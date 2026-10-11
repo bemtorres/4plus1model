@@ -13,7 +13,6 @@ import { useT } from "@/i18n";
 import type { TranslationKey } from "@/i18n";
 import { ExampleDetailDialog } from "./ExampleDetailDialog";
 import { Icon } from "./icons";
-import { notify } from "./Toaster";
 
 type OpenExample = (code: string) => void;
 
@@ -29,17 +28,6 @@ function ExampleCard({
   const t = useT();
   const [brokenImage, setBrokenImage] = useState(false);
   const icon = CATEGORY_ICONS[example.category];
-
-  const copyLink = async () => {
-    const url = new URL(window.location.href);
-    url.searchParams.set("code", example.id);
-    try {
-      await navigator.clipboard.writeText(url.toString());
-      notify(t("examples.linkCopied", { url: url.toString() }), "success");
-    } catch {
-      notify(t("export.copyError"), "danger");
-    }
-  };
 
   return (
     <li className="group flex flex-col overflow-hidden rounded-xl border border-border bg-surface transition-colors hover:border-accent/50">

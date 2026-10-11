@@ -17,10 +17,9 @@ import { IconButton, EditableTitle, Picker, SegmentedControl } from "./ui";
 import { useFullscreen } from "./useFullscreen";
 
 export function TopBar({
-  openExample,
   onOpenExamples,
 }: {
-  openExample: (code: string) => void;
+  openExample?: (code: string) => void;
   onOpenExamples: () => void;
 }) {
   const {

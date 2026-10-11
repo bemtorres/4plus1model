@@ -62,7 +62,7 @@ export function ReadOnlyBanner() {
             variant="ghost"
             className="h-7 px-2 text-xs text-muted hover:text-foreground"
             onPress={toggleFullscreen}
-            title={isFullscreen ? "Salir de pantalla completa" : "Pantalla completa"}
+            aria-label={isFullscreen ? "Salir de pantalla completa" : "Pantalla completa"}
           >
             <Icon name={isFullscreen ? "minimize" : "fullscreen"} className="mr-1 text-xs" />
             <span className="hidden sm:inline">{isFullscreen ? "Salir" : "Pantalla completa"}</span>
@@ -73,7 +73,7 @@ export function ReadOnlyBanner() {
             variant="ghost"
             className="h-7 px-2 text-xs text-muted hover:text-foreground"
             onPress={fit}
-            title="Ajustar diagrama a la pantalla"
+            aria-label="Ajustar diagrama a la pantalla"
           >
             <Icon name="fit" className="mr-1 text-xs" />
             <span className="hidden sm:inline">Ajustar</span>

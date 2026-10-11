@@ -12,7 +12,7 @@ import {
 import { kindMeta, defaultNodeSize } from "./catalog";
 import { createId } from "./id";
 import { centerPositions, computeLayout } from "./layout";
-import { createEmptyWorkspace, createSampleWorkspace } from "./sample";
+import { createEmptyWorkspace } from "./sample";
 import { isReadOnlyFromUrl } from "./share";
 import { createInitialState, savePersistedState } from "./storage";
 import {

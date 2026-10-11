@@ -54,8 +54,8 @@ export async function encodeWorkspace(workspace: Workspace): Promise<string> {
 /** Reconstruye el workspace desde un enlace, payload comprimido o token JWT. */
 export async function decodeWorkspace(payload: string): Promise<Workspace | null> {
   try {
-    const clean = payload.trim();
-    if (isJwtString(clean) || (clean.startsWith("eyJ") && clean.includes("."))) {
+    const clean: string = payload.trim();
+    if (clean.startsWith("eyJ") && clean.includes(".")) {
       return await decodeWorkspaceFromJwt(clean);
     }
     const flag = clean[0];

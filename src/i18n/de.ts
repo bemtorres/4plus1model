@@ -263,7 +263,7 @@ export const de: Dictionary = {
   "share.size": "komprimiert",
   "share.invalid": "Dieser geteilte Link ist beschädigt oder unvollständig.",
   "share.loadedReadOnly": "„{name}“ im Nur-Lese-Modus geöffnet",
-  "share.jwtTitle": "JWT-Token (RFC 7519)",
+  "share.jwtTitle": "Mit Link teilen",
   "share.jwtHint": "Das gesamte Modell als standardmäßiges JSON Web Token (Header, Payload und Signatur). Ideal zum Teilen und Untersuchen auf jwt.io.",
   "share.copyJwt": "JWT-Token kopieren",
   "share.copyJwtUrl": "URL mit ?jwt= kopieren",

@@ -288,10 +288,10 @@ function ElementContentTab({
 }: {
   element: C4Element;
   readOnly: boolean;
-  name: ReturnType<typeof useDraftField>;
-  description: ReturnType<typeof useDraftField>;
-  technology: ReturnType<typeof useDraftField>;
-  tags: ReturnType<typeof useDraftField>;
+  name: ReturnType<typeof useDraftField<string>>;
+  description: ReturnType<typeof useDraftField<string>>;
+  technology: ReturnType<typeof useDraftField<string>>;
+  tags: ReturnType<typeof useDraftField<string>>;
   siblingKinds: C4Element["kind"][];
   parentOptions: { value: string; label: string }[];
   childrenCount: number;
@@ -520,7 +520,7 @@ function ElementStyleTab({
           </div>
         ) : (
           <p className="text-[11px] text-muted italic">
-            {t("inspector.fillRemove") ?? "Fondo transparente (sin relleno)"}
+            Fondo transparente (sin relleno)
           </p>
         )}
       </div>

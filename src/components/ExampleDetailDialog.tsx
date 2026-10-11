@@ -272,19 +272,16 @@ export function ExampleDetailDialog({
                 <span className="mr-1 text-[11px] text-muted">
                   {t("examples.analysis.download")}:
                 </span>
-                {DOWNLOADABLE.map((format) => {
-                  const meta = EXPORT_FORMATS.find((item) => item.id === format)!;
-                  return (
-                    <Button
-                      key={format}
-                      size="sm"
-                      variant="ghost"
-                      onPress={() => download(format)}
-                    >
-                      {t(`export.format.${format}` as TranslationKey)}
-                    </Button>
-                  );
-                })}
+                {DOWNLOADABLE.map((format) => (
+                  <Button
+                    key={format}
+                    size="sm"
+                    variant="ghost"
+                    onPress={() => download(format)}
+                  >
+                    {t(`export.format.${format}` as TranslationKey)}
+                  </Button>
+                ))}
                 <div className="flex-1" />
                 <Button variant="ghost" size="sm" onPress={() => onOpenChange(false)}>
                   {t("common.close")}

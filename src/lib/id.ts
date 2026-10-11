@@ -1,4 +1,3 @@
-import type { ElementKind, Level } from "./types";
 
 let counter = 0;
 

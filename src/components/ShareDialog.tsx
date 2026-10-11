@@ -126,7 +126,7 @@ export function ShareDialog({
 
                     <Separator />
 
-                    <section className="flex flex-col gap-2">
+                    {/* <section className="flex flex-col gap-2">
                       <h3 className="text-sm font-semibold text-foreground">
                         {t("share.editTitle")}
                       </h3>
@@ -149,7 +149,7 @@ export function ShareDialog({
                           <Icon name="external" />
                         </Button>
                       </div>
-                    </section>
+                    </section> */}
 
                     <Separator />
 
@@ -161,13 +161,13 @@ export function ShareDialog({
                             {t("share.jwtTitle")}
                           </h3>
                         </div>
-                        <span className="rounded-full bg-amber-500/10 px-2 py-0.5 text-[10px] font-medium text-amber-500 border border-amber-500/20">
+                        {/* <span className="rounded-full bg-amber-500/10 px-2 py-0.5 text-[10px] font-medium text-amber-500 border border-amber-500/20">
                           RFC 7519 · C4Compact · HS256
-                        </span>
+                        </span> */}
                       </div>
                       <p className="text-xs text-muted">{t("share.jwtHint")}</p>
 
-                      <div className="rounded-lg border border-border bg-surface-secondary/70 p-2 text-[11px] font-mono text-muted overflow-hidden">
+                      {/* <div className="rounded-lg border border-border bg-surface-secondary/70 p-2 text-[11px] font-mono text-muted overflow-hidden">
                         <div className="truncate text-foreground/80 select-all" title={data.jwtToken}>
                           {data.jwtToken.slice(0, 48)}...{data.jwtToken.slice(-16)}
                         </div>
@@ -175,17 +175,17 @@ export function ShareDialog({
                           <span>{data.jwtToken.length} chars</span>
                           <span>header.payload.signature</span>
                         </div>
-                      </div>
+                      </div> */}
 
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
-                        <Button
+                        {/* <Button
                           size="sm"
                           variant="outline"
                           onPress={() => void copy(data.jwtToken)}
                         >
                           <Icon name="copy" />
                           {t("share.copyJwt")}
-                        </Button>
+                        </Button> */}
                         <Button
                           size="sm"
                           variant="outline"
@@ -195,7 +195,7 @@ export function ShareDialog({
                           {t("share.copyJwtUrl")}
                         </Button>
                       </div>
-                      <Button
+                      {/* <Button
                         size="sm"
                         variant="ghost"
                         className="w-full justify-center text-xs"
@@ -203,7 +203,7 @@ export function ShareDialog({
                       >
                         <Icon name="external" />
                         {t("share.openJwtIo")}
-                      </Button>
+                      </Button> */}
                     </section>
                   </>
                 )}
