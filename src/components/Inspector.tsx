@@ -4,7 +4,6 @@ import {
   Label,
   Modal,
   Separator,
-  Switch,
   TextArea,
   TextField,
 } from "@heroui/react";
@@ -26,7 +25,7 @@ import {
   ColorField,
   Details,
   FieldLabel,
-  NumberStepper,
+  SimpleNumberInput,
   Picker,
   SidePicker,
   ThicknessField,
@@ -443,7 +442,7 @@ function ElementStyleTab({
 
   return (
     <div className="flex flex-col gap-3">
-      {/* Estilos rápidos / Swatches de muestra */}
+      {/* Estilos rÃ¡pidos / Swatches de muestra */}
       <div className="flex flex-col gap-1.5">
         <FieldLabel>{t("inspector.presets")}</FieldLabel>
         <div className="grid grid-cols-4 gap-1.5">
@@ -479,25 +478,28 @@ function ElementStyleTab({
         </div>
       </div>
 
-      {/* Relleno (Color de fondo y opacidad, con opción de quitar fondo) */}
-      <Details label={t("inspector.fill")} open={true}>
-        <div className="flex items-center justify-between gap-2">
-          <FieldLabel>{t("inspector.fillEnable")}</FieldLabel>
-          <Switch
-            size="sm"
-            aria-label={t("inspector.fillEnable")}
-            isSelected={showFill}
-            isDisabled={readOnly}
-            onChange={(fill: boolean) =>
+      <Separator />
+
+      {/* Relleno (Color de fondo y opacidad, con opción de check para activar/desactivar) */}
+      <div className="flex flex-col gap-2.5">
+        <label className="flex items-center gap-2 cursor-pointer select-none">
+          <input
+            type="checkbox"
+            checked={showFill}
+            disabled={readOnly}
+            onChange={(e) => {
+              const fill = e.target.checked;
               updateElement(element.id, {
                 fill,
                 ...(fill && element.color === "transparent" ? { color: null } : {}),
-              })
-            }
+              });
+            }}
+            className="h-4 w-4 rounded border-border text-accent focus:ring-accent accent-accent cursor-pointer disabled:cursor-not-allowed"
           />
-        </div>
+          <span className="text-xs font-semibold text-foreground">{t("inspector.fill")}</span>
+        </label>
         {showFill ? (
-          <>
+          <div className="grid grid-cols-2 gap-2.5 items-start">
             <ColorField
               label={t("inspector.color")}
               value={element.color}
@@ -505,7 +507,7 @@ function ElementStyleTab({
               readOnly={readOnly}
               onChange={(color) => updateElement(element.id, { color })}
             />
-            <NumberStepper
+            <SimpleNumberInput
               label={t("inspector.bgOpacity")}
               value={element.bgOpacity ?? 100}
               min={0}
@@ -515,67 +517,80 @@ function ElementStyleTab({
               readOnly={readOnly}
               onChange={(bgOpacity) => updateElement(element.id, { bgOpacity })}
             />
-          </>
+          </div>
         ) : (
           <p className="text-[11px] text-muted italic">
             {t("inspector.fillRemove") ?? "Fondo transparente (sin relleno)"}
           </p>
         )}
-      </Details>
+      </div>
 
-      {/* Borde / Línea (Color, toggle para quitar borde y esquinas redondeadas) */}
-      <Details label={t("inspector.showBorder")} open={true}>
-        <div className="flex items-center justify-between gap-2">
-          <FieldLabel>{t("inspector.borderEnable")}</FieldLabel>
-          <Switch
-            size="sm"
-            aria-label={t("inspector.borderEnable")}
-            isSelected={showBorder}
-            isDisabled={readOnly}
-            onChange={(border: boolean) => updateElement(element.id, { border })}
+      <Separator />
+
+      {/* Borde / Línea (Color, check para activar/desactivar y esquinas redondeadas) */}
+      <div className="flex flex-col gap-2.5">
+        <label className="flex items-center gap-2 cursor-pointer select-none">
+          <input
+            type="checkbox"
+            checked={showBorder}
+            disabled={readOnly}
+            onChange={(e) => updateElement(element.id, { border: e.target.checked })}
+            className="h-4 w-4 rounded border-border text-accent focus:ring-accent accent-accent cursor-pointer disabled:cursor-not-allowed"
+          />
+          <span className="text-xs font-semibold text-foreground">{t("inspector.showBorder")}</span>
+        </label>
+        <div className="grid grid-cols-2 gap-2.5 items-start">
+          {showBorder ? (
+            <ColorField
+              label={t("inspector.borderColor")}
+              value={element.borderColor}
+              fallback={meta.border}
+              readOnly={readOnly}
+              onChange={(borderColor) => updateElement(element.id, { borderColor })}
+            />
+          ) : (
+            <div className="flex flex-col gap-1.5 pt-5">
+              <span className="text-[11px] text-muted italic">Sin borde</span>
+            </div>
+          )}
+          <SimpleNumberInput
+            label={t("inspector.radius")}
+            value={element.radius ?? (meta.shape === "person" ? 16 : 6)}
+            min={0}
+            max={60}
+            suffix="px"
+            readOnly={readOnly}
+            onChange={(radius) => updateElement(element.id, { radius })}
           />
         </div>
-        {showBorder ? (
-          <ColorField
-            label={t("inspector.borderColor")}
-            value={element.borderColor}
-            fallback={meta.border}
-            readOnly={readOnly}
-            onChange={(borderColor) => updateElement(element.id, { borderColor })}
-          />
-        ) : null}
-        <NumberStepper
-          label={t("inspector.radius")}
-          value={element.radius ?? (meta.shape === "person" ? 16 : 6)}
-          min={0}
-          max={40}
-          step={2}
-          suffix="px"
-          readOnly={readOnly}
-          onChange={(radius) => updateElement(element.id, { radius })}
-        />
-      </Details>
+      </div>
 
-      {/* Tipografía (Tamaño de letra y color del texto) */}
-      <Details label={t("inspector.typography")} open={true}>
-        <NumberStepper
-          label={t("inspector.noteSize")}
-          value={element.size ?? 13}
-          min={9}
-          max={32}
-          step={1}
-          suffix="px"
-          readOnly={readOnly}
-          onChange={(size) => updateElement(element.id, { size })}
-        />
-        <ColorField
-          label={t("inspector.textColor")}
-          value={element.textColor}
-          fallback={meta.fg}
-          readOnly={readOnly}
-          onChange={(textColor) => updateElement(element.id, { textColor })}
-        />
-      </Details>
+      <Separator />
+
+      {/* Tipografía (Tamaño de letra y color del texto de lado a lado) */}
+      <div className="flex flex-col gap-2.5">
+        <p className="text-xs font-semibold text-foreground">{t("inspector.typography")}</p>
+        <div className="grid grid-cols-2 gap-2.5 items-start">
+          <SimpleNumberInput
+            label={t("inspector.noteSize")}
+            value={element.size ?? 13}
+            min={8}
+            max={48}
+            suffix="px"
+            readOnly={readOnly}
+            onChange={(size) => updateElement(element.id, { size })}
+          />
+          <ColorField
+            label={t("inspector.textColor")}
+            value={element.textColor}
+            fallback={meta.fg}
+            readOnly={readOnly}
+            onChange={(textColor) => updateElement(element.id, { textColor })}
+          />
+        </div>
+      </div>
+
+      {element.kind !== "note" ? <Separator /> : null}
 
       {/* Icono (si no es nota) */}
       {element.kind !== "note" ? (
@@ -589,7 +604,7 @@ function ElementStyleTab({
         </Details>
       ) : null}
 
-      {/* Botón para restablecer al estilo por defecto */}
+      {/* BotÃ³n para restablecer al estilo por defecto */}
       {!readOnly ? (
         <Button
           size="sm"

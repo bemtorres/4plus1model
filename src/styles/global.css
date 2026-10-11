@@ -73,6 +73,7 @@ body {
   border: 2px solid var(--accent);
   background: var(--surface);
   opacity: 0;
+  pointer-events: none;
   transition:
     opacity 120ms ease,
     width 120ms ease,
@@ -80,13 +81,19 @@ body {
     background-color 120ms ease;
 }
 
-.react-flow__node:hover .c4-handle,
-.react-flow__node.selected .c4-handle {
-  opacity: 1;
+/* Solo visibles cuando el nodo o una flecha conectada está seleccionada */
+.c4-handle--visible {
+  opacity: 1 !important;
+  pointer-events: auto !important;
 }
 
-.c4-handle:hover,
-.c4-handle.connectionindicator {
+/* Visibles al arrastrar una conexión */
+.react-flow--connecting .c4-handle {
+  opacity: 1 !important;
+  pointer-events: auto !important;
+}
+
+.c4-handle:hover {
   width: 14px;
   height: 14px;
   background: var(--accent);
@@ -303,6 +310,12 @@ details[open] .details__chevron {
   color: var(--foreground);
   max-width: 220px;
   text-align: center;
+  transition: border-color 140ms ease, box-shadow 140ms ease;
+}
+
+.c4-edge__label--selected {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-subtle);
 }
 
 .c4-edge__tech {
@@ -325,6 +338,24 @@ details[open] .details__chevron {
   display: grid;
   grid-template-columns: 280px 1fr 320px;
   min-height: 0;
+}
+
+.app-body--presentation {
+  display: flex !important;
+  flex: 1 1 0% !important;
+  grid-template-columns: none !important;
+  width: 100% !important;
+}
+
+.app-body--presentation > main {
+  flex: 1 1 0% !important;
+  width: 100% !important;
+}
+
+/* Modo presentación: elimina puntos de conexión en nodos para visualización impecable */
+.app-body--presentation .c4-handle,
+.app-body--presentation .react-flow__handle {
+  display: none !important;
 }
 
 .app-body > * {

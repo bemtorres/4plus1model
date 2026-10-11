@@ -328,22 +328,47 @@ export function exportMarkdown(workspace: Workspace): string {
 
 import { encodeWorkspaceToJwtSync } from "./jwt";
 
-export type ExportFormat = "json" | "plantuml" | "mermaid" | "markdown" | "jwt";
+export const C4_DEVELOPER_NOTE =
+  "As an educator and teacher, my duty is to ensure my students learn how to create projects and explain them in the simplest, most effective way. The C4 model has been of tremendous help across all my architectural developments, both in the professional software industry and in shaping the careers of my students.";
+
+export interface C4ModelFile {
+  format: "c4model";
+  version: 1;
+  savedAt: string;
+  developerNote: string;
+  workspace: Workspace;
+}
+
+export function exportC4Model(workspace: Workspace): string {
+  const file: C4ModelFile = {
+    format: "c4model",
+    version: 1,
+    savedAt: new Date().toISOString(),
+    developerNote: C4_DEVELOPER_NOTE,
+    workspace: { ...workspace, updatedAt: new Date().toISOString() },
+  };
+  return JSON.stringify(file, null, 2);
+}
+
+export type ExportFormat = "c4model" | "json" | "plantuml" | "mermaid" | "markdown" | "jwt";
 
 export const EXPORT_FORMATS: {
   id: ExportFormat;
   label: string;
   extension: string;
 }[] = [
+  { id: "c4model", label: "C4 Model (.c4model)", extension: "c4model" },
+  { id: "json", label: "JSON", extension: "json" },
   { id: "plantuml", label: "PlantUML (C4)", extension: "puml" },
   { id: "mermaid", label: "Mermaid (C4)", extension: "mmd" },
   { id: "markdown", label: "Markdown", extension: "md" },
-  { id: "json", label: "JSON", extension: "json" },
   { id: "jwt", label: "JWT (JSON Web Token)", extension: "jwt" },
 ];
 
 export function renderExport(workspace: Workspace, format: ExportFormat): string {
   switch (format) {
+    case "c4model":
+      return exportC4Model(workspace);
     case "plantuml":
       return exportPlantUml(workspace);
     case "mermaid":

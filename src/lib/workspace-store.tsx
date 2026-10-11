@@ -134,6 +134,7 @@ export interface WorkspaceApi {
   updateElement: (id: string, patch: Partial<C4Element>) => void;
   moveElement: (id: string, x: number, y: number) => void;
   removeElement: (id: string) => void;
+  duplicateElement: (id: string) => string | null;
   addRelationship: (relationship: Omit<C4Relationship, "id">) => void;
   updateRelationship: (id: string, patch: Partial<C4Relationship>) => void;
   removeRelationship: (id: string) => void;
@@ -354,6 +355,35 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     [commit],
   );
 
+  const duplicateElement = useCallback(
+    (id: string) => {
+      if (readOnlyRef.current) return null;
+      let newId: string | null = null;
+      commit((current) => {
+        const target = current.elements.find((el) => el.id === id);
+        if (!target) return current;
+
+        newId = createId("el");
+        const copy: C4Element = {
+          ...target,
+          id: newId,
+          name: `${target.name} (copia)`,
+          x: target.x + 40,
+          y: target.y + 40,
+        };
+        return {
+          ...current,
+          elements: [...current.elements, copy],
+        };
+      });
+      if (newId) {
+        setSelection({ type: "element", id: newId });
+      }
+      return newId;
+    },
+    [commit],
+  );
+
   const addRelationship = useCallback(
     (relationship: Omit<C4Relationship, "id">) => {
       const id = createId("rel");
@@ -491,6 +521,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       updateElement,
       moveElement,
       removeElement,
+      duplicateElement,
       addRelationship,
       updateRelationship,
       removeRelationship,
@@ -521,6 +552,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       updateElement,
       moveElement,
       removeElement,
+      duplicateElement,
       addRelationship,
       updateRelationship,
       removeRelationship,

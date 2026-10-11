@@ -2,6 +2,7 @@ import { Handle, Position, type NodeProps } from "@xyflow/react";
 import { iconOf, kindMeta, nodeStyle } from "@/lib/catalog";
 import { HANDLE_SIDES, type HandleSide } from "@/lib/types";
 import type { C4FlowNode } from "@/lib/view";
+import { useWorkspace } from "@/lib/workspace-store";
 import { Icon } from "../icons";
 
 const POSITIONS: Record<HandleSide, Position> = {
@@ -11,8 +12,8 @@ const POSITIONS: Record<HandleSide, Position> = {
   left: Position.Left,
 };
 
-/** Las 4 caras de conexión: se arrastra desde la que se quiera usar. */
-function SideHandles({ sides }: { sides: HandleSide[] }) {
+/** Las 4 caras de conexión: se muestran al seleccionar el nodo o una relación conectada. */
+function SideHandles({ sides, show }: { sides: HandleSide[]; show?: boolean }) {
   return (
     <>
       {HANDLE_SIDES.filter((side) => sides.includes(side)).map((side) => (
@@ -21,7 +22,7 @@ function SideHandles({ sides }: { sides: HandleSide[] }) {
           id={side}
           type="source"
           position={POSITIONS[side]}
-          className={`c4-handle c4-handle--${side}`}
+          className={`c4-handle c4-handle--${side} ${show ? "c4-handle--visible" : ""}`}
           title={side}
           aria-label={`Conectar por ${side}`}
         />
@@ -76,6 +77,19 @@ function Content({ name, description, stereotype, tags, icon, size, textColor }:
 
 export function C4ElementNode({ data, selected }: NodeProps<C4FlowNode>) {
   const { element, isDetail } = data;
+  const { selection, workspace, readOnly } = useWorkspace();
+
+  const isDirectlySelected =
+    !readOnly && selection?.type === "element" && selection.id === element.id;
+  const isConnectedToSelectedRelation =
+    !readOnly &&
+    selection?.type === "relationship" &&
+    workspace.relationships.some(
+      (rel) => rel.id === selection.id && (rel.source === element.id || rel.target === element.id),
+    );
+
+  const showHandles = isDirectlySelected || isConnectedToSelectedRelation;
+
   const meta = kindMeta(element.kind);
   const technology = element.technology.trim();
   const description = element.description.trim();
@@ -94,8 +108,9 @@ export function C4ElementNode({ data, selected }: NodeProps<C4FlowNode>) {
   };
 
   const classes = ["c4-node"];
-  if (selected) classes.push("c4-node--selected");
+  if (selected || isDirectlySelected) classes.push("c4-node--selected");
   if (!isDetail) classes.push("c4-node--context");
+  if (showHandles) classes.push("c4-node--show-handles");
 
   const styleOverrides = {
     color: element.color,
@@ -125,9 +140,13 @@ export function C4ElementNode({ data, selected }: NodeProps<C4FlowNode>) {
       ...(!showFill ? { background: "transparent" } : {}),
     };
 
+    const personClasses = ["c4-person"];
+    if (selected || isDirectlySelected) personClasses.push("c4-person--selected");
+    if (showHandles) personClasses.push("c4-person--show-handles");
+
     return (
       <div
-        className={selected ? "c4-person c4-person--selected" : "c4-person"}
+        className={personClasses.join(" ")}
         style={computedStyle}
       >
         <div className="c4-person__head" style={personHeadStyle} />
@@ -136,7 +155,7 @@ export function C4ElementNode({ data, selected }: NodeProps<C4FlowNode>) {
             <Content {...content} />
           </div>
         </div>
-        <SideHandles sides={["left", "right", "bottom"]} />
+        <SideHandles sides={["left", "right", "bottom"]} show={showHandles} />
       </div>
     );
   }
@@ -146,7 +165,7 @@ export function C4ElementNode({ data, selected }: NodeProps<C4FlowNode>) {
       className={classes.join(" ")}
       style={computedStyle}
     >
-      <SideHandles sides={["top", "right", "bottom", "left"]} />
+      <SideHandles sides={["top", "right", "bottom", "left"]} show={showHandles} />
       <Content {...content} />
     </div>
   );

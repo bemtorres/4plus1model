@@ -320,14 +320,14 @@ export function ColorField({
   );
 
   return (
-    <div className="flex flex-col gap-1.5">
-      <div className="flex items-center justify-between gap-2">
-        <FieldLabel>{label}</FieldLabel>
+    <div className="flex flex-col gap-1.5 min-w-0">
+      <div className="flex items-center justify-between gap-1 min-w-0">
+        <span className="text-xs font-medium text-muted truncate" title={label}>{label}</span>
         {isCustom && !readOnly ? (
           <button
             type="button"
             onClick={() => onChange(null)}
-            className="text-[11px] text-accent hover:underline"
+            className="shrink-0 text-[10px] text-accent hover:underline"
           >
             {t("inspector.colorReset")}
           </button>
@@ -411,6 +411,89 @@ export function Details({
 /* ------------------------------------------------------------------ */
 /* Número con paso                                                     */
 /* ------------------------------------------------------------------ */
+
+export function SimpleNumberInput({
+  label,
+  value,
+  min,
+  max,
+  step = 1,
+  suffix = "",
+  readOnly = false,
+  onChange,
+}: {
+  label: string;
+  value: number;
+  min?: number;
+  max?: number;
+  step?: number;
+  suffix?: string;
+  readOnly?: boolean;
+  onChange: (value: number) => void;
+}) {
+  const [text, setText] = useState<string>(String(value ?? 0));
+
+  useEffect(() => {
+    setText(String(value ?? 0));
+  }, [value]);
+
+  const commit = (raw: string) => {
+    let num = parseFloat(raw);
+    if (Number.isNaN(num)) {
+      num = value ?? 0;
+    }
+    if (min !== undefined && num < min) num = min;
+    if (max !== undefined && num > max) num = max;
+    setText(String(num));
+    onChange(num);
+  };
+
+  return (
+    <div className="flex flex-col gap-1.5 min-w-0">
+      <span className="text-xs font-medium text-muted truncate" title={label}>{label}</span>
+      <div className="relative flex items-center">
+        <input
+          type="number"
+          min={min}
+          max={max}
+          step={step}
+          value={text}
+          disabled={readOnly}
+          onChange={(event) => {
+            setText(event.target.value);
+            const val = parseFloat(event.target.value);
+            if (!Number.isNaN(val)) {
+              const clamped = Math.min(
+                max !== undefined ? max : Infinity,
+                Math.max(min !== undefined ? min : -Infinity, val),
+              );
+              onChange(clamped);
+            }
+          }}
+          onBlur={(event) => commit(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") {
+              commit((event.target as HTMLInputElement).value);
+              (event.target as HTMLInputElement).blur();
+            }
+          }}
+          className={[
+            "h-9 w-full rounded-[var(--field-radius)] border border-border bg-field px-2.5 text-sm font-mono text-foreground outline-none transition-colors",
+            "focus:border-field-border-focus focus:ring-1 focus:ring-accent/40",
+            "[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none",
+            suffix ? "pr-9" : "",
+            readOnly ? "cursor-not-allowed opacity-50" : "",
+          ].join(" ")}
+        />
+        {suffix ? (
+          <span className="pointer-events-none absolute right-2.5 text-xs font-medium text-muted">
+            {suffix}
+          </span>
+        ) : null}
+      </div>
+    </div>
+  );
+}
 
 export function NumberStepper({
   label,

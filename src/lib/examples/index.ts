@@ -76,5 +76,5 @@ export function countByCategory(): Record<string, number> {
 
 /** Ruta de la imagen dentro de `public/examples`. */
 export function exampleImage(id: string): string {
-  return `/examples/${id}.png`;
+  return `/examples/${id}.webp`;
 }

@@ -56,7 +56,14 @@ function ExampleCard({
             src={exampleImage(example.id)}
             alt={t("examples.imageAlt", { name: example.name })}
             loading="lazy"
-            onError={() => setBrokenImage(true)}
+            onError={(e) => {
+              const target = e.currentTarget;
+              if (target.src.endsWith(".png")) {
+                target.src = target.src.replace(/\.png$/, ".webp");
+              } else {
+                setBrokenImage(true);
+              }
+            }}
             className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
           />
         )}
@@ -78,15 +85,15 @@ function ExampleCard({
         </div>
         <p className="line-clamp-2 text-xs leading-relaxed text-muted">{example.summary}</p>
         <p className="line-clamp-2 text-[11px] leading-relaxed text-muted/80">{example.focus}</p>
-        <code className="w-fit rounded bg-surface-secondary px-1.5 py-0.5 font-mono text-[10px] text-muted">
+        {/* <code className="w-fit rounded bg-surface-secondary px-1.5 py-0.5 font-mono text-[10px] text-muted">
           ?code={example.id}
-        </code>
+        </code> */}
         <div className="flex-1" />
         <div className="flex items-center gap-1.5">
-          <Button size="sm" variant="outline" className="flex-1" onPress={copyLink}>
+          {/* <Button size="sm" variant="outline" className="flex-1" onPress={copyLink}>
             <Icon name="link" />
             {t("examples.copyLink")}
-          </Button>
+          </Button> */}
           <Button
             size="sm"
             variant="primary"
@@ -212,7 +219,7 @@ export function ExamplesDialog({
                     <p className="mt-1 text-xs text-muted">{t("examples.emptyHint")}</p>
                   </div>
                 ) : (
-                  <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                  <ul className="grid gap-3 sm:grid-cols-4 lg:grid-cols-5">
                     {results.map((example) => (
                       <ExampleCard
                         key={example.id}

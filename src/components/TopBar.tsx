@@ -10,9 +10,11 @@ import { ExportDialog } from "./ExportDialog";
 import { FIT_VIEW_EVENT } from "./Canvas";
 import { Icon } from "./icons";
 import { ImportDialog } from "./ImportDialog";
+import { buildEditUrl } from "@/lib/share";
 import { ShareDialog } from "./ShareDialog";
 import { notify } from "./Toaster";
 import { IconButton, EditableTitle, Picker, SegmentedControl } from "./ui";
+import { useFullscreen } from "./useFullscreen";
 
 export function TopBar({
   openExample,
@@ -42,6 +44,7 @@ export function TopBar({
   const levelLabel = useLevelLabel();
   const levelDescription = useLevelDescription();
   const { resolvedTheme, setTheme } = useTheme();
+  const { isFullscreen, toggleFullscreen } = useFullscreen();
   const [exportOpen, setExportOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
@@ -71,13 +74,21 @@ export function TopBar({
           <Icon name="diagram" className="text-lg" />
         </a>
         <div className="min-w-0">
-          <EditableTitle
-            value={workspace.name}
-            onCommit={(name) => renameWorkspace(name, workspace.description)}
-            placeholder={t("inspector.workspace")}
-            label={t("inspector.workspace")}
-            readOnly={readOnly}
-          />
+          <div className="flex items-center gap-2">
+            <EditableTitle
+              value={workspace.name}
+              onCommit={(name) => renameWorkspace(name, workspace.description)}
+              placeholder={t("inspector.workspace")}
+              label={t("inspector.workspace")}
+              readOnly={readOnly}
+            />
+            {readOnly ? (
+              <span className="hidden sm:inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 shrink-0">
+                <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                Presentación
+              </span>
+            ) : null}
+          </div>
           <p className="truncate text-[11px] leading-tight text-muted">
             {t("topbar.summary", {
               elements: workspace.elements.length,
@@ -134,40 +145,66 @@ export function TopBar({
       <div className="flex-1" />
 
       <div className="flex items-center gap-1">
+        {!readOnly ? (
+          <>
+            <IconButton
+              icon="undo"
+              label={t("topbar.undo")}
+              onPress={undo}
+              isDisabled={!canUndo}
+            />
+            <IconButton
+              icon="redo"
+              label={t("topbar.redo")}
+              onPress={redo}
+              isDisabled={!canRedo}
+            />
+            <Separator orientation="vertical" className="mx-1 h-6" />
+            <IconButton
+              icon="wand"
+              label={t("topbar.autoLayout", { level: levelLabel(level).toLowerCase() })}
+              onPress={() => {
+                autoLayout();
+                notify(t("toast.layoutDone"), "success");
+              }}
+            />
+          </>
+        ) : null}
+
         <IconButton
-          icon="undo"
-          label={t("topbar.undo")}
-          onPress={undo}
-          isDisabled={readOnly || !canUndo}
+          icon={isFullscreen ? "minimize" : "fullscreen"}
+          label={isFullscreen ? "Salir de pantalla completa" : "Pantalla completa"}
+          onPress={toggleFullscreen}
         />
-        <IconButton
-          icon="redo"
-          label={t("topbar.redo")}
-          onPress={redo}
-          isDisabled={readOnly || !canRedo}
-        />
-        <Separator orientation="vertical" className="mx-1 h-6" />
-        <IconButton
-          icon="wand"
-          label={t("topbar.autoLayout", { level: levelLabel(level).toLowerCase() })}
-          onPress={() => {
-            autoLayout();
-            notify(t("toast.layoutDone"), "success");
-          }}
-          isDisabled={readOnly}
-        />
+
         <IconButton
           icon="fit"
           label={t("topbar.fit")}
           onPress={() => window.dispatchEvent(new CustomEvent(FIT_VIEW_EVENT))}
         />
+
         <IconButton icon="link" label={t("share.title")} onPress={() => setShareOpen(true)} />
-        <IconButton
-          icon="upload"
-          label={t("topbar.import")}
-          onPress={() => setImportOpen(true)}
-          isDisabled={readOnly}
-        />
+
+        {!readOnly ? (
+          <IconButton
+            icon="upload"
+            label={t("topbar.import")}
+            onPress={() => setImportOpen(true)}
+          />
+        ) : null}
+
+        {readOnly ? (
+          <Button
+            size="sm"
+            variant="primary"
+            className="shrink-0 font-medium shadow-xs"
+            onPress={() => window.open(buildEditUrl(), "_blank", "noopener,noreferrer")}
+          >
+            <Icon name="external" />
+            {t("share.edit")}
+          </Button>
+        ) : null}
+
         <Button size="sm" variant="secondary" onPress={() => setExportOpen(true)}>
           <Icon name="download" />
           {t("topbar.export")}

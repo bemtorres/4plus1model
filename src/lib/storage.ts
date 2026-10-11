@@ -237,7 +237,11 @@ export function parseWorkspaceFile(text: string): Workspace {
     throw new WorkspaceParseError("invalidJson");
   }
   const candidate = parsed as Partial<WorkspaceFile> & Record<string, unknown>;
-  if (candidate?.format === WORKSPACE_FILE_FORMAT) {
+  if (
+    candidate?.format === WORKSPACE_FILE_FORMAT ||
+    candidate?.format === "c4model" ||
+    candidate?.format === "c4-model"
+  ) {
     const version = Number(candidate.version);
     if (version > WORKSPACE_FILE_VERSION) {
       throw new WorkspaceParseError("futureVersion", {
@@ -245,7 +249,7 @@ export function parseWorkspaceFile(text: string): Workspace {
         max: WORKSPACE_FILE_VERSION,
       });
     }
-    return normalizeWorkspace(candidate.workspace);
+    return normalizeWorkspace(candidate.workspace ?? candidate);
   }
   return normalizeWorkspace(parsed);
 }

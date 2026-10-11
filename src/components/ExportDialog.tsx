@@ -23,7 +23,7 @@ export function ExportDialog({
 }) {
   const { workspace } = useWorkspace();
   const t = useT();
-  const [format, setFormat] = useState<ExportFormat>("plantuml");
+  const [format, setFormat] = useState<ExportFormat>("c4model");
 
   const meta = EXPORT_FORMATS.find((item) => item.id === format) ?? EXPORT_FORMATS[0];
   const content = useMemo(() => renderExport(workspace, format), [workspace, format]);
@@ -41,7 +41,11 @@ export function ExportDialog({
     downloadText(
       `${slugify(workspace.name)}.${meta.extension}`,
       content,
-      format === "json" ? "application/json" : format === "jwt" ? "application/jwt" : "text/plain",
+      format === "json" || format === "c4model"
+        ? "application/json"
+        : format === "jwt"
+          ? "application/jwt"
+          : "text/plain",
     );
     notify(t("export.downloaded", { ext: meta.extension }), "success");
   };

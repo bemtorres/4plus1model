@@ -56,7 +56,7 @@ export async function decodeWorkspace(payload: string): Promise<Workspace | null
   try {
     const clean = payload.trim();
     if (isJwtString(clean) || (clean.startsWith("eyJ") && clean.includes("."))) {
-      return decodeWorkspaceFromJwt(clean);
+      return await decodeWorkspaceFromJwt(clean);
     }
     const flag = clean[0];
     const bytes = base64UrlToBytes(clean.slice(1));

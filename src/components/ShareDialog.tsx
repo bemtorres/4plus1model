@@ -162,7 +162,7 @@ export function ShareDialog({
                           </h3>
                         </div>
                         <span className="rounded-full bg-amber-500/10 px-2 py-0.5 text-[10px] font-medium text-amber-500 border border-amber-500/20">
-                          RFC 7519 · HS256
+                          RFC 7519 · C4Compact · HS256
                         </span>
                       </div>
                       <p className="text-xs text-muted">{t("share.jwtHint")}</p>

@@ -21,7 +21,7 @@ function isTyping(target: EventTarget | null): boolean {  const element = target
 }
 
 function Shell() {
-  const { selection, removeElement, removeRelationship, undo, redo, autoLayout, readOnly, clearAll } =
+  const { selection, removeElement, removeRelationship, duplicateElement, undo, redo, autoLayout, readOnly, clearAll } =
     useWorkspace();
   const { openExample } = useExampleParam();
   useShareParam();
@@ -59,6 +59,13 @@ function Shell() {
         autoLayout();
         return;
       }
+      if (modifier && key === "d") {
+        if (!readOnly && selection?.type === "element") {
+          event.preventDefault();
+          duplicateElement(selection.id);
+          return;
+        }
+      }
 
       if (isTyping(event.target)) return;
 
@@ -72,17 +79,17 @@ function Shell() {
 
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [selection, removeElement, removeRelationship, undo, redo, autoLayout]);
+  }, [selection, removeElement, removeRelationship, duplicateElement, undo, redo, autoLayout, readOnly]);
 
   return (
     <div className="app-shell">
       <TopBar openExample={openExample} onOpenExamples={() => setExamplesOpen(true)} />
-      <div className="app-body">
-        <LeftPanel onOpenExamples={() => setExamplesOpen(true)} />
-        <main className="relative min-h-0 bg-background">
+      <div className={readOnly ? "app-body app-body--presentation" : "app-body"}>
+        {!readOnly ? <LeftPanel onOpenExamples={() => setExamplesOpen(true)} /> : null}
+        <main className="relative min-h-0 bg-background flex-1">
           <Canvas />
         </main>
-        <Inspector />
+        {!readOnly ? <Inspector /> : null}
       </div>
       <ExamplesDialog
         isOpen={examplesOpen}

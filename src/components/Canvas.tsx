@@ -17,7 +17,7 @@ import {
 import { kindMeta } from "@/lib/catalog";
 import { useT } from "@/i18n";
 import { mergeFlowEdges, mergeFlowNodes, withBoundaryGeometry } from "@/lib/flow-state";
-import type { ElementKind, HandleSide } from "@/lib/types";
+import type { C4Element, ElementKind, HandleSide } from "@/lib/types";
 import { HANDLE_SIDES } from "@/lib/types";
 import { useWorkspace } from "@/lib/workspace-store";
 import { NODE_HEIGHT, NODE_WIDTH, type C4FlowEdge, type FlowNode } from "@/lib/view";
@@ -25,6 +25,7 @@ import { C4Edge } from "./edges/C4Edge";
 import { BoundaryNode } from "./nodes/BoundaryNode";
 import { C4ElementNode } from "./nodes/C4ElementNode";
 import { NoteNode } from "./nodes/NoteNode";
+import { NodeContextMenu } from "./NodeContextMenu";
 import { ReadOnlyBanner } from "./ReadOnlyBanner";
 
 const nodeTypes = {
@@ -47,6 +48,7 @@ function asSide(handleId: string | null | undefined): HandleSide | null {
 
 function CanvasInner() {
   const {
+    workspace,
     view,
     level,
     scopeId,
@@ -56,6 +58,8 @@ function CanvasInner() {
     select,
     moveElement,
     addElement,
+    removeElement,
+    duplicateElement,
     addRelationship,
     drillInto,
     beginTransaction,
@@ -63,6 +67,28 @@ function CanvasInner() {
   } = useWorkspace();
   const { screenToFlowPosition, fitView } = useReactFlow();
   const t = useT();
+
+  const [contextMenu, setContextMenu] = useState<{
+    x: number;
+    y: number;
+    element: C4Element;
+  } | null>(null);
+
+  const onNodeContextMenu = useCallback(
+    (event: React.MouseEvent, node: FlowNode) => {
+      event.preventDefault();
+      if (readOnly) return;
+      const el = workspace.elements.find((e) => e.id === node.id);
+      if (!el) return;
+      select({ type: "element", id: node.id });
+      setContextMenu({
+        x: event.clientX,
+        y: event.clientY,
+        element: el,
+      });
+    },
+    [readOnly, select, workspace.elements],
+  );
 
   // Estado propio del lienzo: React Flow necesita conservar la identidad y las
   // medidas de cada nodo, así que el modelo nunca reemplaza estos objetos.
@@ -91,7 +117,9 @@ function CanvasInner() {
 
       for (const change of changes) {
         if (change.type === "position" && change.position) {
-          moveElement(change.id, change.position.x, change.position.y);
+          if (!readOnly) {
+            moveElement(change.id, change.position.x, change.position.y);
+          }
         } else if (change.type === "select") {
           if (change.selected) {
             select({ type: "element", id: change.id });
@@ -101,7 +129,7 @@ function CanvasInner() {
         }
       }
     },
-    [moveElement, select, selection],
+    [moveElement, select, selection, readOnly],
   );
 
   const onEdgesChange = useCallback(
@@ -122,7 +150,7 @@ function CanvasInner() {
 
   const onConnect = useCallback(
     (connection: Connection) => {
-      if (!connection.source || !connection.target) return;
+      if (readOnly || !connection.source || !connection.target) return;
       addRelationship({
         source: connection.source,
         target: connection.target,
@@ -134,16 +162,16 @@ function CanvasInner() {
         style: "sync",
       });
     },
-    [addRelationship, t],
+    [addRelationship, t, readOnly],
   );
 
   const onNodeDragStart = useCallback(() => {
-    beginTransaction();
-  }, [beginTransaction]);
+    if (!readOnly) beginTransaction();
+  }, [beginTransaction, readOnly]);
 
   const onNodeDragStop = useCallback(() => {
-    endTransaction();
-  }, [endTransaction]);
+    if (!readOnly) endTransaction();
+  }, [endTransaction, readOnly]);
 
   const onNodeDoubleClick = useCallback(
     (_event: React.MouseEvent, node: { id: string; data: unknown }) => {
@@ -153,14 +181,19 @@ function CanvasInner() {
     [drillInto],
   );
 
-  const onDragOver = useCallback((event: React.DragEvent) => {
-    event.preventDefault();
-    event.dataTransfer.dropEffect = "copy";
-  }, []);
+  const onDragOver = useCallback(
+    (event: React.DragEvent) => {
+      if (readOnly) return;
+      event.preventDefault();
+      event.dataTransfer.dropEffect = "copy";
+    },
+    [readOnly],
+  );
 
   const onDrop = useCallback(
     (event: React.DragEvent) => {
       event.preventDefault();
+      if (readOnly) return;
       const kind = event.dataTransfer.getData(DRAG_KIND) as ElementKind | "";
       if (!kind) return;
       const point = screenToFlowPosition({ x: event.clientX, y: event.clientY });
@@ -169,7 +202,7 @@ function CanvasInner() {
         y: point.y - NODE_HEIGHT / 2,
       });
     },
-    [addElement, screenToFlowPosition],
+    [addElement, screenToFlowPosition, readOnly],
   );
 
   useEffect(() => {
@@ -203,7 +236,23 @@ function CanvasInner() {
         onNodeDragStart={onNodeDragStart}
         onNodeDragStop={onNodeDragStop}
         onNodeDoubleClick={onNodeDoubleClick}
-        onPaneClick={() => select(null)}
+        onNodeClick={(_event, node) => {
+          select({ type: "element", id: node.id });
+          setContextMenu(null);
+        }}
+        onEdgeClick={(_event, edge) => {
+          select({ type: "relationship", id: edge.id });
+          setContextMenu(null);
+        }}
+        onNodeContextMenu={onNodeContextMenu}
+        onPaneContextMenu={(event) => {
+          event.preventDefault();
+          setContextMenu(null);
+        }}
+        onPaneClick={() => {
+          select(null);
+          setContextMenu(null);
+        }}
         connectionMode={ConnectionMode.Loose}
         connectionRadius={26}
         deleteKeyCode={null}
@@ -229,6 +278,17 @@ function CanvasInner() {
           maskColor="color-mix(in oklab, var(--background) 70%, transparent)"
         />
       </ReactFlow>
+
+      {contextMenu ? (
+        <NodeContextMenu
+          x={contextMenu.x}
+          y={contextMenu.y}
+          element={contextMenu.element}
+          onDuplicate={() => duplicateElement(contextMenu.element.id)}
+          onDelete={() => removeElement(contextMenu.element.id)}
+          onClose={() => setContextMenu(null)}
+        />
+      ) : null}
 
       {isEmpty ? (
         <div className="pointer-events-none absolute inset-0 flex items-center justify-center">

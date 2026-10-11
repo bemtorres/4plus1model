@@ -182,6 +182,30 @@ function liftToDepth(workspace: Workspace, element: C4Element, targetDepth: numb
   return current;
 }
 
+/**
+ * Elemento visible más próximo a un extremo de una relación: el propio si está
+ * visible, o su ancestro visible más cercano.
+ *
+ * Las relaciones se declaran en el nivel en el que ocurren (una componente que
+ * llama a una base de datos, una persona que usa una app), pero cada diagrama
+ * sólo dibuja los elementos de su nivel: sin esta elevación, el extremo no
+ * estaría en la vista y la flecha no se pintaría. Así una relación de nivel 3
+ * aparece en L2 como contenedor → contenedor y en el contexto como sistema →
+ * sistema, que es como se leen los diagramas C4.
+ */
+function nearestVisible(
+  byId: Map<string, C4Element>,
+  id: string,
+  visibleIds: Set<string>,
+): string | null {
+  let current = byId.get(id);
+  while (current) {
+    if (visibleIds.has(current.id)) return current.id;
+    current = current.parentId ? byId.get(current.parentId) : undefined;
+  }
+  return null;
+}
+
 export function buildView(
   workspace: Workspace,
   level: Level,
@@ -201,14 +225,25 @@ export function buildView(
   );
   const detailIds = new Set(detail.map((element) => element.id));
 
-  // Vecinos de un salto, elevado a la profundidad del contexto.
+  // Vecinos de un salto, elevado a la profundidad del contexto. Un extremo
+  // pertenece a la vista si él mismo o alguno de sus ancestros es «detalle»:
+  // así se llegan a ver los contenedores o personas que hablan con una
+  // componente del ámbito, aunque la relación no la declare esa componente.
   const contextIds = new Set<string>();
   if (!isContextLevel && detail.length > 0) {
+    const ownerOf = (id: string): string | null => {
+      let current = byId.get(id);
+      while (current) {
+        if (detailIds.has(current.id)) return current.id;
+        current = current.parentId ? byId.get(current.parentId) : undefined;
+      }
+      return null;
+    };
     for (const relationship of workspace.relationships) {
-      const touchesSource = detailIds.has(relationship.source);
-      const touchesTarget = detailIds.has(relationship.target);
-      if (!touchesSource && !touchesTarget) continue;
-      const otherId = touchesSource ? relationship.target : relationship.source;
+      const sourceOwner = ownerOf(relationship.source);
+      const targetOwner = ownerOf(relationship.target);
+      if (!sourceOwner && !targetOwner) continue;
+      const otherId = sourceOwner ? relationship.target : relationship.source;
       if (otherId === scopeId) continue;
       const other = byId.get(otherId);
       if (!other) continue;
@@ -286,15 +321,25 @@ export function buildView(
   const nodes: FlowNode[] = [...elementNodes, ...boundaryNodes];
 
   const edges: C4FlowEdge[] = [];
+  const drawnPairs = new Set<string>();
   for (const relationship of workspace.relationships) {
-    if (relationship.source === scopeId || relationship.target === scopeId) continue;
-    if (!visibleIds.has(relationship.source) || !visibleIds.has(relationship.target)) continue;
-    if (!detailIds.has(relationship.source) && !detailIds.has(relationship.target)) continue;
+    const source = nearestVisible(byId, relationship.source, visibleIds);
+    const target = nearestVisible(byId, relationship.target, visibleIds);
+    if (!source || !target) continue;
+    if (source === scopeId || target === scopeId) continue;
+    if (source === target) continue;
+    if (!detailIds.has(source) && !detailIds.has(target)) continue;
+    // Al elevar, varias relaciones pueden colapsar en la misma flecha (p. ej.
+    // dos contenedores que llaman a la misma persona en el contexto). Se pinta
+    // la primera, la que aparece antes en el catálogo.
+    const pair = JSON.stringify([source, target]);
+    if (drawnPairs.has(pair)) continue;
+    drawnPairs.add(pair);
     const isSelected = selection?.type === "relationship" && selection.id === relationship.id;
     edges.push({
       id: relationship.id,
-      source: relationship.source,
-      target: relationship.target,
+      source,
+      target,
       sourceHandle: relationship.sourceHandle ?? undefined,
       targetHandle: relationship.targetHandle ?? undefined,
       type: "c4",

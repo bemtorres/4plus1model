@@ -12,27 +12,7 @@
  * El catálogo es TypeScript pero sólo importa tipos, así que se le quitan las
  * anotaciones y se importa como módulo temporal.
  */
-import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
-import { pathToFileURL } from "node:url";
-
-const CATALOG = new URL("../src/lib/examples/catalog.ts", import.meta.url);
-
-/** Convierte el catálogo TS en un .mjs importable (sólo tiene tipos al margen). */
-function loadCatalog() {
-  let source = readFileSync(CATALOG, "utf8");
-  source = source
-    .replace(/import type \{[^}]+\} from "\.\/builder";/, "")
-    .replace(/export const EXAMPLES: ExampleSpec\[\]/, "export const EXAMPLES")
-    .replace(/export const CATEGORY_ORDER: CategoryId\[\]/, "export const CATEGORY_ORDER")
-    .replace(/export const DIFFICULTIES: Difficulty\[\]/, "export const DIFFICULTIES")
-    .replace(/ as const;/g, ";");
-  const dir = mkdtempSync(join(tmpdir(), "c4-examples-"));
-  const file = join(dir, "catalog.mjs");
-  writeFileSync(file, source, "utf8");
-  return import(pathToFileURL(file).href);
-}
+import { CATALOG_TRANSFORMS, loadTsModule, repoUrl } from "./lib/ts-module.mjs";
 
 const LEVEL_KINDS = new Set(["container", "database", "queue"]);
 const DIFFICULTIES = new Set(["beginner", "intermediate", "advanced"]);
@@ -41,7 +21,10 @@ const STYLES = new Set(["sync", "async", "bi"]);
 const errors = [];
 const fail = (id, message) => errors.push(`[${id}] ${message}`);
 
-const { EXAMPLES } = await loadCatalog();
+const { EXAMPLES } = await loadTsModule(
+  repoUrl("src/lib/examples/catalog.ts"),
+  CATALOG_TRANSFORMS,
+);
 const seenIds = new Map();
 
 for (const example of EXAMPLES) {
@@ -126,8 +109,39 @@ for (const example of EXAMPLES) {
   for (const [name, kind] of example.containers) {
     if (!connected.has(name)) fail(id, `contenedor "${name}" (${kind}) sin ninguna relación`);
   }
+  for (const set of example.componentSets ?? []) {
+    for (const [name] of set.components) {
+      if (!connected.has(name)) {
+        fail(id, `componente "${name}" (${set.container}) sin ninguna relación: L3 saldría vacío`);
+      }
+    }
+  }
+
+  // Contexto (L1): las relaciones de nivel 2 y 3 se elevan al sistema propio,
+  // así que una persona o un sistema externo sólo queda unido si al elevar
+  // alguna flecha llega hasta él. Sin esta comprobación, un ejemplo puede
+  // estar «conectado» en sus datos y aun así dibujarse el contexto aislado.
+  const contextNames = new Set([
+    ...example.people.map(([name]) => name),
+    ...(example.externalSystems ?? []).map(([name]) => name),
+    example.name,
+  ]);
+  const liftToContext = (name) => (contextNames.has(name) ? name : example.name);
+  const contextDegree = new Map();
+  for (const [source, target] of example.relations) {
+    const from = liftToContext(source);
+    const to = liftToContext(target);
+    if (from === to) continue;
+    contextDegree.set(from, (contextDegree.get(from) ?? 0) + 1);
+    contextDegree.set(to, (contextDegree.get(to) ?? 0) + 1);
+  }
   for (const [name] of example.people) {
-    if (!connected.has(name)) fail(id, `persona "${name}" sin ninguna relación`);
+    if (!contextDegree.get(name)) fail(id, `persona "${name}" no recibe ninguna flecha en el contexto (L1)`);
+  }
+  for (const [name] of (example.externalSystems ?? [])) {
+    if (!contextDegree.get(name)) {
+      fail(id, `sistema externo "${name}" no recibe ninguna flecha en el contexto (L1)`);
+    }
   }
 }
 

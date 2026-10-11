@@ -20,7 +20,7 @@ Los siguientes parámetros son procesados por el editor en `/editor`:
 | `?share=<payload>` | `g...` o `j...` (base64url) | Carga un modelo completo serializado en la URL. Modo solo lectura por defecto. | `/editor?share=gH4sIC...` |
 | `?jwt=<token>` | Token JWT RFC 7519 (`header.payload.signature`) | Carga el proyecto empaquetado y firmado en formato JWT estándar. | `/editor?jwt=eyJhbGciOi...` |
 | `?token=<token>` | Token JWT RFC 7519 | Alias equivalente a `?jwt=`. | `/editor?token=eyJhbGciOi...` |
-| `?edit=1` | `1` | Usado junto con `?share=` o `?jwt=`, habilita el modo edición para el modelo compartido. | `/editor?jwt=...&edit=1` |
+| `?edit=<valor>` | `0`, `false`, `1`, `true` | Controla el modo edición. Por defecto está activado (`1`/`true`). Si se pasa `0` o `false`, el sistema se bloquea y oculta el modo edición (solo visualización con botón «Editar» que abre una copia en otra pestaña). | `/editor?edit=0&lang=es` |
 
 ---
 
@@ -99,6 +99,22 @@ Permite empaquetar todo el modelo de arquitectura C4 en un estándar internacion
 3. **Parámetro `?edit=1`**:
    - Al abrir un enlace `?jwt=...`, el editor inicia en modo lectura por defecto para evitar sobreescrituras accidentales.
    - Añadiendo `&edit=1` (o haciendo clic en "Editar en nueva pestaña"), se clona el espacio de trabajo en modo edición activo.
+
+### E. Regla de control de edición (`?edit=0`, `?edit=false`, `?edit=1`, `?edit=true`)
+
+Controla si el editor se abre en modo interactivo/editable o en modo de visualización bloqueado:
+
+1. **Valores admitidos**:
+   - **Bloqueado / Solo lectura**: `edit=0`, `edit=false` (también reconoce `no`, `off`).
+   - **Editable**: `edit=1`, `edit=true` (también reconoce `yes`, `on`).
+2. **Comportamiento por defecto**:
+   - **El modo edición está activado por defecto** si no se especifica el parámetro `?edit` (para permitir modelar y experimentar libremente).
+   - En el caso específico de enlaces compartidos (`?share=`, `?jwt=`), el modo protegido (solo lectura) se activa por seguridad a menos que se incluya explícitamente `&edit=1` o `&edit=true`.
+3. **¿Qué ocurre cuando el sistema se bloquea (`edit=0` o `edit=false`)?**:
+   - **Ocultación del modo edición**: La paleta izquierda de creación de elementos queda completamente oculta, impidiendo inserciones o arrastres accidentales.
+   - **Lienzo bloqueado**: Los nodos y conexiones no se pueden arrastrar, modificar ni borrar.
+   - **Inspector protegido**: Los formularios de edición de propiedades, estilos y eliminación quedan inhabilitados; el formulario de «Nueva relación» se oculta.
+   - **Botón «Editar»**: Aparece de forma visible un banner con candado y un botón principal **«Editar en una pestaña nueva»** (tanto en el lienzo como en la barra superior `TopBar`). Al pulsar este botón, se abre una pestaña nueva con `edit=1` manteniendo todo el contexto (ej. idioma `lang`, tema `theme`, código `code` o token `jwt`), permitiendo modificar y continuar el proyecto sin perder nada.
 
 ---
 

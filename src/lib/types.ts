@@ -74,7 +74,9 @@ export type IconName =
   | "info"
   | "search"
   | "refresh"
-  | "keyboard";
+  | "keyboard"
+  | "fullscreen"
+  | "minimize";
 
 export type RelationshipStyle = "sync" | "async" | "bi";
 
@@ -147,11 +149,14 @@ export type Selection =
   | null;
 
 export interface WorkspaceFile {
-  format: "c4-modeler";
+  format: "c4-modeler" | "c4model";
   version: 1;
-  exportedAt: string;
+  exportedAt?: string;
+  savedAt?: string;
+  developerNote?: string;
   workspace: Workspace;
 }
 
 export const WORKSPACE_FILE_FORMAT = "c4-modeler" as const;
+export const C4MODEL_FILE_FORMAT = "c4model" as const;
 export const WORKSPACE_FILE_VERSION = 1 as const;

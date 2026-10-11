@@ -34,7 +34,7 @@ afiliación ni reproduce arquitecturas propietarias.
 | `src/lib/examples/tech-links.ts` | Enlace oficial por tecnología (para las píldoras del diálogo). |
 | `src/lib/examples/reference-links.ts` | Enlace del producto que inspira cada ejemplo. |
 | `scripts/validate-examples.mjs` | Validador de reglas duras (`npm run check:examples`). |
-| `public/examples/` | Miniaturas `<id>.png` (opcionales; ver su README). |
+| `public/examples/` | Miniaturas `<id>.webp` (opcionales; ver su README). |
 | `src/lib/catalog.ts` | Metadatos de tipos y niveles C4 (no confundir con el catálogo de ejemplos). |
 | `src/lib/types.ts` | Modelo de datos: `C4Element`, `C4Relationship`, `Workspace`. |
 | `src/lib/view.ts` | Construye la vista de un nivel/ámbito (nodos, fronteras, aristas). |
@@ -111,7 +111,7 @@ Un elemento es «detalle» en **un único nivel**, según su profundidad:
 ### Campos, de memoria
 
 - `id` — slug en `a-z0-9-`. **Nunca acentos ni ñ**: forma la imagen
-  `public/examples/<id>.png` y el parámetro `?code=`.
+  `public/examples/<id>.webp` y el parámetro `?code=`.
 - `people` — `[nombre, descripción]`. Sin tecnología: son actores.
 - `externalSystems` — `[nombre, descripción, tecnología?]`. Opcional.
 - `containers` — `[nombre, kind, tecnología, descripción]`. `kind` sólo puede
@@ -138,16 +138,42 @@ El validador las comprueba todas. Romper una falla `npm run check:examples`.
 6. **Ningún contenedor «inalcanzable»** — si sólo tiene salidas hacia
    externos o bases de datos, falta quién lo llame. Añade la relación de
    entrada o reconsidera el diseño.
-7. **`componentSets` obligatorio** — sin él el nivel de componentes (L3) del
+7. **Contexto unido (L1)** — al elevar cada relación al sistema propio, ni una
+   persona ni un sistema externo pueden quedar sin flecha. Es el fallo típico
+   de «el contexto sale aislado»: los datos están conectados entre sí dentro
+   del sistema, pero nadie habla con el actor o con el externo.
+8. **Componentes conectados (L3)** — cada componente de `componentSets` debe
+   participar en al menos una relación; si no, el nivel de componentes se abre
+   con tres cajas sueltas y sin vecinos de contexto.
+9. **`componentSets` obligatorio** — sin él el nivel de componentes (L3) del
    ejemplo queda vacío.
-8. **`componentSets.container`** debe existir en `containers` y ser de kind
-   `container` (las bases de datos y colas no se abren en componentes).
-9. **Textos no vacíos** — nombres, descripciones, tecnologías y etiquetas.
-10. **Estilo de relación** — sólo `sync` (por defecto), `async` o `bi`.
+10. **`componentSets.container`** debe existir en `containers` y ser de kind
+    `container` (las bases de datos y colas no se abren en componentes).
+11. **Textos no vacíos** — nombres, descripciones, tecnologías y etiquetas.
+12. **Estilo de relación** — sólo `sync` (por defecto), `async` o `bi`.
 
 En `astro dev` el builder **lanza un error** si una relación apunta a un
 nombre inexistente, para que las erratas no se oculten en silencio. En
 producción esa relación se omite sin romper la app.
+
+### Las relaciones se elevan al dibujarlas
+
+`buildView` dibuja cada relación entre el **elemento visible más próximo** de
+cada extremo: su propio ancestro que exista en el nivel actual. Por eso se
+puede declarar la relación donde ocurre y el resto de niveles la leen solos:
+
+| Relación declarada | Se dibuja en L1 | Se dibuja en L2 | Se dibuja en L3 |
+| --- | --- | --- | --- |
+| `Subscriber → Web App` | `Subscriber → Sistema` | `Subscriber → Web App` | no aparece |
+| `Segment Router → Video Storage` | `Sistema → Sistema`* | `Playback Service → Video Storage` | `Segment Router → Video Storage` |
+| `Moderation Service → Content Safety` | `Sistema → Externo` | `Moderation Service → Externo` | no aparece |
+
+\* los dos extremos caen en el mismo nodo: la relación es interna y no se pinta.
+
+Varias relaciones pueden colapsar en la misma flecha al elevarse (p. ej. dos
+contenedores que llaman a la misma persona): la vista pinta **la primera**,
+la que aparece antes en el catálogo. Por eso conviene que cada flujo se
+declare una sola vez, en el nivel más bajo donde ocurre.
 
 ---
 
@@ -164,9 +190,9 @@ repositorio.
 
 | Dificultad | Contenedores (sin BD/colas) | Componentes | Relaciones |
 | --- | --- | --- | --- |
-| `beginner` | 3–5 | 3 | 7–10 |
-| `intermediate` | 5–6 | 3 | 10–12 |
-| `advanced` | 5–7 | 3 | 10–13 |
+| `beginner` | 3–5 | 3 | 9–13 |
+| `intermediate` | 5–6 | 3 | 10–15 |
+| `advanced` | 5–7 | 3 | 11–15 |
 
 Una persona debe interactuar con el sistema; cada contenedor debe tener
 sentido aislado. No llenes de contenedores vacíos: mejor 5 bien conectados que
@@ -231,8 +257,20 @@ Cada conjunto lleva **exactamente 3 componentes** con `[nombre, tecnología,
 descripción]`. La tecnología suele ser la misma que la del contenedor padre o
 la de su ecosistema (`Java` dentro de un contenedor `Java / Spring Boot`).
 
-Las relaciones **entre componentes de contenedores distintos** se modelan
-igual: el builder las eleva automáticamente al nivel correcto.
+**Los tres componentes deben tener relaciones** (regla 8). El patrón que
+funciona bien son 3–4 relaciones por conjunto:
+
+- **2 internas** encadenando los componentes
+  (`Session Manager → Segment Router`, `Segment Router → DRM Module`), con la
+  tecnología del propio componente.
+- **1–2 hacia fuera**: una base de datos o cola y, si existe, un sistema
+  externo. Si el contenedor ya declaraba esa misma relación, **la del
+  contenedor queda subsumida**: elimínala y deja sólo la del componente, que
+  se dibuja igual en L1/L2 y añade el detalle en L3.
+
+Las relaciones se declaran en el nivel en el que ocurren: `buildView` las
+eleva al dibujarlas, así que una relación de componente aparece como
+contenedor → contenedor en L2 y como sistema → sistema en el contexto.
 
 ---
 
@@ -246,9 +284,11 @@ igual: el builder las eleva automáticamente al nivel correcto.
 3. **Diseña L2.** Contenedores con tecnología real; al menos un `database` y,
    si el flujo lo pide, un `queue`. Que todo esté conectado.
 4. **Diseña L3.** Un `componentSet` de 3 componentes sobre el contenedor del
-   dominio.
-5. **Escribe las relaciones.** Cubre: persona → sistema, app → API, API →
-   dominio, dominio → datos, dominio → externo. Marca `async` donde toque.
+   dominio, y sus relaciones (2 internas + 1 hacia datos o externo).
+5. **Escribe las relaciones.** Cubre: persona → app, app → API, API →
+   dominio, dominio → datos, dominio → externo, y componente → componente /
+   datos. Marca `async` donde toque. Después comprueba que **cada persona y
+   cada externo recibe alguna flecha en el contexto**: si no, L1 sale aislado.
 6. **Añade el bloque de comentario** de arquitectura encima del objeto.
 7. **Verifica:**
 
@@ -258,8 +298,9 @@ igual: el builder las eleva automáticamente al nivel correcto.
    npm run dev              # abrir ?code=<id> y mirar los 4 niveles
    ```
 
-8. **Miniatura (opcional).** `public/examples/<id>.png` a 640×360; si no
-   existe, la tarjeta muestra un marcador sin errores.
+8. **Miniatura (opcional).** `public/examples/<id>.webp` a 640×360. Si agregas
+   un `.png`, puedes convertirlo a `.webp` y eliminar el original con
+   `npm run convert:webp`. Si no existe, la tarjeta muestra un marcador sin errores.
 
 ### Inserta el ejemplo en su categoría
 

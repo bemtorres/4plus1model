@@ -12,6 +12,8 @@
     "preview": "astro preview",
     "check": "tsc --noEmit",
     "check:examples": "node scripts/validate-examples.mjs",
+    "convert:webp": "node scripts/convert-examples-to-webp.mjs",
+    "doc": "node scripts/generate-doc.mjs",
     "astro": "astro"
   },
   "dependencies": {
@@ -29,6 +31,7 @@
   "devDependencies": {
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
+    "sharp": "^0.35.5",
     "typescript": "^5.9.3"
   }
 }

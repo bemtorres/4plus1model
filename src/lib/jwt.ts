@@ -1,5 +1,6 @@
 import { normalizeWorkspace } from "./storage";
 import type { Workspace } from "./types";
+import { C4Compact, type CompactWorkspace } from "./c4-compact";
 
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();
@@ -44,7 +45,12 @@ export interface WorkspaceJwtPayload {
   elementsCount?: number;
   relationshipsCount?: number;
   iat?: number;
-  workspace: Workspace;
+  /** Payload comprimido C4Compact en Base64URL (máxima reducción ~83%) */
+  c4z?: string;
+  /** Payload C4Compact en JSON posicional (reducción ~60% síncrona) */
+  c4c?: CompactWorkspace;
+  /** Payload legado sin compactar (compatibilidad hacia atrás) */
+  workspace?: Workspace;
   [key: string]: unknown;
 }
 
@@ -117,11 +123,16 @@ export function decodeJwt<T = unknown>(token: string): JwtEnvelope<T> {
   };
 }
 
-/** Convierte todo el workspace del modelo a un JWT estándar RFC 7519. */
+/**
+ * Convierte el workspace del modelo a un JWT ultra-compacto estándar RFC 7519.
+ * Utiliza C4Compact con compresión DEFLATE en el claim `c4z`, reduciendo el token
+ * más de un 80% frente al JSON sin procesar.
+ */
 export async function encodeWorkspaceToJwt(
   workspace: Workspace,
   secret = DEFAULT_JWT_SECRET,
 ): Promise<string> {
+  const compressedB64 = await C4Compact.compress(workspace, { algorithm: "deflate" });
   const payload: WorkspaceJwtPayload = {
     iss: "c4model.cafeycodigo.org",
     sub: "c4-workspace",
@@ -130,12 +141,16 @@ export async function encodeWorkspaceToJwt(
     elementsCount: workspace.elements.length,
     relationshipsCount: workspace.relationships.length,
     iat: Math.floor(Date.now() / 1000),
-    workspace,
+    c4z: compressedB64,
   };
   return signJwt(payload as unknown as Record<string, unknown>, secret, "HS256");
 }
 
-/** Versión síncrona de generación de JWT (alg: none) para exportadores síncronos. */
+/**
+ * Versión síncrona de generación de JWT (alg: none) para exportadores síncronos.
+ * Utiliza C4Compact en formato JSON posicional (`c4c`), reduciendo más de un 60%
+ * sin requerir compresión asíncrona.
+ */
 export function encodeWorkspaceToJwtSync(workspace: Workspace): string {
   const header = { alg: "none", typ: "JWT" };
   const payload: WorkspaceJwtPayload = {
@@ -146,26 +161,80 @@ export function encodeWorkspaceToJwtSync(workspace: Workspace): string {
     elementsCount: workspace.elements.length,
     relationshipsCount: workspace.relationships.length,
     iat: Math.floor(Date.now() / 1000),
-    workspace,
+    c4c: C4Compact.compact(workspace),
   };
   const headerB64 = bytesToBase64Url(encoder.encode(JSON.stringify(header)));
   const payloadB64 = bytesToBase64Url(encoder.encode(JSON.stringify(payload)));
   return `${headerB64}.${payloadB64}.`;
 }
 
-/** Reconstruye un Workspace desde un token JWT (devuelve null si está corrupto). */
-export function decodeWorkspaceFromJwt(token: string): Workspace | null {
+/**
+ * Reconstruye un Workspace desde un token JWT de forma asíncrona.
+ * Compatible con:
+ * 1. Tokens ultra-compactos C4Compact comprimidos (`payload.c4z`)
+ * 2. Tokens C4Compact en JSON posicional (`payload.c4c`)
+ * 3. Tokens tradicionales con payload completo (`payload.workspace` o directo)
+ */
+export async function decodeWorkspaceFromJwt(token: string): Promise<Workspace | null> {
   try {
     const { payload } = decodeJwt<Record<string, unknown>>(token);
     if (!payload || typeof payload !== "object") return null;
 
-    // Puede ser payload.workspace o el propio payload si tiene elements y relationships
+    // 1. Formato ultra-compacto comprimido con C4Compact (claim c4z)
+    if (typeof payload.c4z === "string" && payload.c4z.length > 0) {
+      return await C4Compact.decompress(payload.c4z);
+    }
+
+    // 2. Formato compacto JSON posicional C4Compact (claim c4c)
+    if (payload.c4c && typeof payload.c4c === "object") {
+      return C4Compact.decompact(payload.c4c);
+    }
+
+    // 3. Formato legado sin compactar (claim workspace) o payload directo
     const candidate =
       payload.workspace ??
       (Array.isArray(payload.elements) && Array.isArray(payload.relationships) ? payload : null);
 
-    if (!candidate) return null;
-    return normalizeWorkspace(candidate);
+    if (candidate) {
+      return normalizeWorkspace(candidate as Workspace);
+    }
+
+    // 4. Si el payload es un CompactWorkspace directo con "v": 1
+    if (payload.v === 1 && Array.isArray(payload.e) && Array.isArray(payload.r)) {
+      return C4Compact.decompact(payload);
+    }
+
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Reconstruye un Workspace de forma síncrona si el token contiene `c4c` o `workspace`.
+ */
+export function decodeWorkspaceFromJwtSync(token: string): Workspace | null {
+  try {
+    const { payload } = decodeJwt<Record<string, unknown>>(token);
+    if (!payload || typeof payload !== "object") return null;
+
+    if (payload.c4c && typeof payload.c4c === "object") {
+      return C4Compact.decompact(payload.c4c);
+    }
+
+    const candidate =
+      payload.workspace ??
+      (Array.isArray(payload.elements) && Array.isArray(payload.relationships) ? payload : null);
+
+    if (candidate) {
+      return normalizeWorkspace(candidate as Workspace);
+    }
+
+    if (payload.v === 1 && Array.isArray(payload.e) && Array.isArray(payload.r)) {
+      return C4Compact.decompact(payload);
+    }
+
+    return null;
   } catch {
     return null;
   }
