@@ -266,7 +266,7 @@ export const de: Dictionary = {
   "share.jwtTitle": "Mit Link teilen",
   "share.jwtHint": "Das gesamte Modell als standardmäßiges JSON Web Token (Header, Payload und Signatur). Ideal zum Teilen und Untersuchen auf jwt.io.",
   "share.copyJwt": "JWT-Token kopieren",
-  "share.copyJwtUrl": "URL mit ?jwt= kopieren",
+  "share.copyJwtUrl": "URL kopieren",
   "share.openJwtIo": "Auf jwt.io inspizieren",
   "examples.analysis": "Architekturanalyse",
   "examples.analysis.levels": "Was jede Ebene beantwortet",

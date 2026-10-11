@@ -261,7 +261,7 @@ export const en = {
   "share.jwtTitle": "JWT Token (RFC 7519)",
   "share.jwtHint": "The entire model packaged as a standard JSON Web Token (header, payload, and signature). Great for inter-system exchange or inspecting on jwt.io.",
   "share.copyJwt": "Copy JWT Token",
-  "share.copyJwtUrl": "Copy URL with ?jwt=",
+  "share.copyJwtUrl": "Copy URL",
   "share.openJwtIo": "Inspect on jwt.io",
   "examples.viewAnalysis": "View analysis",
   "examples.analysis": "Architecture analysis",

@@ -177,22 +177,22 @@ export function ShareDialog({
                         </div>
                       </div> */}
 
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
-                        {/* <Button
-                          size="sm"
-                          variant="outline"
-                          onPress={() => void copy(data.jwtToken)}
-                        >
-                          <Icon name="copy" />
-                          {t("share.copyJwt")}
-                        </Button> */}
+                      <div className="flex gap-1.5">
                         <Button
                           size="sm"
                           variant="outline"
+                          className="flex-1"
                           onPress={() => void copy(data.jwtViewUrl)}
                         >
                           <Icon name="copy" />
                           {t("share.copyJwtUrl")}
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onPress={() => openInTab(data.jwtViewUrl)}
+                        >
+                          <Icon name="external" />
                         </Button>
                       </div>
                       {/* <Button
