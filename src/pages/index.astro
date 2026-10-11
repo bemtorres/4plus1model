@@ -1,0 +1,11 @@
+---
+import { Modeler } from "../components/Modeler";
+import Layout from "../layouts/Layout.astro";
+---
+
+<Layout
+  title="C4 Modeler"
+  description="Model and document software architecture with the C4 model"
+>
+  <Modeler client:only="react" />
+</Layout>
