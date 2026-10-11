@@ -352,10 +352,11 @@ details[open] .details__chevron {
   width: 100% !important;
 }
 
-/* Modo presentación: elimina puntos de conexión en nodos para visualización impecable */
+/* Modo presentación: oculta visualmente los puntos de conexión pero preserva dimensiones en el DOM para que React Flow pueda medir sus coordenadas y trazar las flechas (aristas) correctamente */
 .app-body--presentation .c4-handle,
 .app-body--presentation .react-flow__handle {
-  display: none !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
 }
 
 .app-body > * {
