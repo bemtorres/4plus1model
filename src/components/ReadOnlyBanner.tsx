@@ -1,5 +1,5 @@
 import { Button } from "@heroui/react";
-import { buildShareUrl, readSharePayload } from "@/lib/share";
+import { buildEditUrl } from "@/lib/share";
 import { useT } from "@/i18n";
 import { useWorkspace } from "@/lib/workspace-store";
 import { Icon } from "./icons";
@@ -14,12 +14,7 @@ export function ReadOnlyBanner() {
   if (!readOnly) return null;
 
   const edit = () => {
-    const shared = readSharePayload();
-    const payload = shared?.payload;
-    const url = payload
-      ? buildShareUrl(payload, true)
-      : `${window.location.pathname}${window.location.search}`;
-    window.open(url, "_blank", "noopener,noreferrer");
+    window.open(buildEditUrl(), "_blank", "noopener,noreferrer");
   };
 
   return (
@@ -33,7 +28,7 @@ export function ReadOnlyBanner() {
           <p className="truncate text-[11px] text-muted">{t("share.readOnlyHint")}</p>
         </div>
         <Button size="sm" variant="primary" className="shrink-0" onPress={edit}>
-          <Icon name="copy" />
+          <Icon name="external" />
           {t("share.edit")}
         </Button>
       </div>

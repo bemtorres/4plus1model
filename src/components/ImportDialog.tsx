@@ -64,7 +64,7 @@ export function ImportDialog({
                 <input
                   ref={fileInputRef}
                   type="file"
-                  accept="application/json,.json"
+                  accept="application/json,.json,.jwt"
                   className="hidden"
                   onChange={(event) => void onFile(event.target.files?.[0])}
                 />
@@ -76,7 +76,7 @@ export function ImportDialog({
                   {t("import.choose")}
                 </Button>
                 <TextField value={text} onChange={setText}>
-                  <TextArea rows={10} placeholder='{ "format": "c4-modeler", ... }' />
+                  <TextArea rows={10} placeholder='{ "format": "c4-modeler", ... } / eyJhbGciOiJIUzI1Ni...' />
                 </TextField>
                 {error ? (
                   <p className="rounded-lg border border-danger/40 bg-danger-soft px-3 py-2 text-xs text-danger-soft-foreground">

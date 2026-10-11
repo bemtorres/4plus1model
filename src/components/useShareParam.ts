@@ -1,14 +1,13 @@
 import { useEffect, useState } from "react";
-import { clearShareParams, decodeWorkspace, readSharePayload } from "@/lib/share";
+import { clearShareParams, decodeWorkspace, isReadOnlyFromUrl, readSharePayload } from "@/lib/share";
 import { useT } from "@/i18n";
 import { useWorkspace } from "@/lib/workspace-store";
 import { notify } from "./Toaster";
 
 /**
- * Carga un diagrama compartido (`?share=<payload>`):
- * - sin `?edit=1` se abre en **solo lectura** y no se guarda en el navegador,
- *   para no pisar el trabajo de quien lo recibe;
- * - con `?edit=1` se abre una copia editable (nueva pestaña) que sí se guarda.
+ * Carga un diagrama compartido (`?share=<payload>` o `?jwt=<token>`) o gestiona el modo bloqueado (`?edit=0`):
+ * - con `?edit=0` o `?edit=false` (o compartido sin `edit=1`) se abre en **solo lectura** y oculta el modo edición;
+ * - con `?edit=1` o `?edit=true` se abre en modo edición completo.
  */
 export function useShareParam() {
   const { importWorkspace, readOnly, setReadOnly } = useWorkspace();
@@ -16,8 +15,20 @@ export function useShareParam() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    // Sincronizar estado inicial según la URL
+    setReadOnly(isReadOnlyFromUrl());
+
+    const onPopState = () => {
+      setReadOnly(isReadOnlyFromUrl());
+    };
+    window.addEventListener("popstate", onPopState);
+
     const shared = readSharePayload();
-    if (!shared) return;
+    if (!shared) {
+      return () => {
+        window.removeEventListener("popstate", onPopState);
+      };
+    }
 
     let cancelled = false;
     decodeWorkspace(shared.payload).then((workspace) => {
@@ -34,6 +45,7 @@ export function useShareParam() {
 
     return () => {
       cancelled = true;
+      window.removeEventListener("popstate", onPopState);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

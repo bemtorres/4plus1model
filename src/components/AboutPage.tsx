@@ -60,7 +60,7 @@ function AboutContent() {
       <header className="border-b border-separator bg-surface">
         <div className="mx-auto flex max-w-3xl items-center gap-3 px-5 py-3">
           <a
-            href="/"
+            href="/editor"
             className="flex items-center gap-2 text-sm font-medium text-muted transition-colors hover:text-foreground"
           >
             <Icon name="chevron-left" />

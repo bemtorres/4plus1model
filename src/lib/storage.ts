@@ -77,6 +77,7 @@ function num(value: unknown, fallback = 0): number {
 
 /** Colores y métricas de nodos/líneas; se omiten si no hay valor propio. */
 function color(value: unknown): string | null {
+  if (value === "transparent") return "transparent";
   return typeof value === "string" && HEX.test(value) ? value : null;
 }
 
@@ -92,6 +93,7 @@ function appearance(element: Record<string, unknown>): Partial<C4Element> {
   if (textColor !== null) result.textColor = textColor;
   if (typeof element.size === "number") result.size = num(element.size, 13);
   if (typeof element.border === "boolean") result.border = element.border;
+  if (typeof element.fill === "boolean") result.fill = element.fill;
   if (typeof element.radius === "number") result.radius = num(element.radius, 10);
   if (typeof element.bgOpacity === "number") result.bgOpacity = num(element.bgOpacity, 100);
   return result;
@@ -201,8 +203,33 @@ export function normalizeWorkspace(input: unknown): Workspace {
   };
 }
 
-/** Acepta el archivo exportado por la app o un workspace suelto. */
+/** Acepta el archivo exportado por la app, un workspace suelto o un token JWT (RFC 7519). */
 export function parseWorkspaceFile(text: string): Workspace {
+  const clean = text.trim();
+  // Detección y desempaquetado de JWT (RFC 7519)
+  if (clean.startsWith("eyJ") && clean.includes(".")) {
+    try {
+      const parts = clean.split(".");
+      const base64 = parts[1].replace(/-/g, "+").replace(/_/g, "/");
+      const padded = base64 + "=".repeat((4 - (base64.length % 4)) % 4);
+      const binary = atob(padded);
+      const bytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+      const decoded = new TextDecoder().decode(bytes);
+      const payloadObj = JSON.parse(decoded) as Record<string, unknown>;
+      const candidateWs =
+        payloadObj.workspace ??
+        (Array.isArray(payloadObj.elements) && Array.isArray(payloadObj.relationships)
+          ? payloadObj
+          : null);
+      if (candidateWs) {
+        return normalizeWorkspace(candidateWs);
+      }
+    } catch {
+      // Si falla como JWT, continuar con JSON estándar
+    }
+  }
+
   let parsed: unknown;
   try {
     parsed = JSON.parse(text);

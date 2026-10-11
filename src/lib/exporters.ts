@@ -326,7 +326,9 @@ export function exportMarkdown(workspace: Workspace): string {
 /* Formatos y descarga                                                 */
 /* ------------------------------------------------------------------ */
 
-export type ExportFormat = "json" | "plantuml" | "mermaid" | "markdown";
+import { encodeWorkspaceToJwtSync } from "./jwt";
+
+export type ExportFormat = "json" | "plantuml" | "mermaid" | "markdown" | "jwt";
 
 export const EXPORT_FORMATS: {
   id: ExportFormat;
@@ -337,6 +339,7 @@ export const EXPORT_FORMATS: {
   { id: "mermaid", label: "Mermaid (C4)", extension: "mmd" },
   { id: "markdown", label: "Markdown", extension: "md" },
   { id: "json", label: "JSON", extension: "json" },
+  { id: "jwt", label: "JWT (JSON Web Token)", extension: "jwt" },
 ];
 
 export function renderExport(workspace: Workspace, format: ExportFormat): string {
@@ -347,6 +350,8 @@ export function renderExport(workspace: Workspace, format: ExportFormat): string
       return exportMermaid(workspace);
     case "markdown":
       return exportMarkdown(workspace);
+    case "jwt":
+      return encodeWorkspaceToJwtSync(workspace);
     case "json":
     default:
       return exportJson(workspace);

@@ -257,12 +257,459 @@ function NewRelationForm({ element }: { element: C4Element }) {
   );
 }
 
-function ElementInspector({ element }: { element: C4Element }) {
-  const { workspace, updateElement, removeElement, drillInto, readOnly } = useWorkspace();
+const STYLE_PRESETS = [
+  // Fila 1 (Pasteles claros con borde definido)
+  { id: "white-dark", label: "Blanco / Oscuro", bg: "#ffffff", border: "#24292f", text: "#1f2937" },
+  { id: "white-gray", label: "Blanco / Gris", bg: "#ffffff", border: "#9ca3af", text: "#374151" },
+  { id: "soft-blue", label: "Azul suave", bg: "#dbeafe", border: "#3b82f6", text: "#1e3a8a" },
+  { id: "soft-green", label: "Verde suave", bg: "#dcfce7", border: "#22c55e", text: "#14532d" },
+  // Fila 2 (Pasteles cálidos)
+  { id: "soft-orange", label: "Naranja suave", bg: "#ffedd5", border: "#f97316", text: "#7c2d12" },
+  { id: "soft-yellow", label: "Amarillo suave", bg: "#fef9c3", border: "#eab308", text: "#713f12" },
+  { id: "soft-red", label: "Rojo suave", bg: "#fee2e2", border: "#ef4444", text: "#7f1d1d" },
+  { id: "soft-purple", label: "Púrpura suave", bg: "#f3e8ff", border: "#a855f7", text: "#581c87" },
+  // Fila 3 (C4 Clásicos)
+  { id: "c4-blue", label: "C4 Azul", bg: "#1168bd", border: "#0b4884", text: "#ffffff" },
+  { id: "c4-navy", label: "C4 Marino", bg: "#08427b", border: "#052e56", text: "#ffffff" },
+  { id: "c4-steel", label: "C4 Acero", bg: "#438dd5", border: "#2e6295", text: "#ffffff" },
+  { id: "c4-gray", label: "C4 Gris", bg: "#6b7280", border: "#4b5563", text: "#ffffff" },
+];
+
+function ElementContentTab({
+  element,
+  readOnly,
+  name,
+  description,
+  technology,
+  tags,
+  siblingKinds,
+  parentOptions,
+  childrenCount,
+  relationshipsCount,
+}: {
+  element: C4Element;
+  readOnly: boolean;
+  name: ReturnType<typeof useDraftField>;
+  description: ReturnType<typeof useDraftField>;
+  technology: ReturnType<typeof useDraftField>;
+  tags: ReturnType<typeof useDraftField>;
+  siblingKinds: C4Element["kind"][];
+  parentOptions: { value: string; label: string }[];
+  childrenCount: number;
+  relationshipsCount: number;
+}) {
+  const { updateElement, removeElement, drillInto } = useWorkspace();
   const t = useT();
   const meta = kindMeta(element.kind);
   const kindLabel = useKindLabel();
   const levelLabel = useLevelLabel();
+
+  return (
+    <div className="flex flex-col gap-4">
+      {meta.drillable ? (
+        <Button
+          size="sm"
+          variant="outline"
+          className="w-full"
+          onPress={() => drillInto(element.id)}
+          isDisabled={childrenCount === 0}
+        >
+          {childrenCount === 0
+            ? t("inspector.noContent")
+            : t("inspector.openLower", {
+                level: levelLabel(kindMeta(element.kind).level).toLowerCase(),
+              })}
+        </Button>
+      ) : null}
+
+      <TextField value={name.value} onChange={name.onChange} isDisabled={readOnly}>
+        <Label>{element.kind === "note" ? t("inspector.noteText") : t("inspector.name")}</Label>
+        {element.kind === "note" ? (
+          <TextArea
+            rows={3}
+            onBlur={name.onBlur}
+            placeholder={t("inspector.noteTextPlaceholder")}
+          />
+        ) : (
+          <Input onBlur={name.onBlur} />
+        )}
+      </TextField>
+
+      {siblingKinds.length > 1 ? (
+        <div className="flex flex-col gap-1.5">
+          <FieldLabel>{t("inspector.elementType")}</FieldLabel>
+          <Picker
+            label={t("inspector.elementType")}
+            disabled={readOnly}
+            value={element.kind}
+            onChange={(value) => updateElement(element.id, { kind: value as C4Element["kind"] })}
+            options={siblingKinds.map((kind) => ({
+              value: kind,
+              label: kindLabel(kind),
+            }))}
+          />
+        </div>
+      ) : null}
+
+      {element.kind !== "note" ? (
+        <>
+          <TextField value={technology.value} onChange={technology.onChange} isDisabled={readOnly}>
+            <Label>{t("inspector.technology")}</Label>
+            <Input
+              onBlur={technology.onBlur}
+              placeholder={
+                meta.depth === 0 ? t("inspector.technologyNA") : "React, PostgreSQL…"
+              }
+              disabled={meta.depth === 0}
+            />
+          </TextField>
+
+          <TextField value={description.value} onChange={description.onChange} isDisabled={readOnly}>
+            <Label>{t("inspector.description")}</Label>
+            <TextArea
+              rows={3}
+              onBlur={description.onBlur}
+              placeholder={t("inspector.descriptionPlaceholder")}
+            />
+          </TextField>
+
+          <TextField value={tags.value} onChange={tags.onChange} isDisabled={readOnly}>
+            <Label>{t("inspector.tags")}</Label>
+            <Input onBlur={tags.onBlur} placeholder={t("inspector.tagsPlaceholder")} />
+          </TextField>
+        </>
+      ) : null}
+
+      {meta.depth > 0 ? (
+        <div className="flex flex-col gap-1.5">
+          <FieldLabel>{t("inspector.scope")}</FieldLabel>
+          <Picker
+            label={t("inspector.scope")}
+            disabled={readOnly}
+            value={element.parentId ?? ""}
+            onChange={(value) =>
+              updateElement(element.id, { parentId: value === "" ? null : value })
+            }
+            options={parentOptions}
+          />
+        </div>
+      ) : null}
+
+      <Separator />
+
+      <div className="grid grid-cols-2 gap-2 text-center">
+        <div className="rounded-lg bg-surface-secondary px-2 py-2">
+          <p className="text-lg font-semibold text-foreground">{childrenCount}</p>
+          <p className="text-[11px] text-muted">{t("inspector.internals")}</p>
+        </div>
+        <div className="rounded-lg bg-surface-secondary px-2 py-2">
+          <p className="text-lg font-semibold text-foreground">{relationshipsCount}</p>
+          <p className="text-[11px] text-muted">{t("common.relationships", { n: "" }).trim()}</p>
+        </div>
+      </div>
+
+      {readOnly ? null : (
+        <DeleteButton
+          title={t("inspector.deleteTitle")}
+          message={
+            childrenCount > 0
+              ? t("inspector.deleteElementWithChildren", {
+                  name: element.name,
+                  n: childrenCount,
+                })
+              : t("inspector.deleteElement", { name: element.name })
+          }
+          onDelete={() => removeElement(element.id)}
+        />
+      )}
+    </div>
+  );
+}
+
+function ElementStyleTab({
+  element,
+  readOnly,
+}: {
+  element: C4Element;
+  readOnly: boolean;
+}) {
+  const { updateElement } = useWorkspace();
+  const t = useT();
+  const meta = kindMeta(element.kind);
+  const kindLabel = useKindLabel();
+
+  const showFill = element.fill !== false && element.color !== "transparent";
+  const showBorder = element.border !== false;
+
+  return (
+    <div className="flex flex-col gap-3">
+      {/* Estilos rápidos / Swatches de muestra */}
+      <div className="flex flex-col gap-1.5">
+        <FieldLabel>{t("inspector.presets")}</FieldLabel>
+        <div className="grid grid-cols-4 gap-1.5">
+          {STYLE_PRESETS.map((preset) => (
+            <button
+              key={preset.id}
+              type="button"
+              title={preset.label}
+              disabled={readOnly}
+              onClick={() =>
+                updateElement(element.id, {
+                  color: preset.bg,
+                  borderColor: preset.border,
+                  textColor: preset.text,
+                  fill: true,
+                  border: true,
+                  bgOpacity: 100,
+                })
+              }
+              className="group relative flex h-7 items-center justify-center rounded-md border transition-all hover:scale-[1.03] hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-accent"
+              style={{
+                backgroundColor: preset.bg,
+                borderColor: preset.border,
+                borderWidth: "2px",
+              }}
+            >
+              <span
+                className="h-1 w-3 rounded-full opacity-60 group-hover:opacity-100"
+                style={{ backgroundColor: preset.text }}
+              />
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Relleno (Color de fondo y opacidad, con opción de quitar fondo) */}
+      <Details label={t("inspector.fill")} open={true}>
+        <div className="flex items-center justify-between gap-2">
+          <FieldLabel>{t("inspector.fillEnable")}</FieldLabel>
+          <Switch
+            size="sm"
+            aria-label={t("inspector.fillEnable")}
+            isSelected={showFill}
+            isDisabled={readOnly}
+            onChange={(fill: boolean) =>
+              updateElement(element.id, {
+                fill,
+                ...(fill && element.color === "transparent" ? { color: null } : {}),
+              })
+            }
+          />
+        </div>
+        {showFill ? (
+          <>
+            <ColorField
+              label={t("inspector.color")}
+              value={element.color}
+              fallback={meta.bg}
+              readOnly={readOnly}
+              onChange={(color) => updateElement(element.id, { color })}
+            />
+            <NumberStepper
+              label={t("inspector.bgOpacity")}
+              value={element.bgOpacity ?? 100}
+              min={0}
+              max={100}
+              step={5}
+              suffix="%"
+              readOnly={readOnly}
+              onChange={(bgOpacity) => updateElement(element.id, { bgOpacity })}
+            />
+          </>
+        ) : (
+          <p className="text-[11px] text-muted italic">
+            {t("inspector.fillRemove") ?? "Fondo transparente (sin relleno)"}
+          </p>
+        )}
+      </Details>
+
+      {/* Borde / Línea (Color, toggle para quitar borde y esquinas redondeadas) */}
+      <Details label={t("inspector.showBorder")} open={true}>
+        <div className="flex items-center justify-between gap-2">
+          <FieldLabel>{t("inspector.borderEnable")}</FieldLabel>
+          <Switch
+            size="sm"
+            aria-label={t("inspector.borderEnable")}
+            isSelected={showBorder}
+            isDisabled={readOnly}
+            onChange={(border: boolean) => updateElement(element.id, { border })}
+          />
+        </div>
+        {showBorder ? (
+          <ColorField
+            label={t("inspector.borderColor")}
+            value={element.borderColor}
+            fallback={meta.border}
+            readOnly={readOnly}
+            onChange={(borderColor) => updateElement(element.id, { borderColor })}
+          />
+        ) : null}
+        <NumberStepper
+          label={t("inspector.radius")}
+          value={element.radius ?? (meta.shape === "person" ? 16 : 6)}
+          min={0}
+          max={40}
+          step={2}
+          suffix="px"
+          readOnly={readOnly}
+          onChange={(radius) => updateElement(element.id, { radius })}
+        />
+      </Details>
+
+      {/* Tipografía (Tamaño de letra y color del texto) */}
+      <Details label={t("inspector.typography")} open={true}>
+        <NumberStepper
+          label={t("inspector.noteSize")}
+          value={element.size ?? 13}
+          min={9}
+          max={32}
+          step={1}
+          suffix="px"
+          readOnly={readOnly}
+          onChange={(size) => updateElement(element.id, { size })}
+        />
+        <ColorField
+          label={t("inspector.textColor")}
+          value={element.textColor}
+          fallback={meta.fg}
+          readOnly={readOnly}
+          onChange={(textColor) => updateElement(element.id, { textColor })}
+        />
+      </Details>
+
+      {/* Icono (si no es nota) */}
+      {element.kind !== "note" ? (
+        <Details label={t("inspector.icon")} open={false}>
+          <IconPicker
+            value={element.icon}
+            defaultIcon={meta.icon}
+            kindLabel={kindLabel(element.kind)}
+            onChange={(icon) => updateElement(element.id, { icon })}
+          />
+        </Details>
+      ) : null}
+
+      {/* Botón para restablecer al estilo por defecto */}
+      {!readOnly ? (
+        <Button
+          size="sm"
+          variant="ghost"
+          className="mt-1 w-full text-xs text-muted hover:text-foreground"
+          onPress={() =>
+            updateElement(element.id, {
+              color: null,
+              borderColor: null,
+              textColor: null,
+              size: null,
+              border: null,
+              fill: null,
+              radius: null,
+              bgOpacity: null,
+              icon: undefined,
+            })
+          }
+        >
+          <Icon name="refresh" className="mr-1.5 text-xs" />
+          {t("inspector.resetStyles")}
+        </Button>
+      ) : null}
+    </div>
+  );
+}
+
+function ElementRelationsTab({
+  element,
+  relationships,
+}: {
+  element: C4Element;
+  relationships: C4Relationship[];
+}) {
+  const { workspace, select, readOnly } = useWorkspace();
+  const t = useT();
+  const styleLabel = useStyleLabel();
+  const byId = indexElements(workspace);
+
+  return (
+    <div className="flex flex-col gap-4">
+      <div>
+        <div className="mb-2 flex items-center justify-between">
+          <p className="text-xs font-semibold text-foreground">
+            {relationships.length === 1
+              ? `1 ${t("common.relationships", { n: "" }).trim()}`
+              : `${relationships.length} ${t("common.relationships", { n: "" }).trim()}`}
+          </p>
+        </div>
+
+        {relationships.length > 0 ? (
+          <div className="flex flex-col gap-2">
+            {relationships.map((rel) => {
+              const isSource = rel.source === element.id;
+              const otherId = isSource ? rel.target : rel.source;
+              const other = byId.get(otherId);
+              return (
+                <div
+                  key={rel.id}
+                  className="flex flex-col gap-1.5 rounded-xl border border-border bg-surface-secondary/40 p-2.5 transition-colors hover:border-accent/40"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="flex items-center gap-1.5 text-xs font-semibold text-foreground">
+                      <Icon
+                        name={isSource ? "arrow-right" : "arrow-left"}
+                        className="text-xs text-accent"
+                      />
+                      <span>
+                        {isSource ? t("inspector.to") : t("inspector.from")}: {other?.name ?? "?"}
+                      </span>
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => select({ type: "relationship", id: rel.id })}
+                      className="rounded px-2 py-0.5 text-[11px] font-medium text-accent hover:bg-accent-soft hover:underline"
+                    >
+                      {t("inspector.editRelation")}
+                    </button>
+                  </div>
+                  {rel.label ? (
+                    <p className="truncate text-xs text-muted">“{rel.label}”</p>
+                  ) : null}
+                  <div className="flex items-center gap-2 text-[10px] text-muted">
+                    <span className="rounded border border-border bg-surface px-1.5 py-0.5">
+                      {styleLabel(rel.style)}
+                    </span>
+                    {rel.technology ? (
+                      <span className="rounded border border-border bg-surface px-1.5 py-0.5">
+                        {rel.technology}
+                      </span>
+                    ) : null}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="rounded-xl border border-dashed border-border p-3 text-center">
+            <p className="text-xs text-muted">{t("inspector.noRelations")}</p>
+          </div>
+        )}
+      </div>
+
+      {readOnly ? null : (
+        <div className="border-t border-border pt-2">
+          <NewRelationForm element={element} />
+        </div>
+      )}
+    </div>
+  );
+}
+
+type InspectorTab = "content" | "style" | "relations";
+
+function ElementInspector({ element }: { element: C4Element }) {
+  const { workspace, updateElement, readOnly } = useWorkspace();
+  const [activeTab, setActiveTab] = useState<InspectorTab>("content");
+  const t = useT();
+  const meta = kindMeta(element.kind);
+  const kindLabel = useKindLabel();
   const byId = indexElements(workspace);
 
   const name = useDraftField(element.name, (value) =>
@@ -305,11 +752,14 @@ function ElementInspector({ element }: { element: C4Element }) {
   const parentName = element.parentId ? (byId.get(element.parentId)?.name ?? "—") : null;
 
   return (
-    <div className="flex flex-col gap-4 px-3 pb-6">
+    <div className="flex flex-col gap-3 px-3 pb-6">
       <header className="flex items-start gap-2.5 pt-3">
         <span
           className="grid size-9 shrink-0 place-items-center rounded-lg text-white"
-          style={{ background: meta.bg }}
+          style={{
+            background:
+              element.color && element.color !== "transparent" ? element.color : meta.bg,
+          }}
         >
           <Icon name={iconOf(element)} />
         </span>
@@ -322,236 +772,76 @@ function ElementInspector({ element }: { element: C4Element }) {
         </div>
       </header>
 
-      {meta.drillable ? (
-        <Button
-          size="sm"
-          variant="outline"
-          className="w-full"
-          onPress={() => drillInto(element.id)}
-          isDisabled={children.length === 0}
+      {/* Navegación por 3 vistas: 1.- Contenido, 2.- Estilo, 3.- Relación */}
+      <div className="grid grid-cols-3 gap-1 rounded-xl bg-surface-secondary p-1 text-xs font-medium">
+        <button
+          type="button"
+          onClick={() => setActiveTab("content")}
+          className={[
+            "flex items-center justify-center gap-1.5 rounded-lg py-1.5 transition-all select-none",
+            activeTab === "content"
+              ? "bg-surface text-foreground shadow-sm font-semibold"
+              : "text-muted hover:text-foreground",
+          ].join(" ")}
         >
-          {children.length === 0
-            ? t("inspector.noContent")
-            : t("inspector.openLower", {
-                level: levelLabel(kindMeta(children[0].kind).level).toLowerCase(),
-              })}
-        </Button>
-      ) : null}
-
-<TextField value={name.value} onChange={name.onChange} isDisabled={readOnly}>
-        <Label>{element.kind === "note" ? t("inspector.noteText") : t("inspector.name")}</Label>
-        {element.kind === "note" ? (
-          <TextArea
-            rows={3}
-            onBlur={name.onBlur}
-            placeholder={t("inspector.noteTextPlaceholder")}
-          />
-        ) : (
-          <Input onBlur={name.onBlur} />
-        )}
-      </TextField>
-
-      {element.kind === "note" ? (
-        <NoteAppearance element={element} readOnly={readOnly} />
-      ) : (
-        <div className="grid grid-cols-2 gap-3">
-          <ColorField
-            label={t("inspector.color")}
-            value={element.color}
-            fallback={meta.bg}
-            readOnly={readOnly}
-            onChange={(color) => updateElement(element.id, { color })}
-          />
-          <ColorField
-            label={t("inspector.borderColor")}
-            value={element.borderColor}
-            fallback={meta.border}
-            readOnly={readOnly}
-            onChange={(borderColor) => updateElement(element.id, { borderColor })}
-          />
-        </div>
-      )}
-
-      {siblingKinds.length > 1 ? (
-        <div className="flex flex-col gap-1.5">
-          <FieldLabel>{t("inspector.elementType")}</FieldLabel>
-          <Picker
-            label={t("inspector.elementType")}
-            disabled={readOnly}
-            value={element.kind}
-            onChange={(value) => updateElement(element.id, { kind: value as C4Element["kind"] })}
-            options={siblingKinds.map((kind) => ({
-              value: kind,
-              label: kindLabel(kind),
-            }))}
-          />
-        </div>
-      ) : null}
-
-{element.kind === "note" ? null : (
-        <>
-          <TextField value={technology.value} onChange={technology.onChange} isDisabled={readOnly}>
-            <Label>{t("inspector.technology")}</Label>
-            <Input
-              onBlur={technology.onBlur}
-              placeholder={
-                meta.depth === 0 ? t("inspector.technologyNA") : "React, PostgreSQL…"
-              }
-              disabled={meta.depth === 0}
-            />
-          </TextField>
-
-          <TextField value={description.value} onChange={description.onChange} isDisabled={readOnly}>
-            <Label>{t("inspector.description")}</Label>
-            <TextArea
-              rows={3}
-              onBlur={description.onBlur}
-              placeholder={t("inspector.descriptionPlaceholder")}
-            />
-          </TextField>
-
-          <TextField value={tags.value} onChange={tags.onChange} isDisabled={readOnly}>
-            <Label>{t("inspector.tags")}</Label>
-            <Input onBlur={tags.onBlur} placeholder={t("inspector.tagsPlaceholder")} />
-          </TextField>
-
-          {readOnly ? null : (
-            <IconPicker
-              value={element.icon}
-              defaultIcon={meta.icon}
-              kindLabel={kindLabel(element.kind)}
-              onChange={(icon) => updateElement(element.id, { icon })}
-            />
-          )}
-          {readOnly ? null : <NewRelationForm element={element} />}
-        </>
-      )}
-
-      {meta.depth > 0 ? (
-        <div className="flex flex-col gap-1.5">
-          <FieldLabel>{t("inspector.scope")}</FieldLabel>
-          <Picker
-            label={t("inspector.scope")}
-            disabled={readOnly}
-            value={element.parentId ?? ""}
-            onChange={(value) =>
-              updateElement(element.id, { parentId: value === "" ? null : value })
-            }
-            options={parentOptions}
-          />
-        </div>
-      ) : null}
-
-      <Separator />
-
-      <div className="grid grid-cols-2 gap-2 text-center">
-        <div className="rounded-lg bg-surface-secondary px-2 py-2">
-          <p className="text-lg font-semibold text-foreground">{children.length}</p>
-          <p className="text-[11px] text-muted">{t("inspector.internals")}</p>
-        </div>
-        <div className="rounded-lg bg-surface-secondary px-2 py-2">
-          <p className="text-lg font-semibold text-foreground">{relationships.length}</p>
-          <p className="text-[11px] text-muted">{t("common.relationships", { n: "" }).trim()}</p>
-        </div>
+          <Icon name="file" className="text-xs" />
+          <span>{t("inspector.tabContent")}</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab("style")}
+          className={[
+            "flex items-center justify-center gap-1.5 rounded-lg py-1.5 transition-all select-none",
+            activeTab === "style"
+              ? "bg-surface text-foreground shadow-sm font-semibold"
+              : "text-muted hover:text-foreground",
+          ].join(" ")}
+        >
+          <Icon name="wand" className="text-xs" />
+          <span>{t("inspector.tabStyle")}</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab("relations")}
+          className={[
+            "flex items-center justify-center gap-1.5 rounded-lg py-1.5 transition-all select-none",
+            activeTab === "relations"
+              ? "bg-surface text-foreground shadow-sm font-semibold"
+              : "text-muted hover:text-foreground",
+          ].join(" ")}
+        >
+          <Icon name="link" className="text-xs" />
+          <span>{t("inspector.tabRelations")}</span>
+          {relationships.length > 0 ? (
+            <span className="ml-0.5 rounded-full bg-accent/15 px-1.5 py-0.2 text-[10px] font-bold text-accent">
+              {relationships.length}
+            </span>
+          ) : null}
+        </button>
       </div>
 
-      {readOnly ? null : (
-<DeleteButton
-          title={t("inspector.deleteTitle")}
-          message={
-            children.length > 0
-              ? t("inspector.deleteElementWithChildren", {
-                  name: element.name,
-                  n: children.length,
-                })
-              : t("inspector.deleteElement", { name: element.name })
-          }
-          onDelete={() => removeElement(element.id)}
+      {/* Pestañas */}
+      {activeTab === "content" ? (
+        <ElementContentTab
+          element={element}
+          readOnly={readOnly}
+          name={name}
+          description={description}
+          technology={technology}
+          tags={tags}
+          siblingKinds={siblingKinds}
+          parentOptions={parentOptions}
+          childrenCount={children.length}
+          relationshipsCount={relationships.length}
         />
+      ) : activeTab === "style" ? (
+        <ElementStyleTab element={element} readOnly={readOnly} />
+      ) : (
+        <ElementRelationsTab element={element} relationships={relationships} />
       )}
     </div>
   );
 }
-
-function NoteAppearance({ element, readOnly }: { element: C4Element; readOnly: boolean }) {
-  const { updateElement } = useWorkspace();
-  const t = useT();
-  const meta = kindMeta("note");
-  const showBorder = element.border !== false;
-
-  return (
-    <div className="flex flex-col gap-2">
-      <Details label={t("inspector.color")}>
-        <ColorField
-          label={t("inspector.color")}
-          value={element.color}
-          fallback={meta.bg}
-          readOnly={readOnly}
-          onChange={(color) => updateElement(element.id, { color })}
-        />
-        <NumberStepper
-          label={t("inspector.bgOpacity")}
-          value={element.bgOpacity ?? 100}
-          min={10}
-          max={100}
-          step={5}
-          suffix="%"
-          readOnly={readOnly}
-          onChange={(bgOpacity) => updateElement(element.id, { bgOpacity })}
-        />
-      </Details>
-
-      <Details label={t("inspector.noteSize")}>
-        <NumberStepper
-          label={t("inspector.noteSize")}
-          value={element.size ?? 13}
-          min={8}
-          max={48}
-          step={1}
-          suffix="px"
-          readOnly={readOnly}
-          onChange={(size) => updateElement(element.id, { size })}
-        />
-      </Details>
-
-      <Details label={t("inspector.showBorder")} open={showBorder}>
-        <div className="flex items-center justify-between gap-2">
-          <FieldLabel>{t("inspector.showBorder")}</FieldLabel>
-          <Switch
-            size="sm"
-            aria-label={t("inspector.showBorder")}
-            isSelected={showBorder}
-            isDisabled={readOnly}
-            onChange={(border: boolean) => updateElement(element.id, { border })}
-          />
-        </div>
-        {showBorder ? (
-          <ColorField
-            label={t("inspector.borderColor")}
-            value={element.borderColor}
-            fallback={meta.border}
-            readOnly={readOnly}
-            onChange={(borderColor) => updateElement(element.id, { borderColor })}
-          />
-        ) : null}
-      </Details>
-
-      <Details label={t("inspector.radius")}>
-        <NumberStepper
-          label={t("inspector.radius")}
-          value={element.radius ?? 10}
-          min={0}
-          max={60}
-          step={2}
-          suffix="px"
-          readOnly={readOnly}
-          onChange={(radius) => updateElement(element.id, { radius })}
-        />
-      </Details>
-    </div>
-  );
-}
-
 function RelationshipInspector({ relationship }: { relationship: C4Relationship }) {
   const { workspace, updateRelationship, removeRelationship, select, readOnly } = useWorkspace();
   const t = useT();

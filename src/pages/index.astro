@@ -1,11 +1,11 @@
 ---
-import { Modeler } from "../components/Modeler";
+import { HomePage } from "../components/HomePage";
 import Layout from "../layouts/Layout.astro";
 ---
 
 <Layout
-  title="C4 Modeler"
-  description="Model and document software architecture with the C4 model"
+  title="C4 Modeler · Software Architecture with C4 Model"
+  description="Visual tool to model and document software architecture using Context, Containers, Components, and Code."
 >
-  <Modeler client:only="react" />
+  <HomePage client:only="react" />
 </Layout>

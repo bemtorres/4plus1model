@@ -330,17 +330,67 @@ export function defaultNodeSize(kind: ElementKind): { width: number; height: num
     : { width: NODE_WIDTH, height: NODE_HEIGHT };
 }
 
+function withAlpha(hex: string, percent: number): string {
+  if (hex === "transparent" || !hex.startsWith("#")) return hex;
+  const channel = (index: number) => Number.parseInt(hex.slice(index, index + 2), 16);
+  const alpha = Math.min(100, Math.max(0, percent)) / 100;
+  return `rgba(${channel(1)}, ${channel(3)}, ${channel(5)}, ${alpha})`;
+}
+
 /** Clases CSS inline para pintar un nodo. */
 export function nodeStyle(
   kind: ElementKind,
-  overrides?: { color?: string | null; borderColor?: string | null },
+  overrides?: {
+    color?: string | null;
+    borderColor?: string | null;
+    textColor?: string | null;
+    size?: number | null;
+    border?: boolean | null;
+    fill?: boolean | null;
+    radius?: number | null;
+    bgOpacity?: number | null;
+  },
 ): Record<string, string> {
   const meta = kindMeta(kind);
-  return {
-    "--c4-bg": overrides?.color ?? meta.bg,
-    "--c4-border": overrides?.borderColor ?? meta.border,
-    "--c4-fg": meta.fg,
-    "--c4-stereo": meta.stereo,
-    borderRadius: meta.shape === "person" ? "0" : meta.radius,
-  } as Record<string, string>;
+  const showFill = overrides?.fill !== false && overrides?.color !== "transparent";
+  const baseBg = !showFill ? "transparent" : (overrides?.color ?? meta.bg);
+  const opacity = overrides?.bgOpacity ?? 100;
+
+  let bg = baseBg;
+  if (!showFill || baseBg === "transparent" || opacity === 0) {
+    bg = "transparent";
+  } else if (opacity < 100 && baseBg.startsWith("#")) {
+    bg = withAlpha(baseBg, opacity);
+  }
+
+  const showBorder = overrides?.border !== false;
+  const border = showBorder ? (overrides?.borderColor ?? meta.border) : "transparent";
+  const fg = overrides?.textColor ?? meta.fg;
+  const radius =
+    overrides?.radius !== undefined && overrides?.radius !== null
+      ? `${overrides.radius}px`
+      : (meta.shape === "person" ? "0" : meta.radius);
+
+  const style: Record<string, string> = {
+    "--c4-bg": bg,
+    "--c4-border": border,
+    "--c4-fg": fg,
+    "--c4-stereo": overrides?.textColor ? overrides.textColor : meta.stereo,
+  };
+
+  if (!showFill) {
+    style.background = "transparent";
+    style.backgroundColor = "transparent";
+  }
+  if (meta.shape !== "person") {
+    style.borderRadius = radius;
+  }
+  if (!showBorder) {
+    style.border = "none";
+    style.borderColor = "transparent";
+  }
+  if (overrides?.size) {
+    style.fontSize = `${overrides.size}px`;
+  }
+  return style;
 }

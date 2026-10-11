@@ -21,7 +21,16 @@ const { title, description = "C4 modeler for software architecture" } = Astro.pr
     <script is:inline>
       (() => {
         try {
-          const stored = localStorage.getItem("heroui-theme") ?? "system";
+          const urlParams = new URLSearchParams(window.location.search);
+          const themeParam = urlParams.get("theme")?.trim().toLowerCase();
+          const validTheme =
+            themeParam === "light" || themeParam === "dark" || themeParam === "system"
+              ? themeParam
+              : null;
+          if (validTheme) {
+            localStorage.setItem("heroui-theme", validTheme);
+          }
+          const stored = validTheme ?? localStorage.getItem("heroui-theme") ?? "system";
           const resolved =
             stored === "system"
               ? window.matchMedia("(prefers-color-scheme: dark)").matches

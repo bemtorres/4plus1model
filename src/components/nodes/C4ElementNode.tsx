@@ -30,28 +30,41 @@ function SideHandles({ sides }: { sides: HandleSide[] }) {
   );
 }
 
-interface Content {
+interface ContentProps {
   name: string;
   description: string;
   stereotype: string;
   tags: string[];
   icon: ReturnType<typeof iconOf>;
+  size?: number | null;
+  textColor?: string | null;
 }
 
-function Content({ name, description, stereotype, tags, icon }: Content) {
+function Content({ name, description, stereotype, tags, icon, size, textColor }: ContentProps) {
+  const titleStyle = size ? { fontSize: `${size}px` } : undefined;
+  const descStyle = size ? { fontSize: `${Math.max(9, size - 2)}px` } : undefined;
+  const stereoStyle = size ? { fontSize: `${Math.max(9, size - 2)}px` } : undefined;
+  const colorStyle = textColor ? { color: textColor } : undefined;
+
   return (
     <>
-      <div className="c4-node__title">
+      <div className="c4-node__title" style={{ ...titleStyle, ...colorStyle }}>
         <Icon name={icon} className="c4-node__icon" />
         <span>{name}</span>
       </div>
-      {description ? <div className="c4-node__desc">{description}</div> : null}
+      {description ? (
+        <div className="c4-node__desc" style={{ ...descStyle, ...colorStyle }}>
+          {description}
+        </div>
+      ) : null}
       {description || stereotype.includes(":") ? <div className="c4-node__divider" /> : null}
-      <div className="c4-node__stereo">{stereotype}</div>
+      <div className="c4-node__stereo" style={{ ...stereoStyle, ...colorStyle }}>
+        {stereotype}
+      </div>
       {tags.length > 0 ? (
         <div className="c4-node__tags">
           {tags.map((tag) => (
-            <span className="c4-node__tag" key={tag}>
+            <span className="c4-node__tag" key={tag} style={colorStyle}>
               {tag}
             </span>
           ))}
@@ -70,31 +83,56 @@ export function C4ElementNode({ data, selected }: NodeProps<C4FlowNode>) {
     ? `«${meta.c4Name}: ${technology}»`
     : `«${meta.c4Name}»`;
 
-  const content = {
+  const content: ContentProps = {
     name: element.name || "Sin nombre",
     description,
     stereotype,
     tags: element.tags,
     icon: iconOf(element),
+    size: element.size,
+    textColor: element.textColor,
   };
 
   const classes = ["c4-node"];
   if (selected) classes.push("c4-node--selected");
   if (!isDetail) classes.push("c4-node--context");
 
+  const styleOverrides = {
+    color: element.color,
+    borderColor: element.borderColor,
+    textColor: element.textColor,
+    size: element.size,
+    border: element.border,
+    fill: element.fill,
+    radius: element.radius,
+    bgOpacity: element.bgOpacity,
+  };
+  const computedStyle = nodeStyle(element.kind, styleOverrides);
+
   // Las personas usan la silueta clásica de C4: círculo + cuerpo redondeado.
   if (meta.shape === "person") {
+    const showBorder = element.border !== false;
+    const showFill = element.fill !== false && element.color !== "transparent";
+    const personHeadStyle: React.CSSProperties = {
+      ...(!showBorder ? { border: "none", borderColor: "transparent" } : {}),
+      ...(!showFill ? { background: "transparent" } : {}),
+    };
+    const personBodyStyle: React.CSSProperties = {
+      ...(element.radius !== null && element.radius !== undefined
+        ? { borderRadius: `${element.radius}px` }
+        : {}),
+      ...(!showBorder ? { border: "none", borderColor: "transparent" } : {}),
+      ...(!showFill ? { background: "transparent" } : {}),
+    };
+
     return (
       <div
         className={selected ? "c4-person c4-person--selected" : "c4-person"}
-        style={nodeStyle(element.kind, {
-          color: element.color,
-          borderColor: element.borderColor,
-        })}
+        style={computedStyle}
       >
-        <div className="c4-person__head" />
+        <div className="c4-person__head" style={personHeadStyle} />
         <div className={classes.join(" ")}>
-          <div className="c4-person__body">
+          <div className="c4-person__body" style={personBodyStyle}>
             <Content {...content} />
           </div>
         </div>
@@ -106,10 +144,7 @@ export function C4ElementNode({ data, selected }: NodeProps<C4FlowNode>) {
   return (
     <div
       className={classes.join(" ")}
-      style={nodeStyle(element.kind, {
-        color: element.color,
-        borderColor: element.borderColor,
-      })}
+      style={computedStyle}
     >
       <SideHandles sides={["top", "right", "bottom", "left"]} />
       <Content {...content} />

@@ -56,6 +56,11 @@ export function detectLocale(): LocaleCode {
 export function readStoredLocale(): LocaleCode {
   if (typeof window === "undefined") return DEFAULT_LOCALE;
   try {
+    const param = new URLSearchParams(window.location.search).get("lang")?.trim().toLowerCase();
+    if (param && isLocale(param)) {
+      window.localStorage.setItem(LOCALE_STORAGE_KEY, param);
+      return param;
+    }
     const stored = window.localStorage.getItem(LOCALE_STORAGE_KEY);
     if (isLocale(stored)) return stored;
   } catch {
@@ -108,8 +113,16 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
       if (event.key !== LOCALE_STORAGE_KEY) return;
       if (isLocale(event.newValue)) setLocaleState(event.newValue);
     };
+    const onPopState = () => {
+      const param = new URLSearchParams(window.location.search).get("lang")?.trim().toLowerCase();
+      if (param && isLocale(param)) setLocaleState(param);
+    };
     window.addEventListener("storage", onStorage);
-    return () => window.removeEventListener("storage", onStorage);
+    window.addEventListener("popstate", onPopState);
+    return () => {
+      window.removeEventListener("storage", onStorage);
+      window.removeEventListener("popstate", onPopState);
+    };
   }, []);
 
   const setLocale = useCallback((next: LocaleCode) => {

@@ -4,6 +4,7 @@ import type { C4Element, ElementKind } from "@/lib/types";
 import { useWorkspace } from "@/lib/workspace-store";
 import { useT } from "@/i18n";
 import { useKindLabel, useLevelDescription, useLevelLabel } from "@/i18n/labels";
+import { buildEditUrl } from "@/lib/share";
 import { DRAG_KIND } from "./Canvas";
 import { Icon } from "./icons";
 import { PanelSection } from "./ui";
@@ -157,27 +158,48 @@ export function LeftPanel({ onOpenExamples }: { onOpenExamples: () => void }) {
   return (
     <aside className="panel panel--left">
       <div className="panel__scroll scroll-thin">
-        <PanelSection
-          title={t("sidebar.palette", { level: levelLabel(level) })}
-          action={
-            <span className="text-[11px] text-muted" title={levelDescription(level)}>
-              {meta.short}
-            </span>
-          }
-        >
-          <ul className="flex flex-col gap-0.5 px-2 pb-3">
-            {meta.kinds.map((kind) => (
-              <PaletteItem key={kind} kind={kind} onAdd={() => addElement(kind)} disabled={readOnly} />
-            ))}
-          </ul>
-          <p className="px-3 pb-3 text-[11px] leading-relaxed text-muted">
-            {readOnly
-              ? t("share.readOnly")
-              : level === "context" || !scopeName
+        {readOnly ? (
+          <div className="p-3">
+            <div className="flex flex-col gap-2 rounded-xl border border-accent/30 bg-accent-soft/30 p-3">
+              <div className="flex items-center gap-1.5 text-xs font-semibold text-accent-soft-foreground">
+                <Icon name="lock" />
+                <span>{t("share.readOnly")}</span>
+              </div>
+              <p className="text-[11px] leading-relaxed text-muted">
+                {t("share.readOnlyHint")}
+              </p>
+              <Button
+                size="sm"
+                variant="primary"
+                className="mt-1 w-full"
+                onPress={() => window.open(buildEditUrl(), "_blank", "noopener,noreferrer")}
+              >
+                <Icon name="external" />
+                {t("share.edit")}
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <PanelSection
+            title={t("sidebar.palette", { level: levelLabel(level) })}
+            action={
+              <span className="text-[11px] text-muted" title={levelDescription(level)}>
+                {meta.short}
+              </span>
+            }
+          >
+            <ul className="flex flex-col gap-0.5 px-2 pb-3">
+              {meta.kinds.map((kind) => (
+                <PaletteItem key={kind} kind={kind} onAdd={() => addElement(kind)} disabled={readOnly} />
+              ))}
+            </ul>
+            <p className="px-3 pb-3 text-[11px] leading-relaxed text-muted">
+              {level === "context" || !scopeName
                 ? `${t("sidebar.dragHint")}.`
                 : `${t("sidebar.dragHintScope", { scope: scopeName })}.`}
-          </p>
-        </PanelSection>
+            </p>
+          </PanelSection>
+        )}
 
         <Separator />
 

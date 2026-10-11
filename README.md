@@ -8,7 +8,7 @@ It is designed to support students and teachers in learning and practicing the C
 
 This project was born from the cafeycodigo.org initiative.
 
-Project website: https://modelc4.cafeycodigo.org
+Project website: https://c4model.cafeycodigo.org
 
 ## Why this project exists
 
@@ -121,11 +121,16 @@ npm run astro
 └── README.md
 ```
 
-## Example catalog
+## Example catalog and URL parameters
 
 The project includes a catalog of example software architectures that can be explored in the app. These examples are defined in the `src/lib/examples` area and are validated by the example checker.
 
-If you want to add or modify example models, use the generator and validation flow defined under `src/lib/examples` and run:
+You can load any example directly via URL using `?code=<id>` (e.g. `https://c4model.cafeycodigo.org/editor?code=cinenova`).
+
+- Full guide of parameters and list of all 50 codes: [docs/URL_PARAMETERS.md](docs/URL_PARAMETERS.md)
+- Guide on writing new examples: [src/lib/examples/README.md](src/lib/examples/README.md)
+
+If you want to add or modify example models, run:
 
 ```bash
 npm run check:examples

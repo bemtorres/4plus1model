@@ -21,10 +21,18 @@ export function NoteNode({ data, selected }: NodeProps<NoteFlowNode>) {
   const { element } = data;
   const meta = kindMeta("note");
   const showBorder = element.border !== false;
+  const showFill = element.fill !== false && element.color !== "transparent";
   const radius = element.radius ?? 10;
   const size = element.size ?? 13;
   const background = element.color ?? DEFAULT_BG;
   const opacity = element.bgOpacity ?? 100;
+
+  const bg =
+    !showFill || opacity === 0 || background === "transparent"
+      ? "transparent"
+      : opacity >= 100
+        ? background
+        : withAlpha(background, opacity);
 
   return (
     <div
@@ -33,7 +41,7 @@ export function NoteNode({ data, selected }: NodeProps<NoteFlowNode>) {
         selected ? "c4-note--selected" : "",
       ].join(" ")}
       style={{
-        background: opacity >= 100 ? background : withAlpha(background, opacity),
+        background: bg,
         color: element.textColor ?? DEFAULT_TEXT,
         fontSize: `${size}px`,
         borderRadius: `${radius}px`,

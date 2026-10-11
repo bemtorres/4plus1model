@@ -1,5 +1,5 @@
 import { Button, Dropdown, Separator, useTheme } from "@heroui/react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { LEVELS } from "@/lib/catalog";
 import type { Level } from "@/lib/types";
 import { navigableElements } from "@/lib/view";
@@ -46,14 +46,30 @@ export function TopBar({
   const [importOpen, setImportOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
 
+  useEffect(() => {
+    const syncThemeFromUrl = () => {
+      const param = new URLSearchParams(window.location.search).get("theme")?.trim().toLowerCase();
+      if (param === "light" || param === "dark" || param === "system") {
+        setTheme(param);
+      }
+    };
+    syncThemeFromUrl();
+    window.addEventListener("popstate", syncThemeFromUrl);
+    return () => window.removeEventListener("popstate", syncThemeFromUrl);
+  }, [setTheme]);
+
   const scopes = navigableElements(workspace, level);
 
   return (
     <header className="topbar scroll-thin flex items-center gap-3 overflow-x-auto px-3 py-2">
       <div className="flex min-w-0 items-center gap-2">
-        <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-accent text-accent-foreground">
+        <a
+          href="/"
+          title="Volver a la página principal"
+          className="grid size-9 shrink-0 place-items-center rounded-xl bg-accent text-accent-foreground shadow-xs transition-transform hover:scale-105"
+        >
           <Icon name="diagram" className="text-lg" />
-        </span>
+        </a>
         <div className="min-w-0">
           <EditableTitle
             value={workspace.name}

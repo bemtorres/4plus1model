@@ -1,12 +1,22 @@
 import { Button, Modal, Separator } from "@heroui/react";
 import { useEffect, useState } from "react";
 import { buildShareUrl, encodeWorkspace } from "@/lib/share";
+import { encodeWorkspaceToJwt } from "@/lib/jwt";
 import { useT } from "@/i18n";
 import { useWorkspace } from "@/lib/workspace-store";
 import { Icon } from "./icons";
 import { notify } from "./Toaster";
 
-type Payload = { payload: string; viewUrl: string; editUrl: string; length: number } | null;
+type Payload = {
+  payload: string;
+  viewUrl: string;
+  editUrl: string;
+  length: number;
+  jwtToken: string;
+  jwtViewUrl: string;
+  jwtEditUrl: string;
+  jwtIoUrl: string;
+} | null;
 
 export function ShareDialog({
   isOpen,
@@ -27,13 +37,20 @@ export function ShareDialog({
     }
     let cancelled = false;
     setBusy(true);
-    encodeWorkspace(workspace).then((payload) => {
+    Promise.all([
+      encodeWorkspace(workspace),
+      encodeWorkspaceToJwt(workspace),
+    ]).then(([payload, jwtToken]) => {
       if (cancelled) return;
       setData({
         payload,
-        viewUrl: buildShareUrl(payload, false),
-        editUrl: buildShareUrl(payload, true),
+        viewUrl: buildShareUrl(payload, false, false),
+        editUrl: buildShareUrl(payload, true, false),
         length: payload.length,
+        jwtToken,
+        jwtViewUrl: buildShareUrl(jwtToken, false, true),
+        jwtEditUrl: buildShareUrl(jwtToken, true, true),
+        jwtIoUrl: `https://jwt.io/#debugger-io?token=${encodeURIComponent(jwtToken)}`,
       });
       setBusy(false);
     });
@@ -42,9 +59,9 @@ export function ShareDialog({
     };
   }, [isOpen, workspace]);
 
-  const copy = async (url: string) => {
+  const copy = async (text: string) => {
     try {
-      await navigator.clipboard.writeText(url);
+      await navigator.clipboard.writeText(text);
       notify(t("share.copied"), "success");
     } catch {
       notify(t("export.copyError"), "danger");
@@ -132,6 +149,61 @@ export function ShareDialog({
                           <Icon name="external" />
                         </Button>
                       </div>
+                    </section>
+
+                    <Separator />
+
+                    <section className="flex flex-col gap-2.5">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-1.5">
+                          <Icon name="key" className="text-amber-500" />
+                          <h3 className="text-sm font-semibold text-foreground">
+                            {t("share.jwtTitle")}
+                          </h3>
+                        </div>
+                        <span className="rounded-full bg-amber-500/10 px-2 py-0.5 text-[10px] font-medium text-amber-500 border border-amber-500/20">
+                          RFC 7519 · HS256
+                        </span>
+                      </div>
+                      <p className="text-xs text-muted">{t("share.jwtHint")}</p>
+
+                      <div className="rounded-lg border border-border bg-surface-secondary/70 p-2 text-[11px] font-mono text-muted overflow-hidden">
+                        <div className="truncate text-foreground/80 select-all" title={data.jwtToken}>
+                          {data.jwtToken.slice(0, 48)}...{data.jwtToken.slice(-16)}
+                        </div>
+                        <div className="mt-1 flex items-center justify-between text-[10px] text-muted">
+                          <span>{data.jwtToken.length} chars</span>
+                          <span>header.payload.signature</span>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onPress={() => void copy(data.jwtToken)}
+                        >
+                          <Icon name="copy" />
+                          {t("share.copyJwt")}
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onPress={() => void copy(data.jwtViewUrl)}
+                        >
+                          <Icon name="copy" />
+                          {t("share.copyJwtUrl")}
+                        </Button>
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="w-full justify-center text-xs"
+                        onPress={() => openInTab(data.jwtIoUrl)}
+                      >
+                        <Icon name="external" />
+                        {t("share.openJwtIo")}
+                      </Button>
                     </section>
                   </>
                 )}

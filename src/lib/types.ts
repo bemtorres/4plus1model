@@ -89,19 +89,21 @@ export interface C4Element {
   parentId: string | null;
   /** Icono personalizado; si no se indica se usa el del tipo de elemento. */
   icon?: IconName;
-  /** Color de relleno. `null` = el color por defecto del tipo. */
+  /** Color de relleno. `null` = color por defecto, "transparent" = sin fondo. */
   color?: string | null;
   /** Color del borde. `null` = el color por defecto del tipo. */
   borderColor?: string | null;
-  /** Solo en notas: color del texto. */
+  /** Color del texto. `null` = color por defecto. */
   textColor?: string | null;
-  /** Solo en notas: tamaño de letra en píxeles. */
+  /** Tamaño de letra en píxeles. */
   size?: number | null;
-  /** Solo en notas: mostrar borde. */
+  /** Mostrar borde (`false` = sin borde). */
   border?: boolean | null;
-  /** Solo en notas: radio del borde en píxeles. */
+  /** Mostrar relleno (`false` = fondo transparente). */
+  fill?: boolean | null;
+  /** Radio del borde en píxeles (esquinas redondeadas). */
   radius?: number | null;
-  /** Solo en notas: opacidad del fondo en porcentaje (100 = opaco). */
+  /** Opacidad del fondo en porcentaje (100 = opaco, 0 = transparente). */
   bgOpacity?: number | null;
   x: number;
   y: number;

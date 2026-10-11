@@ -13,6 +13,7 @@ import { kindMeta, defaultNodeSize } from "./catalog";
 import { createId } from "./id";
 import { centerPositions, computeLayout } from "./layout";
 import { createEmptyWorkspace, createSampleWorkspace } from "./sample";
+import { isReadOnlyFromUrl } from "./share";
 import { createInitialState, savePersistedState } from "./storage";
 import {
   NODE_WIDTH,
@@ -181,7 +182,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const [scopeId, setScopeIdState] = useState<string | null>(initial.scopeId);
   const [selection, setSelection] = useState<Selection>(null);
   const [layoutSignal, setLayoutSignal] = useState(0);
-  const [readOnly, setReadOnly] = useState(false);
+  const [readOnly, setReadOnly] = useState<boolean>(isReadOnlyFromUrl);
   const readOnlyRef = useRef(false);
   readOnlyRef.current = readOnly;
   const transactionRef = useRef<Workspace | null>(null);

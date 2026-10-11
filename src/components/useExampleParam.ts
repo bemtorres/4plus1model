@@ -1,13 +1,14 @@
 import { useCallback, useEffect, useRef } from "react";
 import { buildWorkspaceFor, findExampleByCode, type ExampleTarget } from "@/lib/examples";
-import { clearExampleCode, readExampleCode, setExampleCode } from "@/lib/examples/url";
+import { clearExampleCode, hasExampleParam, readExampleCode, setExampleCode } from "@/lib/examples/url";
 import { useT } from "@/i18n";
 import { useWorkspace } from "@/lib/workspace-store";
 import { notify } from "./Toaster";
 
 /**
  * Sincroniza el parámetro `?code=` con el workspace:
- * - al abrir la página carga el ejemplo indicado (si existe);
+ * - al abrir la página carga el ejemplo indicado (si existe y es seguro);
+ * - si el parámetro está malformado, lo limpia y notifica de forma segura;
  * - `openExample` lo abre en una pestaña nueva con su propio enlace;
  * - si el usuario edita el modelo, el parámetro se limpia para no perder
  *   el trabajo al recargar;
@@ -41,7 +42,12 @@ export function useExampleParam() {
   // 1. Al arrancar: aplica el código de la URL (una sola vez por código).
   useEffect(() => {
     const code = readExampleCode();
-    if (code) apply(code, true);
+    if (code) {
+      apply(code, true);
+    } else if (hasExampleParam()) {
+      clearExampleCode("replace");
+      notify(t("examples.notFound", { code: "invalid" }), "danger");
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -49,7 +55,11 @@ export function useExampleParam() {
   useEffect(() => {
     const onPopState = () => {
       const code = readExampleCode();
-      if (!code || code === appliedRef.current) return;
+      if (!code) {
+        if (hasExampleParam()) clearExampleCode("replace");
+        return;
+      }
+      if (code === appliedRef.current) return;
       apply(code, true);
     };
     window.addEventListener("popstate", onPopState);
@@ -81,6 +91,7 @@ export function useExampleParam() {
       return;
     }
     const url = new URL(window.location.href);
+    url.pathname = "/editor";
     url.search = `?code=${encodeURIComponent(target.code)}`;
     url.hash = "";
     window.open(url.toString(), "_blank", "noopener,noreferrer");

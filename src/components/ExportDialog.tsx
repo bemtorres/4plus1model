@@ -41,7 +41,7 @@ export function ExportDialog({
     downloadText(
       `${slugify(workspace.name)}.${meta.extension}`,
       content,
-      format === "json" ? "application/json" : "text/plain",
+      format === "json" ? "application/json" : format === "jwt" ? "application/jwt" : "text/plain",
     );
     notify(t("export.downloaded", { ext: meta.extension }), "success");
   };

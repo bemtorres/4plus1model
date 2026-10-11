@@ -1,6 +1,7 @@
 import { EXAMPLES } from "./catalog";
 import { buildExampleWorkspace, type CategoryId, type ExampleSpec } from "./builder";
 import { createSampleWorkspace } from "@/lib/sample";
+import { sanitizeExampleCode } from "./url";
 import type { Workspace } from "@/lib/types";
 
 export type { CategoryId, Difficulty, ExampleSpec } from "./builder";
@@ -16,7 +17,7 @@ export type ExampleTarget =
 
 /** Resuelve un código de ejemplo (el del catálogo o el de demostración). */
 export function findExampleByCode(code: string): ExampleTarget | null {
-  const normalized = decodeURIComponent(code).trim().toLowerCase();
+  const normalized = sanitizeExampleCode(code);
   if (!normalized) return null;
   if (normalized === SAMPLE_CODE || normalized === "sample" || normalized === "demo") {
     return { kind: "sample", code: SAMPLE_CODE };

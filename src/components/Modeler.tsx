@@ -21,11 +21,22 @@ function isTyping(target: EventTarget | null): boolean {  const element = target
 }
 
 function Shell() {
-  const { selection, removeElement, removeRelationship, undo, redo, autoLayout, readOnly } =
+  const { selection, removeElement, removeRelationship, undo, redo, autoLayout, readOnly, clearAll } =
     useWorkspace();
   const { openExample } = useExampleParam();
   useShareParam();
   const [examplesOpen, setExamplesOpen] = useState(false);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("new") === "1") {
+      clearAll();
+      params.delete("new");
+      const query = params.toString();
+      const cleanUrl = `${window.location.pathname}${query ? `?${query}` : ""}${window.location.hash}`;
+      window.history.replaceState(null, "", cleanUrl);
+    }
+  }, [clearAll]);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
