@@ -4,20 +4,114 @@ import "../styles/global.css";
 interface Props {
   title: string;
   description?: string;
+  canonical?: string;
+  image?: string;
+  type?: string;
 }
 
-const { title, description = "C4 modeler for software architecture" } = Astro.props;
+const {
+  title,
+  description = "Herramienta visual para modelar y documentar arquitectura de software con el Modelo C4 (Contexto, Contenedores, Componentes y Código). Diagrama en línea, interactivo y exportable a PlantUML, Mermaid y PNG.",
+  canonical,
+  image = "https://c4model.cafeycodigo.org/favicon.svg",
+  type = "website",
+} = Astro.props;
+
+const siteUrl = "https://c4model.cafeycodigo.org";
+const currentCanonical = canonical || new URL(Astro.url.pathname, siteUrl).toString();
+
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "WebApplication",
+      "@id": `${siteUrl}/#app`,
+      "name": "C4 Modeler - Software Architecture Visual Tool",
+      "url": siteUrl,
+      "description": "Herramienta web interactiva para modelar, visualizar y compartir arquitectura de software siguiendo la metodología C4 Model de Simon Brown.",
+      "applicationCategory": "DeveloperApplication",
+      "operatingSystem": "All",
+      "browserRequirements": "Requires JavaScript. Compatible with modern web browsers.",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD",
+      },
+      "author": {
+        "@type": "Person",
+        "name": "Benjamin Mora Torres",
+        "url": "https://www.linkedin.com/in/bemtorres/",
+      },
+      "keywords": [
+        "C4 Model",
+        "Modelo C4",
+        "Arquitectura de Software",
+        "Software Architecture Diagrams",
+        "System Context",
+        "Containers",
+        "Components",
+        "Code",
+        "Structurizr",
+        "PlantUML",
+        "Mermaid",
+      ],
+    },
+    {
+      "@type": "WebSite",
+      "@id": `${siteUrl}/#website`,
+      "url": siteUrl,
+      "name": "C4 Modeler",
+      "publisher": {
+        "@type": "Person",
+        "name": "Benjamin Mora Torres",
+      },
+    },
+  ],
+};
 ---
 
 <!doctype html>
-<html lang="en">
+<html lang="es">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="description" content={description} />
-    <meta name="color-scheme" content="light dark" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <title>{title}</title>
+    <meta name="description" content={description} />
+    <meta
+      name="keywords"
+      content="c4 model, modelo c4, arquitectura de software, diagramas c4, modelado de sistemas, simon brown, contexto del sistema, contenedores, componentes, software architecture, plantuml, mermaid c4, structurizr"
+    />
+    <meta name="author" content="Benjamin Mora Torres" />
+    <meta name="robots" content="index, follow" />
+    <meta name="theme-color" content="#1168bd" />
+    <meta name="color-scheme" content="light dark" />
+
+    <!-- Canonical -->
+    <link rel="canonical" href={currentCanonical} />
+
+    <!-- Favicon & Icons -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/favicon.svg" />
+
+    <!-- Open Graph / Facebook / LinkedIn -->
+    <meta property="og:type" content={type} />
+    <meta property="og:url" content={currentCanonical} />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:image" content={image} />
+    <meta property="og:site_name" content="C4 Modeler · Software Architecture" />
+    <meta property="og:locale" content="es_ES" />
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:url" content={currentCanonical} />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={image} />
+
+    <!-- JSON-LD Structured Data Schema -->
+    <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
+
     <script is:inline>
       (() => {
         try {
