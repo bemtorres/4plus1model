@@ -1076,7 +1076,14 @@ function WorkspaceInspector() {
   );
 }
 
-export function Inspector() {
+export function Inspector({
+  onClose,
+  isOpenMobile,
+}: {
+  onClose?: () => void;
+  isOpenMobile?: boolean;
+} = {}) {
+  const t = useT();
   const { workspace, selection } = useWorkspace();
   const element =
     selection?.type === "element"
@@ -1088,7 +1095,17 @@ export function Inspector() {
       : undefined;
 
   return (
-    <aside className="panel panel--right">
+    <aside className={["panel panel--right", isOpenMobile ? "panel--mobile-open" : ""].join(" ").trim()}>
+      {onClose ? (
+        <div className="flex items-center justify-between border-b border-separator px-3 py-2 lg:hidden">
+          <span className="text-xs font-semibold text-foreground">
+            {element ? t("inspector.elementType") : relationship ? t("inspector.relationship") : t("inspector.workspace")}
+          </span>
+          <Button isIconOnly size="sm" variant="ghost" onPress={onClose} aria-label="Cerrar panel">
+            <Icon name="x" />
+          </Button>
+        </div>
+      ) : null}
       <div className="panel__scroll scroll-thin">
         {element ? (
           <ElementInspector element={element} />

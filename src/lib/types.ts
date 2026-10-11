@@ -77,7 +77,9 @@ export type IconName =
   | "keyboard"
   | "fullscreen"
   | "minimize"
-  | "sparkles";
+  | "sparkles"
+  | "menu"
+  | "x";
 
 export type RelationshipStyle = "sync" | "async" | "bi";
 

@@ -18,9 +18,13 @@ import { useFullscreen } from "./useFullscreen";
 
 export function TopBar({
   onOpenExamples,
+  onOpenMobileLeft,
+  onOpenMobileRight,
 }: {
   openExample?: (code: string) => void;
   onOpenExamples: () => void;
+  onOpenMobileLeft?: () => void;
+  onOpenMobileRight?: () => void;
 }) {
   const {
     workspace,
@@ -64,6 +68,19 @@ export function TopBar({
 
   return (
     <header className="topbar scroll-thin flex items-center gap-3 overflow-x-auto px-3 py-2">
+      {!readOnly && onOpenMobileLeft ? (
+        <Button
+          isIconOnly
+          size="sm"
+          variant="outline"
+          className="lg:hidden shrink-0"
+          onPress={onOpenMobileLeft}
+          aria-label="Abrir catálogo de elementos"
+        >
+          <Icon name="plus" />
+        </Button>
+      ) : null}
+
       <div className="flex min-w-0 items-center gap-2">
         <a
           href="/"
@@ -261,6 +278,19 @@ export function TopBar({
               </Dropdown.Menu>
             </Dropdown.Popover>
           </Dropdown>
+        ) : null}
+
+        {!readOnly && onOpenMobileRight ? (
+          <Button
+            isIconOnly
+            size="sm"
+            variant="outline"
+            className="lg:hidden shrink-0 ml-1"
+            onPress={onOpenMobileRight}
+            aria-label="Abrir propiedades / inspector"
+          >
+            <Icon name="settings" />
+          </Button>
         ) : null}
       </div>
 

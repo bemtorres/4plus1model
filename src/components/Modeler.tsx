@@ -81,15 +81,51 @@ function Shell() {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [selection, removeElement, removeRelationship, duplicateElement, undo, redo, autoLayout, readOnly]);
 
+  const [mobileDrawer, setMobileDrawer] = useState<"left" | "right" | null>(null);
+
+  // Cerrar cajones móviles automáticamente cuando cambia la selección (si el usuario seleccionó algo en el lienzo)
+  useEffect(() => {
+    if (selection) {
+      // Si seleccionó un elemento o relación, si no hay cajón abierto en móvil, el usuario puede abrir el inspector manualmente
+    }
+  }, [selection]);
+
   return (
     <div className="app-shell">
-      <TopBar openExample={openExample} onOpenExamples={() => setExamplesOpen(true)} />
+      <TopBar
+        openExample={openExample}
+        onOpenExamples={() => setExamplesOpen(true)}
+        onOpenMobileLeft={() => setMobileDrawer((prev) => (prev === "left" ? null : "left"))}
+        onOpenMobileRight={() => setMobileDrawer((prev) => (prev === "right" ? null : "right"))}
+      />
       <div className={readOnly ? "app-body app-body--presentation" : "app-body"}>
-        {!readOnly ? <LeftPanel onOpenExamples={() => setExamplesOpen(true)} /> : null}
+        {!readOnly ? (
+          <LeftPanel
+            onOpenExamples={() => {
+              setMobileDrawer(null);
+              setExamplesOpen(true);
+            }}
+            onClose={() => setMobileDrawer(null)}
+            isOpenMobile={mobileDrawer === "left"}
+          />
+        ) : null}
         <main className="relative min-h-0 bg-background flex-1">
           <Canvas />
+          {/* Backdrop oscurecido para móvil cuando un menú/panel lateral está abierto */}
+          {mobileDrawer && !readOnly ? (
+            <div
+              className="fixed inset-0 z-30 bg-black/40 backdrop-blur-xs transition-opacity lg:hidden"
+              onClick={() => setMobileDrawer(null)}
+              aria-label="Cerrar panel"
+            />
+          ) : null}
         </main>
-        {!readOnly ? <Inspector /> : null}
+        {!readOnly ? (
+          <Inspector
+            onClose={() => setMobileDrawer(null)}
+            isOpenMobile={mobileDrawer === "right"}
+          />
+        ) : null}
       </div>
       <ExamplesDialog
         isOpen={examplesOpen}

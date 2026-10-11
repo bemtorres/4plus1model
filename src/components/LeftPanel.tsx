@@ -127,7 +127,15 @@ function OutlineRow({
   );
 }
 
-export function LeftPanel({ onOpenExamples }: { onOpenExamples: () => void }) {
+export function LeftPanel({
+  onOpenExamples,
+  onClose,
+  isOpenMobile,
+}: {
+  onOpenExamples: () => void;
+  onClose?: () => void;
+  isOpenMobile?: boolean;
+}) {
   const { workspace, level, scopeId, selection, addElement, select, drillInto, readOnly } =
     useWorkspace();
   const t = useT();
@@ -156,7 +164,15 @@ export function LeftPanel({ onOpenExamples }: { onOpenExamples: () => void }) {
   ] as const;
 
   return (
-    <aside className="panel panel--left">
+    <aside className={["panel panel--left", isOpenMobile ? "panel--mobile-open" : ""].join(" ").trim()}>
+      {onClose ? (
+        <div className="flex items-center justify-between border-b border-separator px-3 py-2 lg:hidden">
+          <span className="text-xs font-semibold text-foreground">Catálogo y Árbol</span>
+          <Button isIconOnly size="sm" variant="ghost" onPress={onClose} aria-label="Cerrar panel">
+            <Icon name="x" />
+          </Button>
+        </div>
+      ) : null}
       <div className="panel__scroll scroll-thin">
         {readOnly ? (
           <div className="p-3">
