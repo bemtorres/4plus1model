@@ -1,14 +1,41 @@
 import type { CategoryId, Difficulty, ExampleSpec } from "./builder";
 
 /**
- * Catálogo de 50 casos de estudio. Los nombres son ficticios y las empresas
- * citadas son referencias conceptuales: estos modelos son independientes y no
- * están afiliados a ninguna de ellas.
+ * Catálogo de 50 casos de estudio.
+ *
+ * Los nombres de los proyectos son ficticios y las empresas citadas en
+ * `reference` son referencias conceptuales: estos modelos son independientes
+ * y no están afiliados a ninguna de ellas.
+ *
+ * Cada ejemplo declara la arquitectura en los tres primeros niveles C4
+ * (contexto, contenedores y componentes); el builder añade el nivel de
+ * código y coloca los diagramas. La convención completa para escribir un
+ * ejemplo nuevo está en `src/lib/examples/README.md`.
+ *
+ * Convenciones de este archivo:
+ * - Los textos visibles (nombres, descripciones, etiquetas) están en inglés
+ *   para que el catálogo sea legible en cualquier idioma de la interfaz.
+ * - Los comentarios de cada ejemplo describen su arquitectura y sus flujos
+ *   clave, para poder mantenerlos sin reconstruir el modelo mental.
+ * - Las relaciones por broker o correo llevan estilo `"async"` (línea
+ *   discontinua en el diagrama y `Rel_D` en PlantUML/Mermaid).
  */
 export const EXAMPLES: ExampleSpec[] = [
-  /* ---------------------------------------------------------------- */
+  /* ================================================================= */
   /* 1. Streaming y entretenimiento                                     */
-  /* ---------------------------------------------------------------- */
+  /* ================================================================= */
+
+  /* CineNova · inspirado en Netflix — suscripción de vídeo bajo demanda.
+   * L1: suscriptor y curador de contenido; pasarela de pago externa.
+   * L2: app web/móvil, API de catálogo (Spring), servicio de reproducción
+   *     (Go), motor de recomendaciones (Python), facturación (Spring),
+   *     bus de eventos Kafka y dos almacenes: metadatos (PostgreSQL) y
+   *     vídeo segmentado (S3 + CDN).
+   * L3: el Reproductor se abre en token de sesión, enrutado de segmentos
+   *     hacia el CDN más cercano y aplicación de licencias DRM.
+   * Flujo clave: la app solicita reproducción → el servicio lee segmentos
+   *     del almacenamiento y publica eventos de visualización en Kafka, que
+   *     alimentan el motor de recomendaciones. */
   {
     id: "cinenova",
     name: "CineNova",
@@ -51,11 +78,21 @@ export const EXAMPLES: ExampleSpec[] = [
       ["Catalogue API", "Recommendation Engine", "Asks for related titles", "gRPC"],
       ["Catalogue API", "Media Database", "Reads titles and availability", "SQL"],
       ["Playback Service", "Video Storage", "Reads video segments", "HTTPS"],
-      ["Playback Service", "Event Bus", "Publishes viewing events", "Kafka"],
+      ["Playback Service", "Event Bus", "Publishes viewing events", "Kafka", "async"],
       ["Billing Service", "Payment Gateway", "Charges the subscription", "HTTPS"],
       ["Recommendation Engine", "Media Database", "Reads viewing history", "SQL"],
     ],
   },
+
+  /* SonoraPlay · inspirado en Spotify — música y podcasts con suscripción.
+   * L1: oyente y gestor de artistas; pago externo y hosts de podcasts.
+   * L2: reproductor móvil/web (React Native), API de audio (Node),
+   *     reproducción (Go), listas de reproducción (Kotlin), suscripciones
+   *     (Spring), índice de búsqueda OpenSearch y base de catálogo.
+   * L3: el Reproductor se abre en handler de rangos HTTP, caché de
+   *     segmentos populares y adaptación de bitrate a la conexión.
+   * Flujo clave: la búsqueda es síncrona sobre OpenSearch mientras que la
+   *     reproducción sirve audio cacheado cerca del oyente. */
   {
     id: "sonoraplay",
     name: "SonoraPlay",
@@ -65,7 +102,7 @@ export const EXAMPLES: ExampleSpec[] = [
     focus: "Audio library, playback, search and subscriptions.",
     difficulty: "intermediate",
     people: [
-      ["Listener", "Ploses music and follows podcasts."],
+      ["Listener", "Plays music and follows podcasts."],
       ["Artist Manager", "Uploads and manages artist profiles."],
     ],
     externalSystems: [
@@ -81,12 +118,23 @@ export const EXAMPLES: ExampleSpec[] = [
       ["Search Index", "database", "OpenSearch", "Full-text catalogue search."],
       ["Media Database", "database", "PostgreSQL", "Tracks, artists, playlists and listeners."],
     ],
+    componentSets: [
+      {
+        container: "Playback Service",
+        components: [
+          ["Stream Handler", "Go", "Serves ranged audio requests and resumes playback."],
+          ["Segment Cache", "Go", "Caches popular tracks close to the listener."],
+          ["Bitrate Adapter", "Go", "Adapts the stream to the connection quality."],
+        ],
+      },
+    ],
     relations: [
       ["Listener", "Mobile and Web Player", "Plays music", "HTTPS"],
       ["Artist Manager", "Audio API", "Manages the artist profile", "HTTPS"],
       ["Mobile and Web Player", "Audio API", "Searches and browses", "HTTPS/JSON"],
       ["Mobile and Web Player", "Playback Service", "Streams audio", "HTTPS"],
       ["Mobile and Web Player", "Playlist Service", "Edits playlists", "HTTPS"],
+      ["Mobile and Web Player", "Subscription Service", "Manages the plan", "HTTPS"],
       ["Audio API", "Search Index", "Full-text search", "HTTP"],
       ["Audio API", "Media Database", "Reads catalogue and library", "SQL"],
       ["Audio API", "Podcast Hosts", "Fetches episodes", "HTTPS"],
@@ -94,6 +142,16 @@ export const EXAMPLES: ExampleSpec[] = [
       ["Subscription Service", "Media Database", "Reads the plan", "SQL"],
     ],
   },
+
+  /* StreamArena · inspirado en Twitch — emisión en directo con chat.
+   * L1: espectador y streamer; pasarela de pago y CDN de distribución.
+   * L2: estudio del creador (Next), ingesta RTMP (Rust), distribución en
+   *     directo (Go), chat en tiempo real (Elixir), canales (Kotlin),
+   *     donaciones (Spring), cola Redis Streams y base de plataforma.
+   * L3: el Chat se abre en presencia, broker de mensajes y filtro de
+   *     moderación con timeouts por canal.
+   * Flujo clave: el streamer envía RTMP a la ingesta, que empaqueta
+   *     segmentos hacia el CDN; el chat hace fan-out por Redis Streams. */
   {
     id: "streamarena",
     name: "StreamArena",
@@ -120,6 +178,16 @@ export const EXAMPLES: ExampleSpec[] = [
       ["Chat Stream", "queue", "Redis Streams", "Fan-out of chat messages."],
       ["Platform Database", "database", "PostgreSQL", "Channels, users and donations."],
     ],
+    componentSets: [
+      {
+        container: "Chat Service",
+        components: [
+          ["Presence Tracker", "Elixir", "Tracks who is connected to each channel."],
+          ["Message Broker", "Elixir", "Broadcasts messages to connected clients."],
+          ["Moderation Filter", "Elixir", "Applies channel rules and timeouts."],
+        ],
+      },
+    ],
     relations: [
       ["Streamer", "Streamer Studio", "Goes live", "HTTPS"],
       ["Viewer", "Streamer Studio", "Watches a channel", "HTTPS"],
@@ -127,13 +195,23 @@ export const EXAMPLES: ExampleSpec[] = [
       ["Ingest Gateway", "Live Streaming Service", "Forwards segments", "gRPC"],
       ["Live Streaming Service", "CDN Provider", "Publishes segments", "RTMP"],
       ["Streamer Studio", "Chat Service", "Sends and reads messages", "WebSocket"],
-      ["Chat Service", "Chat Stream", "Publishes to subscribers", "Redis"],
+      ["Chat Service", "Chat Stream", "Publishes to subscribers", "Redis", "async"],
       ["Streamer Studio", "Channel Service", "Reads followers and discovery", "HTTPS"],
       ["Streamer Studio", "Donation Service", "Sends a donation", "HTTPS"],
       ["Donation Service", "Payment Gateway", "Charges the donation", "HTTPS"],
       ["Donation Service", "Platform Database", "Records the donation", "SQL"],
     ],
   },
+
+  /* PixelForge · inspirado en Steam — tienda y biblioteca de videojuegos.
+   * L1: jugador y estudio asociado; pago y autoridad fiscal externas.
+   * L2: cliente de juego (C++/Electron), escaparate (Go), licencias
+   *     (Spring), descargas (Go), comunidad (Laravel), logros (Rust),
+   *     base de catálogo y almacenamiento de builds en S3.
+   * L3: Licencias se abre en registro de entitlements, emisor de
+   *     licencias firmadas y revocación por reembolso.
+   * Flujo clave: validar propiedad y descargar son rutas independientes:
+   *     la licencia autoriza, el servicio de descarga sirve los binarios. */
   {
     id: "pixelforge",
     name: "PixelForge",
@@ -160,6 +238,16 @@ export const EXAMPLES: ExampleSpec[] = [
       ["Catalogue Database", "database", "PostgreSQL", "Games, prices and reviews."],
       ["Build Storage", "database", "S3", "Game binaries and patches."],
     ],
+    componentSets: [
+      {
+        container: "Licensing Service",
+        components: [
+          ["Entitlement Store", "Java", "Records which owner has which game."],
+          ["Licence Issuer", "Java", "Signs device licences and renews them."],
+          ["Refund Handler", "Java", "Revokes licences when a purchase is refunded."],
+        ],
+      },
+    ],
     relations: [
       ["Gamer", "Game Client", "Browses and plays", "HTTPS"],
       ["Studio Partner", "Storefront API", "Publishes a game", "HTTPS"],
@@ -174,6 +262,17 @@ export const EXAMPLES: ExampleSpec[] = [
       ["Storefront API", "Payment Gateway", "Charges the purchase", "HTTPS"],
     ],
   },
+
+  /* ComicVerse · inspirado en WEBTOON — cómics digitales por capítulos.
+   * L1: lector y estudio editorial; red de anuncios y pago externos.
+   * L2: app lectora (Flutter), API editorial (NestJS), entrega de páginas
+   *     (Java), suscripciones (Go), moderación (Python), base de cómics y
+   *     páginas en S3 + CDN.
+   * L3: la API editorial se abre en gestor de series, cargador de
+   *     capítulos y motor de calendario de publicación por huso horario.
+   * Flujo clave: publicar pasa por moderación (gRPC) antes de ser visible;
+   *     las páginas se sirven desde CDN y el hueco libre lo llena la red
+   *     de anuncios. */
   {
     id: "comicverse",
     name: "ComicVerse",
@@ -199,6 +298,16 @@ export const EXAMPLES: ExampleSpec[] = [
       ["Comics Database", "database", "PostgreSQL", "Series, chapters and progress."],
       ["Image Storage", "database", "S3 + CDN", "Chapter pages."],
     ],
+    componentSets: [
+      {
+        container: "Publishing API",
+        components: [
+          ["Series Manager", "NestJS", "Series metadata and the release calendar."],
+          ["Chapter Uploader", "NestJS", "Validates and stores chapter pages."],
+          ["Schedule Engine", "NestJS", "Plans daily releases by time zone."],
+        ],
+      },
+    ],
     relations: [
       ["Reader", "Reader App", "Reads chapters", "HTTPS"],
       ["Publishing Studio", "Publishing API", "Publishes chapters", "HTTPS"],
@@ -213,9 +322,21 @@ export const EXAMPLES: ExampleSpec[] = [
     ],
   },
 
-  /* ---------------------------------------------------------------- */
+  /* ================================================================= */
   /* 2. Comercio electrónico y marketplaces                            */
-  /* ---------------------------------------------------------------- */
+  /* ================================================================= */
+
+  /* CompraFácil · inspirado en Mercado Libre — marketplace multi-vendedor.
+   * L1: comprador y vendedor; pasarela que reparte el pago y API de
+   *     transportista.
+   * L2: tienda web/móvil (React), API del marketplace (Spring), búsqueda
+   *     (Go), pedidos (Kotlin), orquestador de pagos (Java), servicio de
+   *     vendedores (Node), cola RabbitMQ, base del marketplace e índice
+   *     de búsqueda OpenSearch.
+   * L3: el servicio de pedidos se abre en máquina de estados, reserva de
+   *     stock con caducidad y adaptador del transportista.
+   * Flujo clave: el pedido publica eventos en RabbitMQ que desacoplan
+   *     pago repartido, métricas de vendedor y envío. */
   {
     id: "comprafacil",
     name: "CompraFácil",
@@ -226,7 +347,7 @@ export const EXAMPLES: ExampleSpec[] = [
     difficulty: "intermediate",
     people: [
       ["Buyer", "Searches products and places orders."],
-      ["Seller", "Publishs products and ships orders."],
+      ["Seller", "Publishes products and ships orders."],
     ],
     externalSystems: [
       ["Payment Gateway", "Splits the payment between buyers and sellers."],
@@ -259,7 +380,9 @@ export const EXAMPLES: ExampleSpec[] = [
       ["Web and Mobile Store", "Marketplace API", "Places the order", "HTTPS/JSON"],
       ["Web and Mobile Store", "Search Service", "Searches products", "HTTPS"],
       ["Marketplace API", "Order Service", "Creates the order", "gRPC"],
-      ["Order Service", "Order Events", "Publishes order events", "AMQP"],
+      ["Marketplace API", "Payment Orchestrator", "Requests the split payment", "gRPC"],
+      ["Marketplace API", "Seller Service", "Serves onboarding and metrics", "gRPC"],
+      ["Order Service", "Order Events", "Publishes order events", "AMQP", "async"],
       ["Order Service", "Marketplace Database", "Writes the order", "SQL"],
       ["Search Service", "Product Search Index", "Queries the index", "HTTP"],
       ["Order Service", "Carrier API", "Generates the label", "HTTPS"],
@@ -267,6 +390,15 @@ export const EXAMPLES: ExampleSpec[] = [
       ["Seller Service", "Marketplace Database", "Reads seller metrics", "SQL"],
     ],
   },
+
+  /* ModaClick · inspirado en Zara online — tienda de moda con almacén.
+   * L1: comprador y operario de almacén; pago y paquetería externos.
+   * L2: escaparate (Next), API comercial (Node), inventario (Java),
+   *     checkout (Kotlin), fulfillment (Java) y base de tienda.
+   * L3: el inventario se abre en libro de stock, pool de reservas y
+   *     reposición automática de unidades bajas.
+   * Flujo clave: checkout reserva stock y dispara fulfillment; el
+   *     operario recoge y envía desde su propio contenedor. */
   {
     id: "modaclick",
     name: "ModaClick",
@@ -291,6 +423,16 @@ export const EXAMPLES: ExampleSpec[] = [
       ["Fulfilment Service", "container", "Java", "Pick, pack and shipment status."],
       ["Store Database", "database", "PostgreSQL", "Products, carts and orders."],
     ],
+    componentSets: [
+      {
+        container: "Inventory Service",
+        components: [
+          ["Stock Ledger", "Java", "Available units per size and colour."],
+          ["Reservation Pool", "Java", "Holds units while checkout runs."],
+          ["Replenishment Job", "Java", "Reorders stock when a size runs low."],
+        ],
+      },
+    ],
     relations: [
       ["Shopper", "Storefront", "Browses and buys", "HTTPS"],
       ["Warehouse Operator", "Fulfilment Service", "Picks orders", "HTTPS"],
@@ -304,6 +446,16 @@ export const EXAMPLES: ExampleSpec[] = [
       ["Commerce API", "Store Database", "Reads catalogue", "SQL"],
     ],
   },
+
+  /* HechoLocal · inspirado en Etsy — marketplace de artesanía.
+   * L1: comprador y artesano; pago con reparto y correo postal externos.
+   * L2: web del marketplace (React), servicio de tiendas (Rails), carrito
+   *     y checkout (Node), motor de comisiones (Java), reseñas (Python) y
+   *     base del marketplace.
+   * L3: el motor de comisiones se abre en cálculo de tarifas, calendario
+   *     de pagos a artesanos y resolución fiscal por destino.
+   * Flujo clave: el checkout calcula la comisión antes de cobrar y el
+   *     motor la aplica después a los pagos del artesano. */
   {
     id: "hecho-local",
     name: "HechoLocal",
@@ -328,6 +480,16 @@ export const EXAMPLES: ExampleSpec[] = [
       ["Review Service", "container", "Python", "Ratings and moderation."],
       ["Marketplace Database", "database", "PostgreSQL", "Shops, listings and orders."],
     ],
+    componentSets: [
+      {
+        container: "Commission Engine",
+        components: [
+          ["Fee Calculator", "Java", "Applies category rates and promotions."],
+          ["Payout Scheduler", "Java", "Aggregates and schedules artisan payouts."],
+          ["Tax Resolver", "Java", "Applies tax rules by destination."],
+        ],
+      },
+    ],
     relations: [
       ["Buyer", "Marketplace Web", "Browses and buys", "HTTPS"],
       ["Artisan", "Shop Service", "Manages the shop", "HTTPS"],
@@ -341,6 +503,16 @@ export const EXAMPLES: ExampleSpec[] = [
       ["Shop Service", "Marketplace Database", "Reads and writes", "SQL"],
     ],
   },
+
+  /* SaborExpress · inspirado en Uber Eats — comida a domicilio.
+   * L1: cliente, restaurante y repartidor; pago y mapas externos.
+   * L2: app de pedido (React Native), portal de restaurante (React),
+   *     pedidos (Kotlin), despacho (Go), cartas (Node), localización
+   *     (Rust), cola NATS de despacho y base de entrega.
+   * L3: el despacho se abre en emparejamiento de repartidores, optimización
+   *     de ruta multi-parada y cálculo de ETA con tráfico en vivo.
+   * Flujo clave: el restaurante acepta → el despacho busca repartidor y
+   *     publica asignaciones por NATS; el repartidor reporta desde la app. */
   {
     id: "saborexpress",
     name: "SaborExpress",
@@ -352,7 +524,7 @@ export const EXAMPLES: ExampleSpec[] = [
     people: [
       ["Customer", "Orders food and tracks the courier."],
       ["Restaurant", "Receives orders and prepares them."],
-      ["Courier", "Delivers the order to the customer."],
+      ["Courier", "Accepts trips, delivers orders and reports the location."],
     ],
     externalSystems: [
       ["Payment Gateway", "Charges the customer and pays couriers."],
@@ -368,20 +540,40 @@ export const EXAMPLES: ExampleSpec[] = [
       ["Dispatch Events", "queue", "NATS", "Courier assignments and location updates."],
       ["Delivery Database", "database", "PostgreSQL", "Orders, menus and ratings."],
     ],
+    componentSets: [
+      {
+        container: "Dispatch Service",
+        components: [
+          ["Courier Matcher", "Go", "Pairs open orders with nearby couriers."],
+          ["Route Optimiser", "Go", "Builds multi-stop delivery routes."],
+          ["ETA Calculator", "Go", "Predicts arrival times from live traffic."],
+        ],
+      },
+    ],
     relations: [
       ["Customer", "Ordering App", "Places the order", "HTTPS"],
       ["Restaurant", "Restaurant Portal", "Accepts and prepares", "HTTPS"],
+      ["Courier", "Dispatch Service", "Accepts trips and sends location", "HTTPS"],
       ["Ordering App", "Menu Service", "Reads the menu", "HTTPS/JSON"],
       ["Ordering App", "Order Service", "Places the order", "HTTPS"],
       ["Restaurant Portal", "Order Service", "Accepts the order", "HTTPS"],
       ["Order Service", "Dispatch Service", "Asks for a courier", "gRPC"],
-      ["Dispatch Service", "Dispatch Events", "Publishes assignments", "NATS"],
+      ["Dispatch Service", "Dispatch Events", "Publishes assignments", "NATS", "async"],
       ["Dispatch Service", "Location Service", "Calculates the route", "gRPC"],
       ["Dispatch Service", "Maps Provider", "Geocodes addresses", "HTTPS"],
       ["Order Service", "Payment Gateway", "Charges the customer", "HTTPS"],
       ["Order Service", "Delivery Database", "Writes the order", "SQL"],
     ],
   },
+
+  /* MercadoVerde · inspirado en Instacart — supermercado con franjas.
+   * L1: comprador y picker de tienda; pago y última milla externos.
+   * L2: app de cesta (React), escaparate (Node), cesta (Kotlin), franjas
+   *     horarias (Java), picking optimizado (Go) y base de pedidos.
+   * L3: la cesta se abre en gestión de líneas, reglas de sustitución y
+   *     bloqueo de stock mientras el cliente decide.
+   * Flujo clave: reservar franja y cesta se hacen en paralelo; la liberación
+   *     de la tarea de picking la dispara la capacidad de la franja. */
   {
     id: "mercadoverde",
     name: "MercadoVerde",
@@ -406,9 +598,20 @@ export const EXAMPLES: ExampleSpec[] = [
       ["Picking Service", "container", "Go", "Optimises the pick route."],
       ["Order Database", "database", "PostgreSQL", "Products, carts and orders."],
     ],
+    componentSets: [
+      {
+        container: "Cart Service",
+        components: [
+          ["Basket Manager", "Kotlin", "Adds, removes and prices basket lines."],
+          ["Substitution Rules", "Kotlin", "Applies customer replacement preferences."],
+          ["Reservation Lock", "Kotlin", "Holds stock while the basket is open."],
+        ],
+      },
+    ],
     relations: [
       ["Shopper", "Grocery Web App", "Builds the basket", "HTTPS"],
       ["Shopper", "Slot Service", "Chooses a delivery window", "HTTPS"],
+      ["Picker", "Picking Service", "Follows the pick route", "HTTPS"],
       ["Grocery Web App", "Storefront API", "Reads products", "HTTPS/JSON"],
       ["Grocery Web App", "Cart Service", "Manages the basket", "HTTPS"],
       ["Cart Service", "Slot Service", "Reserves capacity", "gRPC"],
@@ -419,9 +622,20 @@ export const EXAMPLES: ExampleSpec[] = [
     ],
   },
 
-  /* ---------------------------------------------------------------- */
+  /* ================================================================= */
   /* 3. Finanzas y fintech                                              */
-  /* ---------------------------------------------------------------- */
+  /* ================================================================= */
+
+  /* NovaBank · inspirado en Revolut — banca digital con tarjetas.
+   * L1: cliente minorista y officer de compliance; red de tarjetas, raíles
+   *     interbancarios (ISO 20022) e IdP (OIDC) externos.
+   * L2: app móvil (Swift/Kotlin), core bancario (Spring), pagos (Kotlin),
+   *     motor de riesgo (Python), compliance (Go), libro mayor
+   *     PostgreSQL y stream Kafka de eventos financieros.
+   * L3: el core se abre en el libro de partida doble, el orquestador de
+   *     transferencias con reintentos y el generador de extractos PDF.
+   * Flujo clave: cada movimiento contable publica en Kafka, que alimenta
+   *     la traza de auditoría que revisa compliance. */
   {
     id: "novabank",
     name: "NovaBank",
@@ -467,10 +681,20 @@ export const EXAMPLES: ExampleSpec[] = [
       ["Core Banking Service", "National Bank Rails", "Sends transfers", "ISO 20022"],
       ["Payment Service", "Card Network", "Authorises the transaction", "HTTPS"],
       ["Payment Service", "Risk Engine", "Scores the transaction", "gRPC"],
-      ["Core Banking Service", "Events Stream", "Publishes ledger events", "Kafka"],
+      ["Core Banking Service", "Events Stream", "Publishes ledger events", "Kafka", "async"],
       ["Compliance Service", "Identity Provider", "Verifies identity", "OIDC"],
     ],
   },
+
+  /* BilleteraGo · inspirado en PayPal — billetera digital con comercios.
+   * L1: usuario de billetera y comercio; red bancaria y buró de fraude.
+   * L2: app (React Native), API de billetera (Go), gateway de comercio
+   *     (Node), libro mayor (Java), antifraude (Python), base de billetera
+   *     y cola Kafka de transacciones.
+   * L3: el libro mayor se abre en motor de saldos, reconciliador contra
+   *     extractos bancarios y constructor de extractos mensuales.
+   * Flujo clave: la API publica cada transacción en Kafka; el antifraude
+   *     consume el stream y además consulta el buró de forma síncrona. */
   {
     id: "billetera-go",
     name: "BilleteraGo",
@@ -496,19 +720,40 @@ export const EXAMPLES: ExampleSpec[] = [
       ["Wallet Database", "database", "PostgreSQL", "Wallets, transactions and statements."],
       ["Fraud Events", "queue", "Kafka", "Transaction stream for scoring."],
     ],
+    componentSets: [
+      {
+        container: "Ledger Service",
+        components: [
+          ["Balance Engine", "Java", "Computes available and pending balances."],
+          ["Reconciliator", "Java", "Matches entries against bank statements."],
+          ["Statement Builder", "Java", "Renders monthly wallet statements."],
+        ],
+      },
+    ],
     relations: [
       ["Wallet User", "Wallet App", "Sends and requests money", "HTTPS"],
       ["Merchant", "Merchant Gateway", "Accepts payments", "HTTPS"],
       ["Wallet App", "Wallet API", "Manages the wallet", "HTTPS/JSON"],
       ["Merchant Gateway", "Wallet API", "Captures the payment", "HTTPS"],
       ["Wallet API", "Ledger Service", "Moves the balance", "gRPC"],
-      ["Wallet API", "Fraud Events", "Publishes transactions", "Kafka"],
-      ["Fraud Service", "Fraud Events", "Consumes transactions", "Kafka"],
+      ["Wallet API", "Fraud Service", "Scores before confirming", "gRPC"],
+      ["Wallet API", "Fraud Events", "Publishes transactions", "Kafka", "async"],
+      ["Fraud Events", "Fraud Service", "Delivers transactions to score", "Kafka", "async"],
       ["Fraud Service", "Fraud Bureau", "Checks the counterparty", "HTTPS"],
       ["Ledger Service", "Banking Network", "Settles to the bank", "HTTPS"],
       ["Ledger Service", "Wallet Database", "Writes entries", "SQL"],
     ],
   },
+
+  /* Inverta · inspirado en eToro — carteras y seguimiento de inversión.
+   * L1: inversor y asesor financiero; proveedor de mercado (streaming) y
+   *     banco custodio externos.
+   * L2: app web (React), cartera (Node), datos de mercado (Go), analítica
+   *     de riesgo (Python), caché de precios Redis y base de carteras.
+   * L3: el servicio de cartera se abre en seguimiento de posiciones, puente
+   *     de órdenes al bróker y cálculo de rendimiento frente a índice.
+   * Flujo clave: los precios entran por WebSocket y se cachean; el riesgo
+   *     se calcula bajo demanda con gRPC. */
   {
     id: "inverta",
     name: "Inverta",
@@ -533,6 +778,16 @@ export const EXAMPLES: ExampleSpec[] = [
       ["Price Cache", "database", "Redis", "Latest quotes."],
       ["Portfolio Database", "database", "PostgreSQL", "Positions, orders and history."],
     ],
+    componentSets: [
+      {
+        container: "Portfolio Service",
+        components: [
+          ["Position Tracker", "Node.js", "Maintains holdings and average cost."],
+          ["Order Gateway", "Node.js", "Places and cancels broker orders."],
+          ["Performance Calculator", "Node.js", "Computes returns against benchmarks."],
+        ],
+      },
+    ],
     relations: [
       ["Investor", "Investor Web App", "Manages the portfolio", "HTTPS"],
       ["Financial Advisor", "Investor Web App", "Reviews portfolios", "HTTPS"],
@@ -545,6 +800,15 @@ export const EXAMPLES: ExampleSpec[] = [
       ["Portfolio Service", "Portfolio Database", "Writes positions", "SQL"],
     ],
   },
+
+  /* CuentaClara · inspirado en BudgetBakers — control de gasto personal.
+   * L1: único actor (propietario del presupuesto); banco vía open banking.
+   * L2: app (Flutter), transacciones (Node), presupuestos (Kotlin),
+   *     informes (Python) y base de presupuestos.
+   * L3: el motor de presupuestos se abre en cálculo de límites, despacho
+   *     de alertas antes del límite y previsión de cierre de mes.
+   * Flujo clave: la app importa movimientos del banco y los clasifica antes
+   *     de compararlos con el presupuesto de la categoría. */
   {
     id: "cuentaclara",
     name: "CuentaClara",
@@ -553,9 +817,7 @@ export const EXAMPLES: ExampleSpec[] = [
     summary: "Personal budgeting and expense control.",
     focus: "Transactions, categories, budgets and reports.",
     difficulty: "beginner",
-    people: [
-      ["Budget Owner", "Tracks spending and sets budgets."],
-    ],
+    people: [["Budget Owner", "Tracks spending and sets budgets."]],
     externalSystems: [
       ["Open Banking Provider", "Imports transactions from the bank."],
     ],
@@ -565,6 +827,16 @@ export const EXAMPLES: ExampleSpec[] = [
       ["Budget Engine", "container", "Kotlin", "Budgets, alerts and forecasts."],
       ["Reporting Service", "container", "Python", "Monthly summaries and exports."],
       ["Budget Database", "database", "PostgreSQL", "Accounts, budgets and categories."],
+    ],
+    componentSets: [
+      {
+        container: "Budget Engine",
+        components: [
+          ["Budget Calculator", "Kotlin", "Compares spend against category limits."],
+          ["Alert Dispatcher", "Kotlin", "Warns before a budget is exceeded."],
+          ["Forecast Model", "Kotlin", "Projects month-end balances."],
+        ],
+      },
     ],
     relations: [
       ["Budget Owner", "Budget App", "Reviews spending", "HTTPS"],
@@ -576,6 +848,17 @@ export const EXAMPLES: ExampleSpec[] = [
       ["Reporting Service", "Budget Database", "Aggregates by category", "SQL"],
     ],
   },
+
+  /* PagoNexo · inspirado en Stripe — API de pagos para desarrolladores.
+   * L1: desarrollador del comercio y analista de operaciones; banco
+   *     liquidador y esquemas de tarjeta externos.
+   * L2: dashboard (React), API pública (Go), orquestador de pagos (Go),
+   *     despachador de webhooks firmados (Rust), antifraude (Python) y
+   *     base de pagos.
+   * L3: el orquestador se abre en gestor de intenciones, política de
+   *     reintentos por motivo de rechazo y planificador de liquidaciones.
+   * Flujo clave: la intención de pago pasa por antifraude antes de ir a
+   *     los esquemas; el resultado se notifica por webhook firmado. */
   {
     id: "pagonexo",
     name: "PagoNexo",
@@ -600,6 +883,16 @@ export const EXAMPLES: ExampleSpec[] = [
       ["Antifraud Service", "container", "Python", "Rules and risk scoring."],
       ["Ledger Database", "database", "PostgreSQL", "Payments, fees and settlements."],
     ],
+    componentSets: [
+      {
+        container: "Payment Orchestrator",
+        components: [
+          ["Intent Manager", "Go", "Creates and tracks payment intents."],
+          ["Retry Policy", "Go", "Retries declines with issuer-specific rules."],
+          ["Settlement Planner", "Go", "Batches captures for settlement."],
+        ],
+      },
+    ],
     relations: [
       ["Merchant Developer", "Developer Dashboard", "Configures the integration", "HTTPS"],
       ["Merchant Developer", "Payments API", "Creates payments", "HTTPS"],
@@ -614,9 +907,19 @@ export const EXAMPLES: ExampleSpec[] = [
     ],
   },
 
-  /* ---------------------------------------------------------------- */
+  /* ================================================================= */
   /* 4. Redes sociales y comunicación                                    */
-  /* ---------------------------------------------------------------- */
+  /* ================================================================= */
+
+  /* ConectaRed · inspirado en Facebook — red social con feed y grafo.
+   * L1: miembro y moderador de comunidad; correo y objeto de almacenamiento.
+   * L2: app (React Native), publicación (Kotlin), feed (Go), grafo social
+   *     (Java), notificaciones (Node), moderación (Python), cola Kafka de
+   *     posts y base social.
+   * L3: el feed se abre en worker de fan-out, ranker de relevancia y
+   *     lector de timeline que fusiona fuentes.
+   * Flujo clave: publicar escribe en Kafka; el feed consume y reordena, y
+   *     la notificación se dispara desde el propio fan-out. */
   {
     id: "conectared",
     name: "ConectaRed",
@@ -643,6 +946,16 @@ export const EXAMPLES: ExampleSpec[] = [
       ["Feed Stream", "queue", "Kafka", "Fan-out of post events."],
       ["Social Database", "database", "PostgreSQL", "Profiles, posts and edges."],
     ],
+    componentSets: [
+      {
+        container: "Feed Service",
+        components: [
+          ["Fan-out Worker", "Go", "Replicates posts to follower timelines."],
+          ["Ranker", "Go", "Scores posts for the personal feed."],
+          ["Timeline Reader", "Go", "Merges ranked and chronological sources."],
+        ],
+      },
+    ],
     relations: [
       ["Member", "Web and Mobile App", "Publishes and reacts", "HTTPS"],
       ["Community Moderator", "Moderation Service", "Reviews reports", "HTTPS"],
@@ -650,13 +963,23 @@ export const EXAMPLES: ExampleSpec[] = [
       ["Web and Mobile App", "Feed Service", "Loads the feed", "HTTPS"],
       ["Web and Mobile App", "Graph Service", "Manages the friend list", "HTTPS"],
       ["Post Service", "Object Storage", "Stores media", "HTTPS"],
-      ["Post Service", "Feed Stream", "Publishes post events", "Kafka"],
-      ["Feed Service", "Feed Stream", "Consumes post events", "Kafka"],
+      ["Post Service", "Feed Stream", "Publishes post events", "Kafka", "async"],
+      ["Feed Stream", "Feed Service", "Delivers post events", "Kafka", "async"],
       ["Feed Service", "Notification Service", "Triggers notifications", "gRPC"],
-      ["Notification Service", "Email Provider", "Sends email", "SMTP"],
+      ["Notification Service", "Email Provider", "Sends email", "SMTP", "async"],
       ["Moderation Service", "Social Database", "Applies sanctions", "SQL"],
     ],
   },
+
+  /* ClipLoop · inspirado en TikTok — vídeo corto con feed personalizado.
+   * L1: creador y espectador; CDN de vídeo y socio de moderación.
+   * L2: estudio del creador (Next), ingesta (Rust), transcodificación (Go),
+   *     recomendaciones (Python), feed (Kotlin), cola Kafka de trabajos,
+   *     feature store Redis y base ClickHouse de métricas.
+   * L3: las recomendaciones se abre en generación de candidatos, modelo de
+   *     ranking y constructor de vectores de interacción.
+   * Flujo clave: subir encola un job de transcodificación que un worker
+   *     consume; el feed pide el siguiente clip por gRPC. */
   {
     id: "cliploop",
     name: "ClipLoop",
@@ -683,12 +1006,22 @@ export const EXAMPLES: ExampleSpec[] = [
       ["Feature Store", "database", "Redis", "Recent interaction vectors."],
       ["Video Database", "database", "ClickHouse", "Clips, metadata and watch stats."],
     ],
+    componentSets: [
+      {
+        container: "Recommendation Service",
+        components: [
+          ["Candidate Generator", "Python", "Retrieves candidate clips from recent activity."],
+          ["Ranking Model", "Python", "Scores candidates for the viewer."],
+          ["Feature Builder", "Python", "Builds the interaction vectors used at serving time."],
+        ],
+      },
+    ],
     relations: [
       ["Creator", "Creator Studio", "Uploads a clip", "HTTPS"],
       ["Viewer", "Feed Service", "Watches the feed", "HTTPS"],
       ["Creator Studio", "Video Ingest", "Uploads the file", "HTTPS"],
-      ["Video Ingest", "Transcode Queue", "Enqueues a transcode job", "Kafka"],
-      ["Transcoding Pipeline", "Transcode Queue", "Consumes jobs", "Kafka"],
+      ["Video Ingest", "Transcode Queue", "Enqueues a transcode job", "Kafka", "async"],
+      ["Transcode Queue", "Transcoding Pipeline", "Delivers transcode jobs", "Kafka", "async"],
       ["Transcoding Pipeline", "CDN Provider", "Publishes renditions", "HTTPS"],
       ["Feed Service", "Recommendation Service", "Asks for the next clip", "gRPC"],
       ["Recommendation Service", "Feature Store", "Reads interaction vectors", "RESP"],
@@ -696,6 +1029,15 @@ export const EXAMPLES: ExampleSpec[] = [
       ["Video Ingest", "Moderation Partner", "Checks content", "HTTPS"],
     ],
   },
+
+  /* TalentoPro · inspirado en LinkedIn — red profesional y empleo.
+   * L1: profesional y reclutador; correo y verificación de antecedentes.
+   * L2: app web (React), perfiles (Node), red (Java), empleo (Kotlin),
+   *     notificaciones (Go) y base profesional.
+   * L3: el servicio de empleo se abre en publicación de vacantes, tracker
+   *     de candidatos y matcher que rankea candidatos contra la oferta.
+   * Flujo clave: aplicar escribe la candidatura; el servicio de red avisa
+   *     por invitaciones y el de notificaciones entrega por correo. */
   {
     id: "talentopro",
     name: "TalentoPro",
@@ -720,6 +1062,16 @@ export const EXAMPLES: ExampleSpec[] = [
       ["Notification Service", "container", "Go", "Invitations and job alerts."],
       ["Professional Database", "database", "PostgreSQL", "Profiles, offers and applications."],
     ],
+    componentSets: [
+      {
+        container: "Job Service",
+        components: [
+          ["Vacancy Publisher", "Kotlin", "Publishes and expires job offers."],
+          ["Applicant Tracker", "Kotlin", "Moves candidates through the pipeline."],
+          ["Screening Matcher", "Kotlin", "Ranks applicants against the offer."],
+        ],
+      },
+    ],
     relations: [
       ["Professional", "Web App", "Edits the profile", "HTTPS"],
       ["Recruiter", "Job Service", "Publishes a vacancy", "HTTPS"],
@@ -728,10 +1080,20 @@ export const EXAMPLES: ExampleSpec[] = [
       ["Web App", "Job Service", "Applies to a vacancy", "HTTPS"],
       ["Job Service", "Background Check Provider", "Verifies the record", "HTTPS"],
       ["Network Service", "Notification Service", "Sends invitations", "gRPC"],
-      ["Notification Service", "Email Provider", "Delivers email", "SMTP"],
+      ["Notification Service", "Email Provider", "Delivers email", "SMTP", "async"],
       ["Job Service", "Professional Database", "Writes applications", "SQL"],
     ],
   },
+
+  /* EquipoChat · inspirado en Slack — mensajería de equipo.
+   * L1: miembro y admin de workspace; correo y almacenamiento de objetos.
+   * L2: cliente escritorio/móvil (Electron), API de mensajería (Node),
+   *     gateway en tiempo real (Go), presencia (Redis), ficheros (Kotlin),
+   *     búsqueda (Rust) y base de mensajes.
+   * L3: el gateway se abre en hub de conexiones, router de suscripciones
+   *     por sala y buffer de backpressure para clientes lentos.
+   * Flujo clave: el cliente mantiene un WebSocket con el gateway, que
+   *     entrega eventos sin bloquear la API de mensajería. */
   {
     id: "equipo-chat",
     name: "EquipoChat",
@@ -757,19 +1119,39 @@ export const EXAMPLES: ExampleSpec[] = [
       ["Search Service", "container", "Rust", "Full-text message search."],
       ["Message Database", "database", "PostgreSQL", "Channels, messages and members."],
     ],
+    componentSets: [
+      {
+        container: "Real-time Gateway",
+        components: [
+          ["Connection Hub", "Go", "Maintains the WebSocket sessions."],
+          ["Subscription Router", "Go", "Delivers events to the right rooms."],
+          ["Backpressure Buffer", "Go", "Throttles slow clients without dropping events."],
+        ],
+      },
+    ],
     relations: [
       ["Member", "Desktop and Mobile Client", "Sends messages", "HTTPS"],
       ["Workspace Admin", "Messaging API", "Manages the workspace", "HTTPS"],
       ["Desktop and Mobile Client", "Messaging API", "Posts messages", "HTTPS/JSON"],
+      ["Messaging API", "Message Database", "Persists messages and threads", "SQL"],
       ["Messaging API", "Real-time Gateway", "Pushes messages", "gRPC"],
       ["Real-time Gateway", "Desktop and Mobile Client", "Delivers events", "WebSocket"],
       ["Desktop and Mobile Client", "Presence Service", "Updates presence", "HTTPS"],
       ["Desktop and Mobile Client", "File Service", "Uploads files", "HTTPS"],
       ["File Service", "Object Storage", "Stores the file", "HTTPS"],
       ["Messaging API", "Search Service", "Indexes messages", "gRPC"],
-      ["Messaging API", "Email Provider", "Sends notifications", "SMTP"],
+      ["Messaging API", "Email Provider", "Sends notifications", "SMTP", "async"],
     ],
   },
+
+  /* Reunión360 · inspirado en Zoom — videconferencia con grabación.
+   * L1: anfitrión y invitado; calendario (OAuth) y relay TURN externos.
+   * L2: cliente web (WebRTC), reuniones (Node), señalización (Go),
+   *     gateway de medios SFU (C++), grabación (Kotlin) y base de reuniones.
+   * L3: el gateway de medios se abre en mezcla selectiva de flujos, jitter
+   *     buffer que oculta pérdidas y estimador de ancho de banda por nodo.
+   * Flujo clave: señalización negocia el WebRTC y los medios viajan en
+   *     paralelo por el SFU, que deriva a la grabación. */
   {
     id: "reunion-360",
     name: "Reunión360",
@@ -794,6 +1176,16 @@ export const EXAMPLES: ExampleSpec[] = [
       ["Recording Service", "container", "Kotlin", "Stores recordings and transcripts."],
       ["Meeting Database", "database", "PostgreSQL", "Meetings, participants and recordings."],
     ],
+    componentSets: [
+      {
+        container: "Media Gateway",
+        components: [
+          ["SFU Mixer", "C++", "Forwards selective streams between participants."],
+          ["Jitter Buffer", "C++", "Reorders packets and hides network loss."],
+          ["Bandwidth Estimator", "C++", "Adapts quality to each participant link."],
+        ],
+      },
+    ],
     relations: [
       ["Host", "Web Client", "Schedules the meeting", "HTTPS"],
       ["Guest", "Web Client", "Joins the meeting", "HTTPS"],
@@ -807,9 +1199,19 @@ export const EXAMPLES: ExampleSpec[] = [
     ],
   },
 
-  /* ---------------------------------------------------------------- */
+  /* ================================================================= */
   /* 5. Educación y EdTech                                             */
-  /* ---------------------------------------------------------------- */
+  /* ================================================================= */
+
+  /* AulaNube · inspirado en Moodle — gestión del aprendizaje.
+   * L1: estudiante, profesor y administrador; IdP SAML y proveedor de
+   *     videoconferencia externos.
+   * L2: app web (React), cursos (Kotlin), evaluaciones (Java), libreta de
+   *     notas (Python), notificaciones (Node) y base del LMS.
+   * L3: el servicio de evaluaciones se abre en motor de cuestionarios,
+   *     almacén de entregas y flujo de calificación hacia el profesor.
+   * Flujo clave: el SSO delegado en el IdP valida a profesores y alumnos
+   *     antes de tocar el contenido del curso. */
   {
     id: "aulanube",
     name: "AulaNube",
@@ -835,6 +1237,16 @@ export const EXAMPLES: ExampleSpec[] = [
       ["Notification Service", "container", "Node.js", "Deadlines and announcements."],
       ["LMS Database", "database", "PostgreSQL", "Courses, users and submissions."],
     ],
+    componentSets: [
+      {
+        container: "Assessment Service",
+        components: [
+          ["Quiz Engine", "Java", "Builds and scores quizzes."],
+          ["Submission Store", "Java", "Collects attempts and resubmissions."],
+          ["Grading Workflow", "Java", "Routes work to the teacher and records grades."],
+        ],
+      },
+    ],
     relations: [
       ["Student", "Learning Web App", "Follows a course", "HTTPS"],
       ["Teacher", "Learning Web App", "Creates content", "HTTPS"],
@@ -848,6 +1260,15 @@ export const EXAMPLES: ExampleSpec[] = [
       ["Course Service", "Notification Service", "Sends announcements", "gRPC"],
     ],
   },
+
+  /* CodeCampus · inspirado en Codecademy — cursos de programación.
+   * L1: alumno y autor de cursos; sandbox de ejecución y tutor LLM.
+   * L2: IDE en el navegador (Monaco + React), cursos (Node), evaluador
+   *     (Go), tutor (Python), cola NATS de ejecuciones y base de cursos.
+   * L3: el evaluador se abre en test harness, despachador al sandbox con
+   *     aislamiento y scorer de comprobaciones fallidas.
+   * Flujo clave: cada solución se encola y se ejecuta fuera del proceso
+   *     del evaluador; el resultado puntúa y guarda el progreso. */
   {
     id: "codecampus",
     name: "CodeCampus",
@@ -872,18 +1293,37 @@ export const EXAMPLES: ExampleSpec[] = [
       ["Sandbox Queue", "queue", "NATS", "Execution jobs."],
       ["Course Database", "database", "PostgreSQL", "Lessons and progress."],
     ],
+    componentSets: [
+      {
+        container: "Evaluator Service",
+        components: [
+          ["Test Harness", "Go", "Runs the exercise tests against the submission."],
+          ["Sandbox Dispatcher", "Go", "Queues executions and isolates each run."],
+          ["Scorer", "Go", "Computes the score and the failing checks."],
+        ],
+      },
+    ],
     relations: [
       ["Learner", "Learning IDE", "Writes and runs code", "HTTPS"],
       ["Course Author", "Course Service", "Publishes lessons", "HTTPS"],
       ["Learning IDE", "Course Service", "Loads the lesson", "HTTPS/JSON"],
       ["Learning IDE", "Evaluator Service", "Submits a solution", "HTTPS"],
-      ["Evaluator Service", "Sandbox Queue", "Enqueues the run", "NATS"],
+      ["Evaluator Service", "Sandbox Queue", "Enqueues the run", "NATS", "async"],
       ["Evaluator Service", "Code Runner Sandbox", "Executes in a sandbox", "gRPC"],
       ["Learning IDE", "Tutor Service", "Asks for a hint", "HTTPS"],
       ["Tutor Service", "LLM Tutor", "Generates the explanation", "HTTPS"],
       ["Evaluator Service", "Course Database", "Writes progress", "SQL"],
     ],
   },
+
+  /* LinguaQuest · inspirado en Duolingo — idiomas con gamificación.
+   * L1: único actor (aprendiz); proveedor de texto a voz externo.
+   * L2: app móvil (Flutter), lecciones (Kotlin), repetición espaciada
+   *     (Python), progreso (Go) y base del aprendiz.
+   * L3: el servicio de lecciones se abre en constructor de ejercicios,
+   *     ajuste dinámico de dificultad y gestor de vidas y reintentos.
+   * Flujo clave: cada lección agenda revisiones futuras que el servicio de
+   *     repetición espaciada decide cuándo repasar. */
   {
     id: "linguaquest",
     name: "LinguaQuest",
@@ -892,18 +1332,24 @@ export const EXAMPLES: ExampleSpec[] = [
     summary: "Language learning with challenges and streaks.",
     focus: "Lessons, levels, gamification and learning progress.",
     difficulty: "beginner",
-    people: [
-      ["Learner", "Completes daily lessons and reviews vocabulary."],
-    ],
-    externalSystems: [
-      ["Text to Speech Provider", "Pronunciation of exercises."],
-    ],
+    people: [["Learner", "Completes daily lessons and reviews vocabulary."]],
+    externalSystems: [["Text to Speech Provider", "Pronunciation of exercises."]],
     containers: [
       ["Mobile App", "container", "Flutter", "Lessons, streak and badges."],
       ["Lesson Service", "container", "Kotlin", "Exercises, hearts and levels."],
       ["Spaced Repetition Service", "container", "Python", "Schedules reviews."],
       ["Progress Service", "container", "Go", "Streaks, leagues and achievements."],
       ["Learner Database", "database", "PostgreSQL", "Learners, lessons and reviews."],
+    ],
+    componentSets: [
+      {
+        container: "Lesson Service",
+        components: [
+          ["Exercise Builder", "Kotlin", "Assembles lessons from the item bank."],
+          ["Difficulty Tuner", "Kotlin", "Adjusts item difficulty to the learner."],
+          ["Heart Manager", "Kotlin", "Applies the lives and retry rules."],
+        ],
+      },
     ],
     relations: [
       ["Learner", "Mobile App", "Practises", "HTTPS"],
@@ -915,6 +1361,16 @@ export const EXAMPLES: ExampleSpec[] = [
       ["Progress Service", "Learner Database", "Reads achievements", "SQL"],
     ],
   },
+
+  /* MentorLink · inspirado en Preply — clases particulares con pago en
+   * depósito (escrow).
+   * L1: alumno y profesor; pago en depósito y proveedor de vídeo.
+   * L2: marketplace (Next), reservas (Node), disponibilidad (Kotlin),
+   *     sesión (Java), pagos al profesor (Go) y base del marketplace.
+   * L3: las reservas se abren en bloqueo de franja, despacho de recordatorios
+   *     y gestor de cancelaciones con ventanas de reembolso.
+   * Flujo clave: el pago queda retenido hasta que la sesión se completa y
+   *     el servicio de pagos libera la ganancia del profesor. */
   {
     id: "mentorlink",
     name: "MentorLink",
@@ -939,9 +1395,20 @@ export const EXAMPLES: ExampleSpec[] = [
       ["Payout Service", "container", "Go", "Tutor earnings and invoices."],
       ["Marketplace Database", "database", "PostgreSQL", "Tutors, bookings and sessions."],
     ],
+    componentSets: [
+      {
+        container: "Booking Service",
+        components: [
+          ["Slot Reserve", "Node.js", "Holds a tutor slot while the booking completes."],
+          ["Reminder Dispatcher", "Node.js", "Sends lesson reminders."],
+          ["Cancellation Handler", "Node.js", "Applies the refund windows."],
+        ],
+      },
+    ],
     relations: [
       ["Student", "Tutor Marketplace", "Books a lesson", "HTTPS"],
       ["Tutor", "Tutor Marketplace", "Publishes availability", "HTTPS"],
+      ["Tutor", "Payout Service", "Reviews earnings", "HTTPS"],
       ["Tutor Marketplace", "Booking Service", "Creates the booking", "HTTPS"],
       ["Booking Service", "Schedule Service", "Reserves the slot", "gRPC"],
       ["Booking Service", "Payment Provider", "Escrows the payment", "HTTPS"],
@@ -951,6 +1418,15 @@ export const EXAMPLES: ExampleSpec[] = [
       ["Schedule Service", "Marketplace Database", "Writes availability", "SQL"],
     ],
   },
+
+  /* Memora · inspirado en Quizlet — tarjetas de estudio.
+   * L1: estudiante y profesor; sin sistemas externos (ejemplo autocontenido).
+   * L2: app de estudio (React Native), mazos (Node), sesiones (Kotlin),
+   *     estadísticas (Python) y base de estudio.
+   * L3: las sesiones se abren en el scheduler de repetición espaciada,
+   *     estado de la sesión en curso y escritura de cada repaso.
+   * Flujo clave: el repaso alimenta las estadísticas que luego deciden
+   *     qué tarjetas débiles volver a mostrar. */
   {
     id: "memora",
     name: "Memora",
@@ -971,6 +1447,16 @@ export const EXAMPLES: ExampleSpec[] = [
       ["Statistics Service", "container", "Python", "Progress and weak cards."],
       ["Study Database", "database", "PostgreSQL", "Decks, cards and sessions."],
     ],
+    componentSets: [
+      {
+        container: "Session Service",
+        components: [
+          ["Scheduler", "Kotlin", "Orders cards by the spaced repetition algorithm."],
+          ["Session State", "Kotlin", "Tracks the current run and its results."],
+          ["Review Writer", "Kotlin", "Persists each review for the statistics."],
+        ],
+      },
+    ],
     relations: [
       ["Student", "Study App", "Studies", "HTTPS"],
       ["Teacher", "Study App", "Shares a deck", "HTTPS"],
@@ -982,9 +1468,19 @@ export const EXAMPLES: ExampleSpec[] = [
     ],
   },
 
-  /* ---------------------------------------------------------------- */
+  /* ================================================================= */
   /* 6. Salud y bienestar                                              */
-  /* ---------------------------------------------------------------- */
+  /* ================================================================= */
+
+  /* SaludConecta · inspirado en Teladoc — teleconsulta.
+   * L1: paciente y médico; mutua y proveedor de vídeo externos.
+   * L2: app del paciente (React Native), portal clínico (React), citas
+   *     (Kotlin), telemedicina (Java), historia clínica (Go), facturación
+   *     (Python), base clínica y stream Kafka de auditoría.
+   * L3: la historia clínica se abre en almacén de notas, gestor de
+   *     consentimientos y logger de auditoría inmutable.
+   * Flujo clave: cada acceso a la historia se registra en el stream de
+   *     auditoría; la facturación se dispara desde el flujo clínico. */
   {
     id: "saludconecta",
     name: "SaludConecta",
@@ -1011,19 +1507,40 @@ export const EXAMPLES: ExampleSpec[] = [
       ["Clinical Database", "database", "PostgreSQL", "Patients, appointments and records."],
       ["Audit Stream", "queue", "Kafka", "Immutable access log."],
     ],
+    componentSets: [
+      {
+        container: "Clinical Records Service",
+        components: [
+          ["Record Store", "Go", "Stores clinical notes and prescriptions."],
+          ["Consent Manager", "Go", "Applies patient access consent."],
+          ["Audit Logger", "Go", "Writes the immutable access trail."],
+        ],
+      },
+    ],
     relations: [
       ["Patient", "Patient App", "Books a consultation", "HTTPS"],
       ["Doctor", "Clinical Portal", "Attends the appointment", "HTTPS"],
       ["Patient App", "Appointment Service", "Books and cancels", "HTTPS"],
+      ["Patient App", "Clinical Records Service", "Reads the history", "HTTPS"],
       ["Clinical Portal", "Appointment Service", "Reads the agenda", "HTTPS"],
+      ["Clinical Portal", "Billing Service", "Tracks the claim", "HTTPS"],
       ["Patient App", "Telemedicine Service", "Joins the consultation", "HTTPS"],
       ["Clinical Portal", "Telemedicine Service", "Writes the record", "HTTPS"],
       ["Telemedicine Service", "Video Provider", "Carries the call", "HTTPS"],
       ["Clinical Records Service", "Clinical Database", "Reads and writes records", "SQL"],
-      ["Clinical Records Service", "Audit Stream", "Logs record access", "Kafka"],
+      ["Clinical Records Service", "Audit Stream", "Logs record access", "Kafka", "async"],
       ["Billing Service", "Health Insurance", "Sends the claim", "HTTPS"],
     ],
   },
+
+  /* ClínicaFlow · inspirado en sistemas de gestión clínica.
+   * L1: paciente, recepcionista y médico; aseguradora y laboratorio.
+   * L2: app de la clínica (Angular), agenda (Java), historia clínica
+   *     (Kotlin), facturación (Python), integraciones (Node) y base clínica.
+   * L3: la historia clínica se abre en editor de notas estructuradas,
+   *     emisor de recetas y visor de historial longitudinal.
+   * Flujo clave: la agenda dispara la facturación, que delega en el
+   *     servicio de integraciones los contactos con laboratorio y aseguradora. */
   {
     id: "clinicaflow",
     name: "ClínicaFlow",
@@ -1049,6 +1566,16 @@ export const EXAMPLES: ExampleSpec[] = [
       ["Integration Service", "container", "Node.js", "Lab and insurance connectors."],
       ["Clinic Database", "database", "PostgreSQL", "Patients, visits and invoices."],
     ],
+    componentSets: [
+      {
+        container: "Clinical Record Service",
+        components: [
+          ["Note Editor", "Kotlin", "Structured visit notes and diagnosis codes."],
+          ["Prescription Writer", "Kotlin", "Issues and renews prescriptions."],
+          ["History Viewer", "Kotlin", "Presents the longitudinal record."],
+        ],
+      },
+    ],
     relations: [
       ["Patient", "Clinic Web App", "Books a visit", "HTTPS"],
       ["Receptionist", "Clinic Web App", "Manages the agenda", "HTTPS"],
@@ -1062,6 +1589,16 @@ export const EXAMPLES: ExampleSpec[] = [
       ["Clinical Record Service", "Clinic Database", "Writes records", "SQL"],
     ],
   },
+
+  /* VitalTrack · inspirado en Fitbit — actividad y coaching.
+   * L1: usuario con wearable y coach; nube del fabricante del dispositivo.
+   * L2: app móvil (Swift), sincronización (Go), métricas (Python), metas
+   *     (Kotlin), panel del coach (React), serie temporal ClickHouse y
+   *     caché Redis de agregados.
+   * L3: el servicio de métricas se abre en escritor de series, agregador
+   *     de totales y detector de anomalías de frecuencia cardiaca.
+   * Flujo clave: los lotes de sensores se ingieren por lotes y se agregan
+   *     para que el panel del coach no lea la serie cruda. */
   {
     id: "vitaltrack",
     name: "VitalTrack",
@@ -1074,9 +1611,7 @@ export const EXAMPLES: ExampleSpec[] = [
       ["Tracker User", "Wears the device and reviews progress."],
       ["Coach", "Reviews the metrics and adjusts goals."],
     ],
-    externalSystems: [
-      ["Wearable Cloud", "Firmware updates and device sync."],
-    ],
+    externalSystems: [["Wearable Cloud", "Firmware updates and device sync."]],
     containers: [
       ["Mobile App", "container", "Swift", "Dashboard, goals and social streaks."],
       ["Sync Service", "container", "Go", "Ingests sensor batches."],
@@ -1085,6 +1620,16 @@ export const EXAMPLES: ExampleSpec[] = [
       ["Coach Dashboard", "container", "React", "Client overview."],
       ["Metrics Database", "database", "ClickHouse", "Time series of measurements."],
       ["Metrics Cache", "database", "Redis", "Latest aggregated values."],
+    ],
+    componentSets: [
+      {
+        container: "Metrics Service",
+        components: [
+          ["Series Writer", "Python", "Appends sensor measurements to the store."],
+          ["Aggregator", "Python", "Rolls up daily and weekly totals."],
+          ["Anomaly Detector", "Python", "Flags unusual heart-rate patterns."],
+        ],
+      },
     ],
     relations: [
       ["Tracker User", "Mobile App", "Reviews progress", "HTTPS"],
@@ -1098,6 +1643,16 @@ export const EXAMPLES: ExampleSpec[] = [
       ["Coach Dashboard", "Metrics Service", "Queries metrics", "gRPC"],
     ],
   },
+
+  /* FarmaClick · farmacia online con receta regulada.
+   * L1: cliente y farmacéutico; autoridad sanitaria y pasarela de pago.
+   * L2: web de farmacia (Next), catálogo (Node), recetas (Kotlin),
+   *     pedidos (Java), inventario (Go) y base de farmacia.
+   * L3: el servicio de pedidos se abre en puerta de receta que bloquea
+   *     medicamentos regulados, asignación de lote por caducidad y nota
+   *     de envío regulada.
+   * Flujo clave: nada regulado sale sin validación de la autoridad; el
+   *     lote se elige por fecha de caducidad para minimizar mermas. */
   {
     id: "farmaclick",
     name: "FarmaClick",
@@ -1122,6 +1677,16 @@ export const EXAMPLES: ExampleSpec[] = [
       ["Inventory Service", "container", "Go", "Stock by batch and expiry."],
       ["Pharmacy Database", "database", "PostgreSQL", "Products, orders and prescriptions."],
     ],
+    componentSets: [
+      {
+        container: "Order Service",
+        components: [
+          ["Prescription Gate", "Java", "Blocks regulated items without validation."],
+          ["Batch Allocator", "Java", "Assigns batches by expiry date."],
+          ["Dispatch Note", "Java", "Generates the regulated shipping note."],
+        ],
+      },
+    ],
     relations: [
       ["Customer", "Pharmacy Web App", "Places an order", "HTTPS"],
       ["Pharmacist", "Prescription Service", "Validates the prescription", "HTTPS"],
@@ -1134,6 +1699,15 @@ export const EXAMPLES: ExampleSpec[] = [
       ["Inventory Service", "Pharmacy Database", "Writes stock movements", "SQL"],
     ],
   },
+
+  /* MenteSerena · inspirado en Calm — meditación y bienestar.
+   * L1: único actor (socio); pago y CDN de contenido externos.
+   * L2: app de bienestar (Swift), catálogo de sesiones (Node), reproductor
+   *     (Kotlin), suscripciones (Go) y base de socios.
+   * L3: el reproductor se abre en reproducción con búfer, seguimiento de
+   *     progreso y descarga para uso sin conexión.
+   * Flujo clave: el progreso se escribe en la base para retomar la sesión
+   *     en otro dispositivo y alimentar las rachas. */
   {
     id: "menteserena",
     name: "MenteSerena",
@@ -1142,9 +1716,7 @@ export const EXAMPLES: ExampleSpec[] = [
     summary: "Meditation and wellness application.",
     focus: "Media library, routines, profiles and subscriptions.",
     difficulty: "beginner",
-    people: [
-      ["Member", "Follows guided sessions daily."],
-    ],
+    people: [["Member", "Follows guided sessions daily."]],
     externalSystems: [
       ["Payment Provider", "Processes the subscription."],
       ["Content CDN", "Serves audio and video."],
@@ -1155,6 +1727,16 @@ export const EXAMPLES: ExampleSpec[] = [
       ["Player Service", "container", "Kotlin", "Streams media and tracks progress."],
       ["Subscription Service", "container", "Go", "Plans and trials."],
       ["Wellness Database", "database", "PostgreSQL", "Members, progress and plans."],
+    ],
+    componentSets: [
+      {
+        container: "Player Service",
+        components: [
+          ["Stream Player", "Kotlin", "Buffers and plays session media."],
+          ["Progress Tracker", "Kotlin", "Records the listening position."],
+          ["Download Manager", "Kotlin", "Caches sessions for offline use."],
+        ],
+      },
     ],
     relations: [
       ["Member", "Wellness App", "Practises", "HTTPS"],
@@ -1167,9 +1749,19 @@ export const EXAMPLES: ExampleSpec[] = [
     ],
   },
 
-  /* ---------------------------------------------------------------- */
+  /* ================================================================= */
   /* 7. Transporte, viajes y movilidad                                 */
-  /* ---------------------------------------------------------------- */
+  /* ================================================================= */
+
+  /* RutaYa · inspirado en Uber — viajes bajo demanda.
+   * L1: pasajero y conductor; mapas y pasarela de pago externos.
+   * L2: app de pasajero (Swift), app de conductor (Kotlin), emparejamiento
+   *     (Go), viajes (Java), localización (Rust), stream Redis de posiciones
+   *     y base de viajes.
+   * L3: el emparejamiento se abre en broker de solicitudes, monitor de
+   *     oferta por zona y cálculo de tarifa dinámica.
+   * Flujo clave: el conductor publica posiciones por WebSocket y el
+   *     emparejamiento decide quién recoge; la tarifa se calcula al cerrar. */
   {
     id: "rutaya",
     name: "RutaYa",
@@ -1195,12 +1787,22 @@ export const EXAMPLES: ExampleSpec[] = [
       ["Matching Stream", "queue", "Redis Streams", "Driver positions and trip offers."],
       ["Trips Database", "database", "PostgreSQL", "Trips, drivers and fares."],
     ],
+    componentSets: [
+      {
+        container: "Matching Service",
+        components: [
+          ["Request Broker", "Go", "Pairs ride requests with nearby drivers."],
+          ["Supply Monitor", "Go", "Balances driver density by zone."],
+          ["Surge Calculator", "Go", "Applies multipliers when demand peaks."],
+        ],
+      },
+    ],
     relations: [
       ["Passenger", "Passenger App", "Requests a ride", "HTTPS"],
       ["Driver", "Driver App", "Accepts trips", "HTTPS"],
       ["Passenger App", "Matching Service", "Sends the request", "gRPC"],
       ["Driver App", "Matching Service", "Streams positions", "WebSocket"],
-      ["Matching Service", "Matching Stream", "Publishes trip offers", "Redis"],
+      ["Matching Service", "Matching Stream", "Publishes trip offers", "Redis", "async"],
       ["Matching Service", "Location Service", "Calculates the ETA", "gRPC"],
       ["Location Service", "Maps Provider", "Routes and geocodes", "HTTPS"],
       ["Matching Service", "Trip Service", "Creates the trip", "gRPC"],
@@ -1208,6 +1810,16 @@ export const EXAMPLES: ExampleSpec[] = [
       ["Trip Service", "Trips Database", "Writes the trip", "SQL"],
     ],
   },
+
+  /* Hospeda · inspirado en Airbnb — alojamiento turístico.
+   * L1: huésped y anfitrión; pago y mensajería SMS externos.
+   * L2: web del huésped (Next), panel del anfitrión (React), búsqueda (Go),
+   *     reservas (Kotlin), pagos (Java), reseñas (Node), stream Kafka de
+   *     reservas y base de estancias.
+   * L3: las reservas se abren en verificador de disponibilidad, retención
+   *     de la estancia durante el pago y motor de reglas de la casa.
+   * Flujo clave: la reserva se confirma sólo si el pago se autoriza; los
+   *     eventos de reserva/cancelación se publican en Kafka. */
   {
     id: "hospeda",
     name: "Hospeda",
@@ -1234,19 +1846,40 @@ export const EXAMPLES: ExampleSpec[] = [
       ["Booking Stream", "queue", "Kafka", "Booking and cancellation events."],
       ["Stay Database", "database", "PostgreSQL", "Listings, bookings and reviews."],
     ],
+    componentSets: [
+      {
+        container: "Booking Service",
+        components: [
+          ["Availability Checker", "Kotlin", "Validates dates against the calendar."],
+          ["Reservation Holder", "Kotlin", "Holds the stay while payment completes."],
+          ["House Rules Engine", "Kotlin", "Applies host rules and quiet hours."],
+        ],
+      },
+    ],
     relations: [
       ["Guest", "Guest Web App", "Books a stay", "HTTPS"],
       ["Host", "Host Dashboard", "Manages listings", "HTTPS"],
       ["Guest Web App", "Search Service", "Searches stays", "HTTPS"],
+      ["Search Service", "Stay Database", "Reads listings", "SQL"],
       ["Guest Web App", "Booking Service", "Creates the reservation", "HTTPS"],
       ["Host Dashboard", "Booking Service", "Accepts the request", "HTTPS"],
-      ["Booking Service", "Booking Stream", "Publishes booking events", "Kafka"],
+      ["Booking Service", "Booking Stream", "Publishes booking events", "Kafka", "async"],
       ["Booking Service", "Payment Service", "Authorises the charge", "gRPC"],
       ["Payment Service", "Payment Provider", "Collects and pays", "HTTPS"],
       ["Booking Service", "Messaging Provider", "Sends confirmations", "HTTPS"],
       ["Guest Web App", "Review Service", "Publishes a review", "HTTPS"],
     ],
   },
+
+  /* VueloDirecto · inspirado en Skyscanner — buscador de vuelos.
+   * L1: viajero; GDS de aerolíneas y proveedor de pago externos.
+   * L2: app de búsqueda (React), servicio de búsqueda (Go), tarifas
+   *     (Kotlin), reservas (Java), caché Redis de tarifas y base de
+   *     reservas.
+   * L3: el servicio de tarifas se abre en reglas de precios, conversor de
+   *     divisa por mercado y cálculo de impuestos y tasas.
+   * Flujo clave: la búsqueda es cacheada con TTL porque el GDS es lento y
+   *     las tarifas caducan; la emisión del PNR va directa al GDS. */
   {
     id: "vuelodirecto",
     name: "VueloDirecto",
@@ -1255,9 +1888,7 @@ export const EXAMPLES: ExampleSpec[] = [
     summary: "Flight search and booking engine.",
     focus: "Search, fares, airlines and reservations.",
     difficulty: "advanced",
-    people: [
-      ["Traveller", "Searches flights and books a seat."],
-    ],
+    people: [["Traveller", "Searches flights and books a seat."]],
     externalSystems: [
       ["Airline GDS", "Global Distribution System for availability."],
       ["Payment Provider", "Processes the payment."],
@@ -1269,6 +1900,16 @@ export const EXAMPLES: ExampleSpec[] = [
       ["Booking Service", "container", "Java", "PNR creation and ticketing."],
       ["Search Cache", "database", "Redis", "Cached fares with TTL."],
       ["Booking Database", "database", "PostgreSQL", "Bookings and passengers."],
+    ],
+    componentSets: [
+      {
+        container: "Fare Service",
+        components: [
+          ["Pricing Rules", "Kotlin", "Applies fare families and discounts."],
+          ["Currency Converter", "Kotlin", "Normalises prices per market."],
+          ["Tax Calculator", "Kotlin", "Adds taxes and carrier fees."],
+        ],
+      },
     ],
     relations: [
       ["Traveller", "Travel Search App", "Searches and books", "HTTPS"],
@@ -1282,6 +1923,15 @@ export const EXAMPLES: ExampleSpec[] = [
       ["Booking Service", "Booking Database", "Writes the reservation", "SQL"],
     ],
   },
+
+  /* CiudadEnRuta · inspirado en Google Maps Transit — planificador multimodal.
+   * L1: viajero urbano; feeds GTFS de las agencias y proveedor de mapas.
+   * L2: app planificadora (Flutter), rutas (Go), horarios (Kotlin),
+   *     geocodificación (Rust), caché espacial Redis y base de tránsito.
+   * L3: el servicio de rutas se abre en constructor del grafo multimodal,
+   *     búsqueda de viajes con transbordos y estimación de precio.
+   * Flujo clave: el planificador resuelve el viaje sobre el grafo y usa la
+   *     caché espacial para las paradas próximas; los mapas se piden aparte. */
   {
     id: "ciudadenruta",
     name: "CiudadEnRuta",
@@ -1290,9 +1940,7 @@ export const EXAMPLES: ExampleSpec[] = [
     summary: "Public transport journey planner.",
     focus: "Maps, routes, stops, timetables and geospatial data.",
     difficulty: "intermediate",
-    people: [
-      ["Commuter", "Plans routes and checks arrivals."],
-    ],
+    people: [["Commuter", "Plans routes and checks arrivals."]],
     externalSystems: [
       ["Transit Agency Feeds", "GTFS timetables."],
       ["Maps Provider", "Base map tiles and geocoding."],
@@ -1305,10 +1953,21 @@ export const EXAMPLES: ExampleSpec[] = [
       ["Spatial Cache", "database", "Redis", "Nearby stops."],
       ["Transit Database", "database", "PostgreSQL", "Stops, routes and timetables."],
     ],
+    componentSets: [
+      {
+        container: "Routing Service",
+        components: [
+          ["Graph Builder", "Go", "Maintains the multimodal transit graph."],
+          ["Journey Search", "Go", "Finds routes with transfers and constraints."],
+          ["Fare Estimator", "Go", "Prices each journey from the agency fares."],
+        ],
+      },
+    ],
     relations: [
       ["Commuter", "Planner App", "Plans a journey", "HTTPS"],
       ["Planner App", "Routing Service", "Requests routes", "HTTPS/JSON"],
       ["Planner App", "Timetable Service", "Shows departures", "HTTPS"],
+      ["Planner App", "Geocoding Service", "Resolves the journey endpoints", "gRPC"],
       ["Routing Service", "Transit Database", "Reads the network", "SQL"],
       ["Routing Service", "Spatial Cache", "Reads nearby stops", "RESP"],
       ["Timetable Service", "Transit Agency Feeds", "Ingests GTFS", "HTTPS"],
@@ -1316,6 +1975,16 @@ export const EXAMPLES: ExampleSpec[] = [
       ["Planner App", "Maps Provider", "Shows the base map", "HTTPS"],
     ],
   },
+
+  /* ElectroRuta · inspirado en PlugShare — puntos de recarga de coches.
+   * L1: conductor de VE y operador de estación; mapas y red de recarga.
+   * L2: app del conductor (React Native), estaciones (Go), disponibilidad
+   *     (Kotlin), reportes (Node), índice espacial PostGIS y base de
+   *     estaciones.
+   * L3: la disponibilidad se abre en sondeo de estado por conector,
+   *     espejo de sesiones en curso y predicción del tiempo de espera.
+   * Flujo clave: el estado en vivo viene por OCPP de la red operadora y se
+   *     separa del directorio fijo de estaciones. */
   {
     id: "electroruta",
     name: "ElectroRuta",
@@ -1340,6 +2009,16 @@ export const EXAMPLES: ExampleSpec[] = [
       ["Geo Index", "database", "PostGIS", "Spatial queries on chargers."],
       ["Station Database", "database", "PostgreSQL", "Stations, reports and pricing."],
     ],
+    componentSets: [
+      {
+        container: "Availability Service",
+        components: [
+          ["Status Poller", "Kotlin", "Polls connectors for live status."],
+          ["Session Mirror", "Kotlin", "Mirrors ongoing charging sessions."],
+          ["Prediction Model", "Kotlin", "Estimates waiting time per station."],
+        ],
+      },
+    ],
     relations: [
       ["EV Driver", "Driver App", "Finds a charger", "HTTPS"],
       ["Station Operator", "Station Service", "Updates the station", "HTTPS"],
@@ -1353,11 +2032,20 @@ export const EXAMPLES: ExampleSpec[] = [
     ],
   },
 
-  /* ---------------------------------------------------------------- */
+  /* ================================================================= */
   /* 8. Productividad y gestión empresarial                             */
-  /* ---------------------------------------------------------------- */
+  /* ================================================================= */
+
+  /* ProyectoZen · inspirado en Trello — gestión con tableros Kanban.
+   * L1: miembro del proyecto y propietario; correo (SMTP) e IdP (OIDC).
+   * L2: app web (React), tableros (Node), tareas (Kotlin), notificaciones
+   *     (Go), búsqueda (Rust), stream Kafka de actividad y base de tableros.
+   * L3: el servicio de tareas se abre en gestor de tarjetas, rastreador de
+   *     dependencias y motor de asignación equilibrada.
+   * Flujo clave: cada cambio de tarjeta publica en Kafka; las menciones
+   *     se resuelven en el servicio de tareas y salen por correo. */
   {
-    id: "proyectozén",
+    id: "proyectozen",
     name: "ProyectoZen",
     category: "productivity",
     reference: "Trello",
@@ -1381,19 +2069,39 @@ export const EXAMPLES: ExampleSpec[] = [
       ["Activity Stream", "queue", "Kafka", "Card change events."],
       ["Board Database", "database", "PostgreSQL", "Boards, cards and comments."],
     ],
+    componentSets: [
+      {
+        container: "Task Service",
+        components: [
+          ["Card Manager", "Kotlin", "Creates cards, checklists and due dates."],
+          ["Dependency Tracker", "Kotlin", "Links cards and blocks progress."],
+          ["Assignment Engine", "Kotlin", "Balances work across members."],
+        ],
+      },
+    ],
     relations: [
       ["Project Member", "Web App", "Updates tasks", "HTTPS"],
       ["Project Owner", "Board Service", "Configures the board", "HTTPS"],
       ["Web App", "Board Service", "Reads boards", "HTTPS/JSON"],
       ["Web App", "Task Service", "Moves cards", "HTTPS"],
-      ["Board Service", "Activity Stream", "Publishes changes", "Kafka"],
+      ["Board Service", "Activity Stream", "Publishes changes", "Kafka", "async"],
       ["Task Service", "Notification Service", "Sends mentions", "gRPC"],
-      ["Notification Service", "Email Provider", "Sends digests", "SMTP"],
+      ["Notification Service", "Email Provider", "Sends digests", "SMTP", "async"],
       ["Web App", "Search Service", "Searches across boards", "HTTPS"],
       ["Board Service", "Identity Provider", "Verifies users", "OIDC"],
       ["Task Service", "Board Database", "Writes cards", "SQL"],
     ],
   },
+
+  /* Cliente360 · inspirado en Salesforce — CRM de oportunidades.
+   * L1: comercial y cliente final; correo y ERP externos.
+   * L2: app comercial (React), API CRM (Spring), oportunidades (Kotlin),
+   *     automatización (Node), informes (Python), hub de integración (Go),
+   *     cola RabbitMQ y base del CRM.
+   * L3: las oportunidades se abren en etapas del pipeline con criterios de
+   *     salida, motor de previsión ponderada y cálculo de oferta.
+   * Flujo clave: la automatización encola reglas que el ERP y el correo
+   *     consumen vía el hub de integración. */
   {
     id: "cliente360",
     name: "Cliente360",
@@ -1420,19 +2128,41 @@ export const EXAMPLES: ExampleSpec[] = [
       ["Automation Queue", "queue", "RabbitMQ", "Rule execution jobs."],
       ["CRM Database", "database", "PostgreSQL", "Accounts, contacts and activities."],
     ],
+    componentSets: [
+      {
+        container: "Opportunity Service",
+        components: [
+          ["Pipeline Stage", "Kotlin", "Validates stage transitions and exit criteria."],
+          ["Forecast Engine", "Kotlin", "Aggregates weighted pipeline by period."],
+          ["Quote Calculator", "Kotlin", "Builds quotes from the price book."],
+        ],
+      },
+    ],
     relations: [
       ["Sales Rep", "Sales Web App", "Manages the pipeline", "HTTPS"],
       ["Customer", "Sales Web App", "Opens a case", "HTTPS"],
+      ["Sales Web App", "Reporting Service", "Views dashboards", "HTTPS"],
       ["Sales Web App", "CRM API", "Reads and writes records", "HTTPS/JSON"],
       ["CRM API", "Opportunity Service", "Advances the deal", "gRPC"],
       ["Opportunity Service", "Automation Service", "Triggers the automation", "gRPC"],
-      ["Automation Service", "Automation Queue", "Enqueues the job", "AMQP"],
+      ["Automation Service", "Automation Queue", "Enqueues the job", "AMQP", "async"],
       ["Automation Service", "Integration Hub", "Calls the ERP", "gRPC"],
       ["Integration Hub", "ERP", "Syncs orders", "HTTPS"],
-      ["Integration Hub", "Email Provider", "Sends sequences", "SMTP"],
+      ["Integration Hub", "Email Provider", "Sends sequences", "SMTP", "async"],
       ["Reporting Service", "CRM Database", "Aggregates metrics", "SQL"],
     ],
   },
+
+  /* EmpresaNexo · inspirado en Odoo — ERP integrado.
+   * L1: contable, responsable de compras y operario de almacén; autoridad
+   *     fiscal y banca electrónica.
+   * L2: cliente web del ERP (React), facturación (Java), compras (Kotlin),
+   *     inventario (Java), contabilidad (Python), base de negocio y cola
+   *     Kafka de flujos documentales.
+   * L3: la facturación se abre en constructor de facturas, resolutor de
+   *     régimen fiscal y adaptador de facturación electrónica.
+   * Flujo clave: un movimiento de inventario publica en Kafka; la
+   *     contabilidad recibe los asientos desde facturación por gRPC. */
   {
     id: "empresanexo",
     name: "EmpresaNexo",
@@ -1459,6 +2189,16 @@ export const EXAMPLES: ExampleSpec[] = [
       ["Business Database", "database", "PostgreSQL", "All business documents."],
       ["Document Queue", "queue", "Kafka", "Document workflows and approvals."],
     ],
+    componentSets: [
+      {
+        container: "Invoicing Service",
+        components: [
+          ["Invoice Builder", "Java", "Totals, taxes and credit notes."],
+          ["Tax Resolver", "Java", "Applies the regime per jurisdiction."],
+          ["E-invoice Adapter", "Java", "Serialises to the authority format."],
+        ],
+      },
+    ],
     relations: [
       ["Accountant", "ERP Web Client", "Records invoices", "HTTPS"],
       ["Purchasing Manager", "ERP Web Client", "Creates purchase orders", "HTTPS"],
@@ -1467,11 +2207,22 @@ export const EXAMPLES: ExampleSpec[] = [
       ["ERP Web Client", "Purchasing Service", "Manages orders", "HTTPS"],
       ["Invoicing Service", "Accounting Service", "Posts entries", "gRPC"],
       ["Purchasing Service", "Inventory Service", "Receives goods", "gRPC"],
-      ["Inventory Service", "Document Queue", "Publishes stock moves", "Kafka"],
+      ["Inventory Service", "Document Queue", "Publishes stock moves", "Kafka", "async"],
       ["Invoicing Service", "Tax Authority", "Sends the invoice", "HTTPS"],
       ["Accounting Service", "Bank Gateway", "Reconciles payments", "HTTPS"],
+      ["Accounting Service", "Business Database", "Writes the ledger", "SQL"],
     ],
   },
+
+  /* ArchivoNube · inspirado en Dropbox — documentos en la nube.
+   * L1: miembro y admin de workspace; objeto de almacenamiento y correo.
+   * L2: cliente escritorio/móvil (C#/Kotlin), API de ficheros (Go),
+   *     sincronización (Rust), compartir (Node), cola Kafka de análisis de
+   *     virus y base de metadatos.
+   * L3: la sincronización se abre en motor de deltas, resolutor de
+   *     conflictos y sincronización selectiva por carpeta.
+   * Flujo clave: el cliente intercambia deltas con el servicio, que escribe
+   *     metadatos y encola el análisis antivirus de cada subida. */
   {
     id: "archivonube",
     name: "ArchivoNube",
@@ -1496,18 +2247,39 @@ export const EXAMPLES: ExampleSpec[] = [
       ["Virus Scan Pipeline", "queue", "Kafka", "Scan every uploaded file."],
       ["Metadata Database", "database", "PostgreSQL", "Files, versions and ACLs."],
     ],
+    componentSets: [
+      {
+        container: "Sync Service",
+        components: [
+          ["Delta Engine", "Rust", "Computes and applies file deltas."],
+          ["Conflict Resolver", "Rust", "Merges concurrent edits or keeps both."],
+          ["Selective Sync", "Rust", "Syncs only the folders the member chose."],
+        ],
+      },
+    ],
     relations: [
       ["Member", "Desktop and Mobile Client", "Syncs files", "HTTPS"],
       ["Workspace Admin", "File API", "Sets policies", "HTTPS"],
       ["Desktop and Mobile Client", "Sync Service", "Exchanges deltas", "HTTPS"],
       ["Sync Service", "File API", "Reads metadata", "gRPC"],
       ["File API", "Object Storage", "Stores bytes", "HTTPS"],
-      ["File API", "Virus Scan Pipeline", "Enqueues the scan", "Kafka"],
+      ["File API", "Virus Scan Pipeline", "Enqueues the scan", "Kafka", "async"],
       ["File API", "Sharing Service", "Creates shared links", "gRPC"],
-      ["Sharing Service", "Email Provider", "Sends share emails", "SMTP"],
+      ["Sharing Service", "Email Provider", "Sends share emails", "SMTP", "async"],
       ["File API", "Metadata Database", "Reads and writes metadata", "SQL"],
     ],
   },
+
+  /* FlujoBot · inspirado en Zapier — automatización visual de procesos.
+   * L1: constructor de automatizaciones y responsable de operaciones;
+   *     APIs de terceros como único externo.
+   * L2: constructor de flujos (React), API de flujos (Node), motor de
+   *     ejecución (Rust), conectores (Java), planificador (Go), cola Kafka
+   *     de ejecuciones y base de flujos.
+   * L3: el motor de ejecución se abre en runner de pasos con timeout,
+   *     supervisor de reintentos con backoff y bóveda de credenciales.
+   * Flujo clave: el planificador encola ejecuciones que el motor consume;
+   *     los conectores son los únicos que tocan credenciales externas. */
   {
     id: "flujobot",
     name: "FlujoBot",
@@ -1520,11 +2292,9 @@ export const EXAMPLES: ExampleSpec[] = [
       ["Automation Builder", "Designs flows and connects apps."],
       ["Ops Manager", "Monitors runs and failures."],
     ],
-    externalSystems: [
-      ["Third-party APIs", "CRM, email, accounting services."],
-    ],
+    externalSystems: [["Third-party APIs", "CRM, email, accounting services."]],
     containers: [
-      ["Automation Builder", "container", "React", "Canvas of triggers and actions."],
+      ["Flow Builder", "container", "React", "Canvas of triggers and actions."],
       ["Flow API", "container", "Node.js", "Flow definitions and versions."],
       ["Execution Engine", "container", "Rust", "Runs steps and retries."],
       ["Connector Service", "container", "Java", "OAuth and API calls to external apps."],
@@ -1532,22 +2302,43 @@ export const EXAMPLES: ExampleSpec[] = [
       ["Execution Queue", "queue", "Kafka", "Run jobs and step retries."],
       ["Flow Database", "database", "PostgreSQL", "Flows, runs and credentials."],
     ],
+    componentSets: [
+      {
+        container: "Execution Engine",
+        components: [
+          ["Step Runner", "Rust", "Executes each step with its own timeout."],
+          ["Retry Supervisor", "Rust", "Replays failed steps with backoff."],
+          ["Credential Vault", "Rust", "Injects secrets into connector calls."],
+        ],
+      },
+    ],
     relations: [
-      ["Automation Builder", "Automation Builder", "Designs flows", "HTTPS"],
-      ["Ops Manager", "Automation Builder", "Monitors runs", "HTTPS"],
-      ["Automation Builder", "Flow API", "Saves the flow", "HTTPS/JSON"],
+      ["Automation Builder", "Flow Builder", "Designs flows", "HTTPS"],
+      ["Ops Manager", "Flow Builder", "Monitors runs", "HTTPS"],
+      ["Flow Builder", "Flow API", "Saves the flow", "HTTPS/JSON"],
       ["Flow API", "Scheduler Service", "Registers triggers", "gRPC"],
-      ["Scheduler Service", "Execution Queue", "Enqueues runs", "Kafka"],
-      ["Execution Queue", "Execution Engine", "Consumes jobs", "Kafka"],
+      ["Scheduler Service", "Execution Queue", "Enqueues runs", "Kafka", "async"],
+      ["Execution Queue", "Execution Engine", "Delivers run jobs", "Kafka", "async"],
       ["Execution Engine", "Connector Service", "Calls external APIs", "gRPC"],
       ["Connector Service", "Third-party APIs", "Performs the action", "HTTPS"],
       ["Execution Engine", "Flow Database", "Writes run logs", "SQL"],
     ],
   },
 
-  /* ---------------------------------------------------------------- */
+  /* ================================================================= */
   /* 9. Inteligencia artificial y datos                               */
-  /* ---------------------------------------------------------------- */
+  /* ================================================================= */
+
+  /* AsistenteNova · inspirado en ChatGPT — asistente conversacional.
+   * L1: usuario y revisor de seguridad; proveedor de modelo y proveedor
+   *     de seguridad de contenido externos.
+   * L2: app de chat (React), API de conversación (Go), orquestador (Python),
+   *     registro de herramientas (Node), moderación (Python), libro de
+   *     tokens y base de conversaciones (ambas PostgreSQL).
+   * L3: el orquestador se abre en constructor de prompts, router de
+   *     herramientas y adaptador de streams del modelo.
+   * Flujo clave: la respuesta vuelve por SSE mientras el orquestador aplica
+   *     el filtro de salida antes de entregarse al cliente. */
   {
     id: "asistentenova",
     name: "AsistenteNova",
@@ -1573,6 +2364,16 @@ export const EXAMPLES: ExampleSpec[] = [
       ["Token Ledger", "database", "PostgreSQL", "Usage and billing units."],
       ["Conversation Database", "database", "PostgreSQL", "Messages and sessions."],
     ],
+    componentSets: [
+      {
+        container: "Orchestrator",
+        components: [
+          ["Prompt Builder", "Python", "Assembles system, history and tool results."],
+          ["Tool Router", "Python", "Selects and invokes the right tool."],
+          ["Stream Adapter", "Python", "Normalises model streams for the client."],
+        ],
+      },
+    ],
     relations: [
       ["User", "Chat App", "Sends a message", "HTTPS"],
       ["Safety Reviewer", "Moderation Service", "Reviews conversations", "HTTPS"],
@@ -1585,6 +2386,17 @@ export const EXAMPLES: ExampleSpec[] = [
       ["Conversation API", "Token Ledger", "Records usage", "SQL"],
     ],
   },
+
+  /* DocuMente · inspirado en NotebookLM — QA sobre documentos internos.
+   * L1: trabajador del conocimiento y administrador de contenidos;
+   *     proveedor de embeddings y de modelo de lenguaje.
+   * L2: app de investigación (Next), ingesta (Go), embeddings (Python),
+   *     recuperación (Python), respuesta (Kotlin), almacén vectorial
+   *     pgvector, almacenamiento de documentos S3 y cola Kafka de índice.
+   * L3: la recuperación se abre en búsqueda híbrida, reranking y mapeo de
+   *     citas hacia la fuente original.
+   * Flujo clave: la ingesta encola trabajos de indexación; en consulta, la
+   *     recuperación filtra y el modelo responde con citas trazables. */
   {
     id: "documente",
     name: "DocuMente",
@@ -1611,12 +2423,22 @@ export const EXAMPLES: ExampleSpec[] = [
       ["Document Storage", "database", "S3", "Original files and extracted text."],
       ["Index Queue", "queue", "Kafka", "Ingestion and re-index jobs."],
     ],
+    componentSets: [
+      {
+        container: "Retrieval Service",
+        components: [
+          ["Hybrid Searcher", "Python", "Combines vector and keyword retrieval."],
+          ["Reranker", "Python", "Orders candidates for the question."],
+          ["Citation Mapper", "Python", "Links answer spans back to sources."],
+        ],
+      },
+    ],
     relations: [
       ["Knowledge Worker", "Research App", "Asks a question", "HTTPS"],
       ["Content Administrator", "Ingestion Service", "Curates the corpus", "HTTPS"],
       ["Research App", "Ingestion Service", "Uploads documents", "HTTPS"],
-      ["Ingestion Service", "Index Queue", "Enqueues indexing", "Kafka"],
-      ["Index Queue", "Embedding Service", "Consumes jobs", "Kafka"],
+      ["Ingestion Service", "Index Queue", "Enqueues indexing", "Kafka", "async"],
+      ["Index Queue", "Embedding Service", "Delivers indexing jobs", "Kafka", "async"],
       ["Embedding Service", "Embedding Provider", "Computes embeddings", "HTTPS"],
       ["Embedding Service", "Vector Store", "Writes vectors", "SQL"],
       ["Research App", "Retrieval Service", "Searches the corpus", "gRPC"],
@@ -1625,6 +2447,17 @@ export const EXAMPLES: ExampleSpec[] = [
       ["Ingestion Service", "Document Storage", "Reads originals", "HTTPS"],
     ],
   },
+
+  /* DataVision · inspirado en Power BI — analítica de negocio.
+   * L1: analista y ejecutivo; sistemas de origen e IdP de seguridad por
+   *     fila (row-level security).
+   * L2: espacio de trabajo (React), consulta (Go), ETL (Python), capa
+   *     semántica (Kotlin), jobs programados Airflow, almacén Snowflake y
+   *     caché Redis de resultados.
+   * L3: la capa semántica se abre en catálogo de métricas, rastreador de
+   *     linaje y compilador de métricas a SQL.
+   * Flujo clave: las métricas se resuelven en la capa semántica antes de
+   *     compilarse a SQL; el ETL carga el almacén con Airflow. */
   {
     id: "datavision",
     name: "DataVision",
@@ -1650,6 +2483,16 @@ export const EXAMPLES: ExampleSpec[] = [
       ["Warehouse", "database", "Snowflake", "Curated analytical tables."],
       ["Result Cache", "database", "Redis", "Cached query results."],
     ],
+    componentSets: [
+      {
+        container: "Semantic Layer",
+        components: [
+          ["Metric Catalog", "Kotlin", "Stores the definition of each measure."],
+          ["Lineage Tracker", "Kotlin", "Maps columns back to source fields."],
+          ["Query Compiler", "Kotlin", "Translates metrics into SQL."],
+        ],
+      },
+    ],
     relations: [
       ["Analyst", "Analytics Workspace", "Builds dashboards", "HTTPS"],
       ["Executive", "Analytics Workspace", "Reviews KPIs", "HTTPS"],
@@ -1657,12 +2500,22 @@ export const EXAMPLES: ExampleSpec[] = [
       ["Semantic Layer", "Query Service", "Compiles the query", "gRPC"],
       ["Query Service", "Warehouse", "Executes SQL", "ODBC"],
       ["Query Service", "Result Cache", "Reads cached results", "RESP"],
-      ["ETL Pipeline", "Scheduled Jobs", "Runs on schedule", "Airflow"],
+      ["Scheduled Jobs", "ETL Pipeline", "Triggers the scheduled runs", "Airflow", "async"],
       ["ETL Pipeline", "Source Systems", "Extracts data", "HTTPS"],
       ["ETL Pipeline", "Warehouse", "Loads tables", "Snowflake"],
       ["Semantic Layer", "Identity Provider", "Applies row-level security", "OIDC"],
     ],
   },
+
+  /* PixelIA · inspirado en Midjourney — generación de imágenes con IA.
+   * L1: artista y revisor de confianza; nube GPU y proveedor de seguridad.
+   * L2: estudio (Next), API de generación (Go), prompts (Python), seguridad
+   *     (Python), scheduler Celery, clúster de inferencia (Python), tienda
+   *     de medios S3 y base de generaciones.
+   * L3: el clúster se abre en worker de difusión, empaquetado de lotes para
+   *     llenar las GPU y filtro de salida de imágenes.
+   * Flujo clave: la generación es asíncrona (Celery) y el cliente consulta
+   *     el estado; nada llega al almacenamiento sin pasar por seguridad. */
   {
     id: "pixelia",
     name: "PixelIA",
@@ -1689,19 +2542,40 @@ export const EXAMPLES: ExampleSpec[] = [
       ["Media Store", "database", "S3", "Generated images and metadata."],
       ["Generation Database", "database", "PostgreSQL", "Jobs, credits and history."],
     ],
+    componentSets: [
+      {
+        container: "Inference Cluster",
+        components: [
+          ["Diffusion Worker", "Python", "Runs the sampling loop on a GPU."],
+          ["Batch Scheduler", "Python", "Packs prompts to fill the GPUs."],
+          ["Output Filter", "Python", "Applies safety checks to the result."],
+        ],
+      },
+    ],
     relations: [
       ["Artist", "Studio App", "Generates images", "HTTPS"],
       ["Trust Reviewer", "Safety Service", "Reviews content", "HTTPS"],
       ["Studio App", "Generation API", "Creates a job", "HTTPS/JSON"],
       ["Generation API", "Prompt Service", "Enhances the prompt", "gRPC"],
       ["Generation API", "Safety Service", "Checks the prompt", "gRPC"],
-      ["Generation API", "GPU Scheduler", "Enqueues the job", "Celery"],
-      ["GPU Scheduler", "Inference Cluster", "Schedules GPUs", "Celery"],
+      ["Generation API", "GPU Scheduler", "Enqueues the job", "Celery", "async"],
+      ["GPU Scheduler", "Inference Cluster", "Schedules GPUs", "Celery", "async"],
       ["Inference Cluster", "GPU Cloud", "Runs the model", "HTTPS"],
       ["Inference Cluster", "Media Store", "Stores the image", "HTTPS"],
       ["Generation API", "Generation Database", "Records credits", "SQL"],
     ],
   },
+
+  /* AgenteFlow — plataformas de agentes de IA con herramientas externas.
+   * L1: constructor de agentes y operador; modelo de lenguaje y APIs
+   *     externas que el agente puede invocar.
+   * L2: estudio de agentes (React), runtime (Rust), gateway de modelos (Go),
+   *     herramientas (Node), memoria (Python), trazas (Kotlin), cola NATS
+   *     y almacén de trazas ClickHouse.
+   * L3: el runtime se abre en bucle de razonamiento, ensamblador de
+   *     contexto desde memoria y guardrails que detienen acciones inseguras.
+   * Flujo clave: cada ejecución queda trazada en ClickHouse; el gateway de
+   *     modelos centraliza cuotas y enrutado entre proveedores. */
   {
     id: "agenteflow",
     name: "AgenteFlow",
@@ -1728,23 +2602,43 @@ export const EXAMPLES: ExampleSpec[] = [
       ["Agent Queue", "queue", "NATS", "Agent run jobs."],
       ["Tracing Store", "database", "ClickHouse", "Traces and metrics."],
     ],
+    componentSets: [
+      {
+        container: "Agent Runtime",
+        components: [
+          ["Reasoning Loop", "Rust", "Plans, acts and observes until the goal is met."],
+          ["Context Assembler", "Rust", "Builds the model context from memory and tools."],
+          ["Guardrail Checker", "Rust", "Stops unsafe or out-of-scope actions."],
+        ],
+      },
+    ],
     relations: [
       ["Agent Builder", "Agent Studio", "Configures the agent", "HTTPS"],
       ["Operator", "Tracing Service", "Reviews traces", "HTTPS"],
       ["Agent Studio", "Agent Runtime", "Runs the agent", "HTTPS/JSON"],
-      ["Agent Runtime", "Agent Queue", "Enqueues the run", "NATS"],
+      ["Agent Runtime", "Agent Queue", "Enqueues the run", "NATS", "async"],
       ["Agent Runtime", "Model Gateway", "Calls the model", "gRPC"],
       ["Model Gateway", "Language Model Provider", "Completes the prompt", "HTTPS"],
       ["Agent Runtime", "Tool Service", "Executes a tool", "gRPC"],
       ["Tool Service", "External Tools", "Performs the action", "HTTPS"],
       ["Agent Runtime", "Memory Service", "Reads and writes memory", "gRPC"],
       ["Agent Runtime", "Tracing Service", "Reports spans", "gRPC"],
+      ["Tracing Service", "Tracing Store", "Persists traces and spans", "SQL"],
     ],
   },
 
-  /* ---------------------------------------------------------------- */
+  /* ================================================================= */
   /* 10. Infraestructura, desarrollo y ciberseguridad                 */
-  /* ---------------------------------------------------------------- */
+  /* ================================================================= */
+
+  /* NubeStack · inspirado en Vercel — plataforma de despliegue.
+   * L1: desarrollador y operador de plataforma; proveedor Git y DNS.
+   * L2: dashboard (Next), plano de control (Go), builds (Rust), control de
+   *     despliegues (Kotlin), enrutado (Go), cola Kafka y base de control.
+   * L3: el servicio de build se abre en clonador de fuentes, runner de
+   *     builds en sandbox y publicador de imágenes en el registro.
+   * Flujo clave: el webhook del proveedor Git dispara la cadena build →
+   *     despliegue → enrutado, toda ella encolada en Kafka. */
   {
     id: "nubestack",
     name: "NubeStack",
@@ -1770,19 +2664,39 @@ export const EXAMPLES: ExampleSpec[] = [
       ["Build Queue", "queue", "Kafka", "Build and deploy jobs."],
       ["Control Plane Database", "database", "PostgreSQL", "Projects and deployment history."],
     ],
+    componentSets: [
+      {
+        container: "Build Service",
+        components: [
+          ["Source Cloner", "Rust", "Fetches the commit to build."],
+          ["Builder Runner", "Rust", "Executes the build in a sandbox."],
+          ["Image Publisher", "Rust", "Pushes the image to the registry."],
+        ],
+      },
+    ],
     relations: [
       ["Developer", "Developer Dashboard", "Deploys an app", "HTTPS"],
       ["Platform Operator", "Developer Dashboard", "Inspects deployments", "HTTPS"],
       ["Developer Dashboard", "Control Plane API", "Triggers a deployment", "HTTPS/JSON"],
       ["Control Plane API", "Git Provider", "Receives webhooks", "HTTPS"],
-      ["Control Plane API", "Build Queue", "Enqueues the build", "Kafka"],
-      ["Build Queue", "Build Service", "Consumes build jobs", "Kafka"],
+      ["Control Plane API", "Build Queue", "Enqueues the build", "Kafka", "async"],
+      ["Build Queue", "Build Service", "Delivers build jobs", "Kafka", "async"],
       ["Build Service", "Deployment Controller", "Publishes the image", "gRPC"],
       ["Deployment Controller", "Routing Service", "Updates the routing", "gRPC"],
       ["Routing Service", "DNS Provider", "Provisions certificates", "HTTPS"],
       ["Control Plane API", "Control Plane Database", "Writes history", "SQL"],
     ],
   },
+
+  /* CódigoLibre · inspirado en GitHub — alojamiento de repositorios.
+   * L1: colaborador y maintainer; correo y registro de paquetes.
+   * L2: cliente web/git (React), servicio git (Rust), pull requests (Java),
+   *     CI/CD (Go), búsqueda (Rust), notificaciones (Node), cola Kafka y
+   *     base de metadatos.
+   * L3: CI/CD se abre en parser de pipelines, pool de runners y almacén de
+   *     artefactos con caché.
+   * Flujo clave: el push dispara pipelines encolados; cada PR indexa cambios
+   *     y pide notificaciones a los revisores. */
   {
     id: "codigolibre",
     name: "CódigoLibre",
@@ -1809,20 +2723,42 @@ export const EXAMPLES: ExampleSpec[] = [
       ["Pipeline Queue", "queue", "Kafka", "Build jobs."],
       ["Metadata Database", "database", "PostgreSQL", "Repositories, issues and PRs."],
     ],
+    componentSets: [
+      {
+        container: "CI/CD Service",
+        components: [
+          ["Pipeline Parser", "Go", "Reads the pipeline definition."],
+          ["Runner Pool", "Go", "Schedules jobs on the runners."],
+          ["Artefact Store", "Go", "Keeps build outputs and caches."],
+        ],
+      },
+    ],
     relations: [
       ["Contributor", "Web and Git Client", "Clones and pushes", "HTTPS"],
       ["Maintainer", "Web and Git Client", "Reviews and merges", "HTTPS"],
       ["Web and Git Client", "Git Service", "Reads repository objects", "HTTPS"],
       ["Web and Git Client", "Pull Request Service", "Opens a pull request", "HTTPS/JSON"],
+      ["Git Service", "Metadata Database", "Indexes repositories and refs", "SQL"],
       ["Git Service", "CI/CD Service", "Triggers pipelines", "HTTPS"],
-      ["CI/CD Service", "Pipeline Queue", "Enqueues build jobs", "Kafka"],
-      ["Pipeline Queue", "CI/CD Service", "Consumes build jobs", "Kafka"],
+      ["Pull Request Service", "Metadata Database", "Stores pull requests", "SQL"],
+      ["CI/CD Service", "Pipeline Queue", "Enqueues build jobs", "Kafka", "async"],
+      ["Pipeline Queue", "CI/CD Service", "Delivers build jobs", "Kafka", "async"],
       ["CI/CD Service", "Package Registry", "Publishes artefacts", "HTTPS"],
       ["Pull Request Service", "Search Service", "Indexes changes", "gRPC"],
       ["Pull Request Service", "Notification Service", "Requests notifications", "gRPC"],
-      ["Notification Service", "Email Provider", "Sends digests", "SMTP"],
+      ["Notification Service", "Email Provider", "Sends digests", "SMTP", "async"],
     ],
   },
+
+  /* Monitorix · inspirado en Datadog — observabilidad de infraestructura.
+   * L1: SRE y desarrollador; pager de guardia y fuentes de métricas.
+   * L2: UI de observabilidad (React), pasarela de ingesta (Go), métricas
+   *     (Rust), logs (Go), trazas (Kotlin), alertas (Node), cola Kafka de
+   *     telemetría y almacén ClickHouse.
+   * L3: el servicio de métricas se abre en escritor de series, motor de
+   *     rollups preagregados y guardia de cardinalidad.
+   * Flujo clave: agentes externos empujan telemetría, que se bufferiza en
+   *     Kafka antes de repartirse a métricas, logs y trazas. */
   {
     id: "monitorix",
     name: "Monitorix",
@@ -1849,19 +2785,40 @@ export const EXAMPLES: ExampleSpec[] = [
       ["Telemetry Queue", "queue", "Kafka", "Buffers incoming telemetry."],
       ["Metrics Store", "database", "ClickHouse", "Metrics, logs and traces."],
     ],
+    componentSets: [
+      {
+        container: "Metrics Service",
+        components: [
+          ["Series Writer", "Rust", "Appends samples to the time series."],
+          ["Rollup Engine", "Rust", "Pre-aggregates at fixed resolutions."],
+          ["Cardinality Guard", "Rust", "Rejects label sets that would explode storage."],
+        ],
+      },
+    ],
     relations: [
       ["SRE", "Observability UI", "Investigates alerts", "HTTPS"],
       ["Developer", "Observability UI", "Reads traces", "HTTPS"],
       ["Metric Sources", "Ingestion Gateway", "Sends telemetry", "HTTPS"],
-      ["Ingestion Gateway", "Telemetry Queue", "Buffers telemetry", "Kafka"],
-      ["Telemetry Queue", "Metrics Service", "Consumes metrics", "Kafka"],
-      ["Telemetry Queue", "Log Service", "Consumes logs", "Kafka"],
-      ["Telemetry Queue", "Trace Service", "Consumes spans", "Kafka"],
+      ["Ingestion Gateway", "Telemetry Queue", "Buffers telemetry", "Kafka", "async"],
+      ["Telemetry Queue", "Metrics Service", "Delivers metrics", "Kafka", "async"],
+      ["Telemetry Queue", "Log Service", "Delivers logs", "Kafka", "async"],
+      ["Telemetry Queue", "Trace Service", "Delivers spans", "Kafka", "async"],
       ["Metrics Service", "Alerting Engine", "Evaluates rules", "gRPC"],
       ["Alerting Engine", "Pager Provider", "Pages the on-call", "HTTPS"],
       ["Observability UI", "Metrics Store", "Queries data", "SQL"],
     ],
   },
+
+  /* EscudoDigital · plataformas SIEM — gestión de incidentes de seguridad.
+   * L1: analista y engineer de seguridad; IdP, nube y inteligencia de
+   *     amenazas externas.
+   * L2: consola SOC (React), colector (Go), correlación (Rust), reglas de
+   *     detección (Python), gestión de casos (Kotlin), cola Kafka de
+   *     eventos, servicio de indicadores (Go) y base OpenSearch.
+   * L3: el motor de correlación se abre en agregador por ventana, paso de
+   *     enriquecimiento con contexto y constructor de incidentes.
+   * Flujo clave: los colectores normalizan a Kafka; la correlación levanta
+   *     incidentes que el analista tria en la consola. */
   {
     id: "escudodigital",
     name: "EscudoDigital",
@@ -1889,19 +2846,41 @@ export const EXAMPLES: ExampleSpec[] = [
       ["Correlation Service", "container", "Go", "Matches indicators and hashes."],
       ["SIEM Database", "database", "OpenSearch", "Events, incidents and audit log."],
     ],
+    componentSets: [
+      {
+        container: "Correlation Engine",
+        components: [
+          ["Window Aggregator", "Rust", "Groups events into incident windows."],
+          ["Enrichment Step", "Rust", "Adds asset and user context."],
+          ["Incident Builder", "Rust", "Raises and de-duplicates incidents."],
+        ],
+      },
+    ],
     relations: [
       ["Security Analyst", "SOC Console", "Triages incidents", "HTTPS"],
       ["Security Engineer", "SOC Console", "Writes detection rules", "HTTPS"],
       ["SOC Console", "Case Management", "Manages incidents", "HTTPS/JSON"],
-      ["Identity Provider", "Collector Service", "Sends auth logs", "Syslog"],
-      ["Cloud Provider", "Collector Service", "Sends audit logs", "Syslog"],
-      ["Collector Service", "Event Queue", "Normalises events", "Kafka"],
-      ["Event Queue", "Correlation Engine", "Consumes events", "Kafka"],
+      ["SOC Console", "Detection Rules Service", "Authors and tests rules", "HTTPS"],
+      ["Identity Provider", "Collector Service", "Sends auth logs", "Syslog", "async"],
+      ["Cloud Provider", "Collector Service", "Sends audit logs", "Syslog", "async"],
+      ["Collector Service", "Event Queue", "Normalises events", "Kafka", "async"],
+      ["Event Queue", "Correlation Engine", "Delivers events", "Kafka", "async"],
       ["Correlation Engine", "Correlation Service", "Matches indicators", "gRPC"],
       ["Correlation Service", "Threat Intelligence", "Queries indicators", "HTTPS"],
       ["Correlation Engine", "SIEM Database", "Writes incidents", "SQL"],
     ],
   },
+
+  /* APIHub · inspirado en Kong — gestión centralizada de APIs.
+   * L1: consumidor de APIs y engineer de plataforma; IdP y servicios
+   *     upstream (los microservicios tras el gateway).
+   * L2: portal de desarrollador (React), gateway (Go), políticas (Kotlin),
+   *     registro de servicios (Java), analítica (Python), caché Redis de
+   *     políticas y base del gateway.
+   * L3: el gateway se abre en resolución de rutas, filtro de autenticación
+   *     y aplicador de límites por consumidor.
+   * Flujo clave: todo tráfico de datos pasa por el gateway; el portal sólo
+   *     aplica configuración y emite métricas de uso por Kafka. */
   {
     id: "apihub",
     name: "APIHub",
@@ -1927,6 +2906,16 @@ export const EXAMPLES: ExampleSpec[] = [
       ["Policy Cache", "database", "Redis", "Cached policies and counters."],
       ["Gateway Database", "database", "PostgreSQL", "Routes, consumers and quotas."],
     ],
+    componentSets: [
+      {
+        container: "API Gateway",
+        components: [
+          ["Route Resolver", "Go", "Maps requests to upstream services."],
+          ["Auth Filter", "Go", "Validates tokens before proxying."],
+          ["Quota Enforcer", "Go", "Applies per-consumer rate limits."],
+        ],
+      },
+    ],
     relations: [
       ["API Consumer", "Developer Portal", "Gets an API key", "HTTPS"],
       ["Platform Engineer", "Developer Portal", "Publishes routes", "HTTPS"],
@@ -1936,7 +2925,7 @@ export const EXAMPLES: ExampleSpec[] = [
       ["API Gateway", "Policy Cache", "Reads cached counters", "RESP"],
       ["API Gateway", "Service Registry", "Resolves upstreams", "gRPC"],
       ["API Gateway", "Upstream Services", "Proxies the request", "HTTPS"],
-      ["API Gateway", "API Analytics", "Emits usage metrics", "Kafka"],
+      ["API Gateway", "API Analytics", "Emits usage metrics", "Kafka", "async"],
       ["API Analytics", "Gateway Database", "Aggregates usage", "SQL"],
     ],
   },
@@ -1955,6 +2944,7 @@ export const CATEGORY_ORDER: CategoryId[] = [
   "infra",
 ];
 
+/** Icono de la tarjeta de cada categoría (nombres de `src/components/icons`). */
 export const CATEGORY_ICONS = {
   streaming: "layers",
   ecommerce: "cart",

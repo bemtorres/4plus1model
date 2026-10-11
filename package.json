@@ -8,6 +8,7 @@
     "build": "astro build",
     "preview": "astro preview",
     "check": "tsc --noEmit",
+    "check:examples": "node scripts/validate-examples.mjs",
     "astro": "astro"
   },
   "dependencies": {
