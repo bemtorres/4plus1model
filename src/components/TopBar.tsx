@@ -97,17 +97,20 @@ export function TopBar({
         </div>
       </div>
 
-      <Button
-        size="sm"
-        variant="secondary"
-        className="shrink-0"
-        onPress={onOpenExamples}
-      >
-        <Icon name="grid" />
-        {t("examples.nav")}
-      </Button>
-
-      <Separator orientation="vertical" className="h-8" />
+      {!readOnly ? (
+        <>
+          <Button
+            size="sm"
+            variant="secondary"
+            className="shrink-0"
+            onPress={onOpenExamples}
+          >
+            <Icon name="grid" />
+            {t("examples.nav")}
+          </Button>
+          <Separator orientation="vertical" className="h-8" />
+        </>
+      ) : null}
 
       <SegmentedControl<Level>
         label={t("topbar.level")}
@@ -182,7 +185,9 @@ export function TopBar({
           onPress={() => window.dispatchEvent(new CustomEvent(FIT_VIEW_EVENT))}
         />
 
-        <IconButton icon="link" label={t("share.title")} onPress={() => setShareOpen(true)} />
+        {!readOnly ? (
+          <IconButton icon="link" label={t("share.title")} onPress={() => setShareOpen(true)} />
+        ) : null}
 
         {!readOnly ? (
           <IconButton
@@ -204,10 +209,12 @@ export function TopBar({
           </Button>
         ) : null}
 
-        <Button size="sm" variant="secondary" onPress={() => setExportOpen(true)}>
-          <Icon name="download" />
-          {t("topbar.export")}
-        </Button>
+        {!readOnly ? (
+          <Button size="sm" variant="secondary" onPress={() => setExportOpen(true)}>
+            <Icon name="download" />
+            {t("topbar.export")}
+          </Button>
+        ) : null}
         <IconButton
           icon={resolvedTheme === "dark" ? "sun" : "moon"}
           label={resolvedTheme === "dark" ? t("topbar.themeLight") : t("topbar.themeDark")}
@@ -231,28 +238,30 @@ export function TopBar({
           }}
         />
 
-        <Dropdown>
-          <Dropdown.Trigger>
-            <Button isIconOnly size="sm" variant="ghost" aria-label={t("topbar.more")}>
-              <Icon name="chevron-down" />
-            </Button>
-          </Dropdown.Trigger>
-          <Dropdown.Popover>
-            <Dropdown.Menu<{ id: string }>
-              onAction={(key) => {
-                if (String(key) === "examples") {
-                  onOpenExamples();
-                } else if (String(key) === "clear" && !readOnly) {
-                  clearAll();
-                  notify(t("toast.cleared"), "info");
-                }
-              }}
-            >
-              <Dropdown.Item id="examples">{t("examples.nav")}</Dropdown.Item>
-              <Dropdown.Item id="clear">{t("topbar.menuClear")}</Dropdown.Item>
-            </Dropdown.Menu>
-          </Dropdown.Popover>
-        </Dropdown>
+        {!readOnly ? (
+          <Dropdown>
+            <Dropdown.Trigger>
+              <Button isIconOnly size="sm" variant="ghost" aria-label={t("topbar.more")}>
+                <Icon name="chevron-down" />
+              </Button>
+            </Dropdown.Trigger>
+            <Dropdown.Popover>
+              <Dropdown.Menu<{ id: string }>
+                onAction={(key) => {
+                  if (String(key) === "examples") {
+                    onOpenExamples();
+                  } else if (String(key) === "clear") {
+                    clearAll();
+                    notify(t("toast.cleared"), "info");
+                  }
+                }}
+              >
+                <Dropdown.Item id="examples">{t("examples.nav")}</Dropdown.Item>
+                <Dropdown.Item id="clear">{t("topbar.menuClear")}</Dropdown.Item>
+              </Dropdown.Menu>
+            </Dropdown.Popover>
+          </Dropdown>
+        ) : null}
       </div>
 
       <ExportDialog isOpen={exportOpen} onOpenChange={setExportOpen} />
