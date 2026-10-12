@@ -7,7 +7,7 @@ export const AUTHOR = {
   /** Se muestra junto al nombre; la biografía lo describe en detalle. */
   role: "Informatics engineer & teacher",
   links: {
-    linkedin: "https://www.linkedin.com/in/bemtorres/",
+    linkedin: "https://www.linkedin.com/in/benjamin-mora-torres/",
     github: "https://github.com/bemtorres",
   },
 } as const;

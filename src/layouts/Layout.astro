@@ -18,7 +18,8 @@ const {
 } = Astro.props;
 
 const siteUrl = "https://c4model.cafeycodigo.org";
-const currentCanonical = canonical || new URL(Astro.url.pathname, siteUrl).toString();
+const currentCanonical =
+  canonical || new URL(Astro.url.pathname, siteUrl).toString();
 
 const jsonLd = {
   "@context": "https://schema.org",
@@ -26,23 +27,25 @@ const jsonLd = {
     {
       "@type": "WebApplication",
       "@id": `${siteUrl}/#app`,
-      "name": "C4 Modeler - Software Architecture Visual Tool",
-      "url": siteUrl,
-      "description": "Herramienta web interactiva para modelar, visualizar y compartir arquitectura de software siguiendo la metodología C4 Model de Simon Brown.",
-      "applicationCategory": "DeveloperApplication",
-      "operatingSystem": "All",
-      "browserRequirements": "Requires JavaScript. Compatible with modern web browsers.",
-      "offers": {
+      name: "C4 Modeler - Software Architecture Visual Tool",
+      url: siteUrl,
+      description:
+        "Herramienta web interactiva para modelar, visualizar y compartir arquitectura de software siguiendo la metodología C4 Model de Simon Brown.",
+      applicationCategory: "DeveloperApplication",
+      operatingSystem: "All",
+      browserRequirements:
+        "Requires JavaScript. Compatible with modern web browsers.",
+      offers: {
         "@type": "Offer",
-        "price": "0",
-        "priceCurrency": "USD",
+        price: "0",
+        priceCurrency: "USD",
       },
-      "author": {
+      author: {
         "@type": "Person",
-        "name": "Benjamin Mora Torres",
-        "url": "https://www.linkedin.com/in/bemtorres/",
+        name: "Benjamin Mora Torres",
+        url: "https://www.linkedin.com/in/benjamin-mora-torres/",
       },
-      "keywords": [
+      keywords: [
         "C4 Model",
         "Modelo C4",
         "Arquitectura de Software",
@@ -59,11 +62,11 @@ const jsonLd = {
     {
       "@type": "WebSite",
       "@id": `${siteUrl}/#website`,
-      "url": siteUrl,
-      "name": "C4 Modeler",
-      "publisher": {
+      url: siteUrl,
+      name: "C4 Modeler",
+      publisher: {
         "@type": "Person",
-        "name": "Benjamin Mora Torres",
+        name: "Benjamin Mora Torres",
       },
     },
   ],
@@ -99,7 +102,10 @@ const jsonLd = {
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
     <meta property="og:image" content={image} />
-    <meta property="og:site_name" content="C4 Modeler · Software Architecture" />
+    <meta
+      property="og:site_name"
+      content="C4 Modeler · Software Architecture"
+    />
     <meta property="og:locale" content="es_ES" />
 
     <!-- Twitter -->
@@ -118,13 +124,16 @@ const jsonLd = {
           const urlParams = new URLSearchParams(window.location.search);
           const themeParam = urlParams.get("theme")?.trim().toLowerCase();
           const validTheme =
-            themeParam === "light" || themeParam === "dark" || themeParam === "system"
+            themeParam === "light" ||
+            themeParam === "dark" ||
+            themeParam === "system"
               ? themeParam
               : null;
           if (validTheme) {
             localStorage.setItem("heroui-theme", validTheme);
           }
-          const stored = validTheme ?? localStorage.getItem("heroui-theme") ?? "system";
+          const stored =
+            validTheme ?? localStorage.getItem("heroui-theme") ?? "system";
           const resolved =
             stored === "system"
               ? window.matchMedia("(prefers-color-scheme: dark)").matches
