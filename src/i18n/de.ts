@@ -22,6 +22,13 @@ export const de: Dictionary = {
   "level.component.desc": "Module innerhalb eines Containers",
   "level.code.desc": "Wichtige Klassen und Funktionen",
 
+  "level.actors": "Akteure und Systeme",
+  "level.usecases": "Anwendungsfälle",
+  "level.steps": "Ablauf des Anwendungsfalls",
+  "level.actors.desc": "Akteure und das untersuchte System",
+  "level.usecases.desc": "Anwendungsfälle im System",
+  "level.steps.desc": "Schritte des Hauptablaufs",
+
   "kind.person": "Person",
   "kind.softwareSystem": "Softwaresystem",
   "kind.externalSystem": "Externes System",
@@ -32,10 +39,50 @@ export const de: Dictionary = {
   "kind.code": "Code-Element",
   "kind.note": "Textnotiz",
 
+  "kind.actor": "Akteur",
+  "kind.system": "System",
+  "kind.useCase": "Anwendungsfall",
+  "kind.step": "Schritt",
+  "kind.actorType.primary": "Primär",
+  "kind.actorType.secondary": "Sekundär",
+
   "style.sync": "Synchron",
   "style.async": "Asynchron (wartend)",
   "style.bi": "Bidirektional",
 
+
+  "style.association": "Assoziation",
+  "style.include": "Include",
+  "style.extend": "Extend",
+  "style.generalization": "Generalisierung",
+
+  "diagram.usecase": "Anwendungsfälle",
+  "diagram.logical": "Logisch",
+  "diagram.process": "Prozess",
+  "diagram.development": "Entwicklung",
+  "diagram.physical": "Physisch",
+
+  "sheet.new": "Neues Blatt",
+  "sheet.rename": "Umbenennen",
+  "sheet.duplicate": "Duplizieren",
+  "sheet.delete": "Löschen",
+  "sheet.untitled": "Unbenanntes Blatt",
+  "sheet.lastOne": "Das Projekt braucht mindestens ein Blatt",
+  "sheet.comingSoon": "bald verfügbar",
+
+  "inspector.actorType": "Akteurstyp",
+  "inspector.useCase.preconditions": "Vorbedingungen",
+  "inspector.useCase.postconditions": "Nachbedingungen",
+  "inspector.useCase.goalLevel": "Zielniveau",
+  "inspector.useCase.goal.summary": "Zusammenfassung",
+  "inspector.useCase.goal.user": "Benutzerziel",
+  "inspector.useCase.goal.subfunction": "Unterfunktion",
+  "inspector.useCase.flow": "Hauptablauf",
+  "inspector.useCase.addStep": "Schritt hinzufügen",
+  "inspector.useCase.moveUp": "Nach oben",
+  "inspector.useCase.moveDown": "Nach unten",
+
+  "topbar.home": "Start",
   "relation.defaultLabel": "Nutzt",
 
   "side.top": "Oben",
@@ -49,15 +96,6 @@ export const de: Dictionary = {
   "sidebar.dragHintScope": "Auf die Fläche ziehen oder klicken, um es {scope} hinzuzufügen",
   "sidebar.elements": "Elemente",
   "sidebar.empty": "Auf der Kontextebene gibt es noch keine Elemente.",
-  "sidebar.shortcuts": "Tastenkürzel",
-  "sidebar.shortcutDrag": "Ziehen",
-  "sidebar.shortcutDragValue": "neues Element",
-  "sidebar.shortcutConnect": "Verbinden",
-  "sidebar.shortcutConnectValue": "von jeder Seite",
-  "sidebar.shortcutOpen": "Doppelklick",
-  "sidebar.shortcutOpenValue": "eine Ebene tiefer",
-  "sidebar.shortcutDelete": "Entf",
-  "sidebar.shortcutDeleteValue": "löschen",
 
   "canvas.emptyTitle": "Diese Ebene ist leer",
   "canvas.emptyBody":
@@ -158,6 +196,17 @@ export const de: Dictionary = {
   "inspector.activeLevel": "Aktive Ebene",
   "inspector.byType": "Nach Typ",
   "inspector.noElementsYet": "Noch keine Elemente",
+
+  "inspector.nomenclature": "UML-Nomenklatur",
+  "inspector.nomenclatureHint":
+    "Legende der Beziehungen, die Sie in diesem Anwendungsfalldiagramm zeichnen können.",
+  "inspector.nomenclature.association": "Durchgezogene Linie: Der Akteur führt den Anwendungsfall aus.",
+  "inspector.nomenclature.include":
+    "Gestrichelte Linie mit offener Spitze: «include» wiederverwendet einen anderen Anwendungsfall.",
+  "inspector.nomenclature.extend":
+    "Gestrichelte Linie mit offener Spitze: «extend» ergänzt einen anderen Anwendungsfall um optionales Verhalten.",
+  "inspector.nomenclature.generalization":
+    "Durchgezogene Linie mit hohlem Dreieck: Vererbung zwischen Akteuren oder Anwendungsfällen.",
 
   "export.title": "Diagramm exportieren",
   "export.format": "Format",

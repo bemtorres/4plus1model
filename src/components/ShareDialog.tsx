@@ -1,9 +1,9 @@
 import { Button, Modal, Separator } from "@heroui/react";
 import { useEffect, useState } from "react";
-import { buildShareUrl, encodeWorkspace } from "@/lib/share";
-import { encodeWorkspaceToJwt } from "@/lib/jwt";
+import { buildShareUrl, encodeProject } from "@/lib/share";
+import { encodeProjectToJwt } from "@/lib/jwt";
 import { useT } from "@/i18n";
-import { useWorkspace } from "@/lib/workspace-store";
+import { useProject } from "@/lib/project-store";
 import { Icon } from "./icons";
 import { notify } from "./Toaster";
 
@@ -25,7 +25,7 @@ export function ShareDialog({
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
-  const { workspace, readOnly } = useWorkspace();
+  const { project, readOnly } = useProject();
   const t = useT();
   const [data, setData] = useState<Payload>(null);
   const [busy, setBusy] = useState(false);
@@ -38,8 +38,8 @@ export function ShareDialog({
     let cancelled = false;
     setBusy(true);
     Promise.all([
-      encodeWorkspace(workspace),
-      encodeWorkspaceToJwt(workspace),
+      encodeProject(project),
+      encodeProjectToJwt(project),
     ]).then(([payload, jwtToken]) => {
       if (cancelled) return;
       setData({
@@ -57,7 +57,7 @@ export function ShareDialog({
     return () => {
       cancelled = true;
     };
-  }, [isOpen, workspace]);
+  }, [isOpen, project]);
 
   const copy = async (text: string) => {
     try {

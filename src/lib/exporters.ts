@@ -1,4 +1,4 @@
-import { kindMeta, levelMeta } from "./catalog";
+import { diagramDef, kindMeta, levelMeta, styleLabel } from "./diagrams";
 import {
   NODE_HEIGHT,
   NODE_WIDTH,
@@ -8,12 +8,13 @@ import {
   type FlowNode,
 } from "./view";
 import {
-  WORKSPACE_FILE_FORMAT,
-  WORKSPACE_FILE_VERSION,
-  type C4Element,
+  PROJECT_FILE_FORMAT,
+  PROJECT_FILE_VERSION,
+  type DiagramElement,
   type Level,
-  type Workspace,
-  type WorkspaceFile,
+  type Project,
+  type ProjectFile,
+  type Sheet,
 } from "./types";
 
 export { NODE_HEIGHT, NODE_WIDTH };
@@ -22,25 +23,16 @@ export { NODE_HEIGHT, NODE_WIDTH };
 /* Utilidades                                                          */
 /* ------------------------------------------------------------------ */
 
-function alias(element: C4Element): string {
-  return element.id.replace(/[^a-zA-Z0-9_]/g, "_");
-}
-
-function quote(value: string): string {
-  return `"${value.replace(/"/g, "'").replace(/\r?\n/g, " ").trim()}"`;
-}
-
 function clean(value: string | undefined): string {
   return (value ?? "").replace(/\r?\n/g, " ").trim();
 }
 
-function isElementNode(node: FlowNode): node is Extract<FlowNode, { type: "c4" }> {
-  return node.type === "c4";
+function md(value: string | undefined): string {
+  return clean(value).replace(/\|/g, "\\|");
 }
 
-/** Nodos que se exportan: elementos C4 y notas. */
-function isDiagramNode(node: FlowNode): node is Extract<FlowNode, { type: "c4" | "note" }> {
-  return node.type === "c4" || node.type === "note";
+function isDiagramNode(node: FlowNode): node is Extract<FlowNode, { type: "element" | "note" }> {
+  return node.type === "element" || node.type === "note";
 }
 
 interface Scope {
@@ -48,338 +40,160 @@ interface Scope {
   scopeId: string | null;
 }
 
-/** Todos los diagramas del workspace: contexto + un diagrama por ámbito. */
-export function diagramScopes(workspace: Workspace): Scope[] {
-  const scopes: Scope[] = [{ level: "context", scopeId: null }];
-  for (const element of workspace.elements) {
-    const hasChildren = workspace.elements.some((child) => child.parentId === element.id);
+/**
+ * Todos los diagramas de una hoja: nivel raíz + un diagrama por cada elemento
+ * navegable con contenido (drill-down).
+ */
+function sheetScopes(sheet: Sheet): Scope[] {
+  const def = diagramDef(sheet.diagram);
+  const root = def.levels.find((item) => item.scopeDepth < 0);
+  const scopes: Scope[] = root ? [{ level: root.id, scopeId: null }] : [];
+  for (const element of sheet.elements) {
+    const hasChildren = sheet.elements.some((child) => child.parentId === element.id);
     if (!hasChildren) continue;
-    const level = levelForElement(element);
+    const level = levelForElement(sheet.diagram, element);
     if (level) scopes.push({ level, scopeId: element.id });
   }
   return scopes;
 }
 
-function scopeTitle(workspace: Workspace, level: Level, scopeId: string | null): string {
-  const byId = indexElements(workspace);
+function scopeTitle(sheet: Sheet, level: Level, scopeId: string | null): string {
+  const byId = indexElements(sheet);
   const scope = scopeId ? byId.get(scopeId) : undefined;
-  const label = levelMeta(level).label;
+  const label = levelMeta(sheet.diagram, level).label;
   return scope ? `${label} · ${scope.name}` : label;
-}
-
-/* ------------------------------------------------------------------ */
-/* PlantUML (C4-PlantUML)                                              */
-/* ------------------------------------------------------------------ */
-
-function plantUmlDeclaration(element: C4Element): string {
-  const meta = kindMeta(element.kind);
-  const name = quote(element.name);
-  const description = quote(clean(element.description));
-  if (element.kind === "note") {
-    const color = element.color ? ` #${element.color.replace("#", "")}` : "";
-    return `note ${quote(clean(element.name))} as ${alias(element)}${color}`;
-  }
-  if (meta.depth === 0) {
-    return `${meta.plantUml}(${alias(element)}, ${name}, ${description})`;
-  }
-  const technology = quote(clean(element.technology) || "Sin tecnología");
-  return `${meta.plantUml}(${alias(element)}, ${name}, ${technology}, ${description})`;
-}
-
-/** Colores propios del elemento en sintaxis C4 (PlantUML y Mermaid). */
-function elementStyleLine(element: C4Element): string | null {
-  const fill = element.color ?? null;
-  const border = element.borderColor ?? null;
-  const font = element.textColor ?? null;
-  if (!fill && !border && !font) return null;
-  const parts = [
-    fill ? `$bgColor="${fill}"` : null,
-    border ? `$borderColor="${border}"` : null,
-    font ? `$fontColor="${font}"` : null,
-  ].filter((part): part is string => part !== null);
-  return `UpdateElementStyle(${alias(element)}, ${parts.join(", ")})`;
-}
-
-function plantUmlDiagram(workspace: Workspace, level: Level, scopeId: string | null): string {
-  const view = buildView(workspace, level, scopeId, null);
-  const visible = view.nodes.filter(isDiagramNode);
-  if (visible.length === 0) return "";
-
-  const byId = indexElements(workspace);
-  const kinds = new Set(visible.map((node) => node.data.element.kind));
-
-  const includes: string[] = [];
-  if (kinds.has("person") || kinds.has("softwareSystem") || kinds.has("externalSystem")) {
-    includes.push("!include <C4/C4_Context>");
-  }
-  if (kinds.has("container") || kinds.has("database") || kinds.has("queue")) {
-    includes.push("!include <C4/C4_Container>");
-  }
-  if (kinds.has("component") || kinds.has("code")) {
-    includes.push("!include <C4/C4_Component>");
-  }
-
-  const lines: string[] = [
-    "@startuml",
-    `title ${workspace.name} - ${scopeTitle(workspace, level, scopeId)}`,
-    ...includes,
-  ];
-
-  const detail = visible.filter((node) => node.data.isDetail);
-  const context = visible.filter((node) => !node.data.isDetail);
-
-  for (const node of context) lines.push(plantUmlDeclaration(node.data.element));
-
-  if (scopeId) {
-    const scope = byId.get(scopeId);
-    const boundary = scope ? kindMeta(scope.kind).plantUmlBoundary : null;
-    lines.push(
-      boundary
-        ? `${boundary}(${alias(scope!)}, ${quote(scope!.name)}) {`
-        : `package "${quote(scope?.name ?? "Detalle")}" {`,
-    );
-    for (const node of detail) lines.push(`  ${plantUmlDeclaration(node.data.element)}`);
-    lines.push("}");
-  } else {
-    for (const node of detail) lines.push(plantUmlDeclaration(node.data.element));
-  }
-
-  for (const edge of view.edges) {
-    const relationship = edge.data?.relationship;
-    if (!relationship) continue;
-    const arrow =
-      relationship.style === "bi" ? "BiRel" : relationship.style === "async" ? "Rel_D" : "Rel";
-    const source = alias(byId.get(relationship.source)!);
-    const target = alias(byId.get(relationship.target)!);
-    const technology = clean(relationship.technology);
-    const label = quote(clean(relationship.label));
-    const suffix = technology ? `, ${quote(technology)}` : "";
-    lines.push(`${arrow}(${source}, ${target}, ${label}${suffix})`);
-
-    const color = relationship.color;
-    const thickness = relationship.thickness;
-    if (color || thickness) {
-      const style = [
-        color ? `$lineColor="${color}"` : null,
-        thickness ? `$thickness=${thickness}` : null,
-      ].filter((part): part is string => part !== null);
-      lines.push(`UpdateRelStyle(${source}, ${target}, ${style.join(", ")})`);
-    }
-  }
-
-  for (const node of visible) {
-    const style = elementStyleLine(node.data.element);
-    if (style) lines.push(style);
-  }
-
-  lines.push("@enduml");
-  return lines.join("\n");
-}
-
-export function exportPlantUml(workspace: Workspace): string {
-  return diagramScopes(workspace)
-    .map(({ level, scopeId }) => plantUmlDiagram(workspace, level, scopeId))
-    .filter((text) => text.length > 0)
-    .join("\n\n");
-}
-
-/* ------------------------------------------------------------------ */
-/* Mermaid (C4)                                                        */
-/* ------------------------------------------------------------------ */
-
-const MERMAID_KEYWORD: Record<string, string> = {
-  person: "Person",
-  softwareSystem: "System",
-  externalSystem: "System_Ext",
-  container: "Container",
-  database: "ContainerDb",
-  queue: "ContainerQueue",
-  component: "Component",
-  code: "Component",
-};
-
-function mermaidDiagram(workspace: Workspace, level: Level, scopeId: string | null): string {
-  const view = buildView(workspace, level, scopeId, null);
-  const visible = view.nodes.filter(isElementNode);
-  if (visible.length === 0) return "";
-
-  const diagramType =
-    level === "context" ? "C4Context" : level === "container" ? "C4Container" : "C4Component";
-  const byId = indexElements(workspace);
-
-  const lines: string[] = [
-    diagramType,
-    `    title ${workspace.name} - ${scopeTitle(workspace, level, scopeId)}`,
-    '    UpdateLayoutConfig($c4ShapeInRow="3", $c4BoundaryInRow="1")',
-  ];
-
-  for (const node of visible) {
-    const element = node.data.element;
-    const keyword = MERMAID_KEYWORD[element.kind];
-    const label = quote(element.name);
-    const description = quote(clean(element.description));
-    const isNested = ["container", "database", "queue", "component", "code"].includes(
-      element.kind,
-    );
-    const payload = isNested
-      ? `${label}, ${quote(clean(element.technology) || "Sin tecnología")}, ${description}`
-      : `${label}, ${description}`;
-    lines.push(`    ${keyword}(${alias(element)}, ${payload})`);
-  }
-
-  for (const node of visible) {
-    const style = elementStyleLine(node.data.element);
-    if (style) lines.push(`    ${style}`);
-  }
-
-  for (const edge of view.edges) {
-    const relationship = edge.data?.relationship;
-    if (!relationship) continue;
-    const arrow =
-      relationship.style === "bi" ? "BiRel" : relationship.style === "async" ? "Rel_D" : "Rel";
-    const source = alias(byId.get(relationship.source)!);
-    const target = alias(byId.get(relationship.target)!);
-    const technology = clean(relationship.technology);
-    const label = quote(clean(relationship.label));
-    const payload = technology ? `${label}, ${quote(technology)}` : label;
-    lines.push(`    ${arrow}(${source}, ${target}, ${payload})`);
-  }
-
-  return lines.join("\n");
-}
-
-export function exportMermaid(workspace: Workspace): string {
-  const parts = diagramScopes(workspace)
-    .map(({ level, scopeId }) => mermaidDiagram(workspace, level, scopeId))
-    .filter((text) => text.length > 0);
-  return `%% Generado con C4 Modeler\n\n${parts.join("\n\n")}`;
 }
 
 /* ------------------------------------------------------------------ */
 /* JSON                                                                */
 /* ------------------------------------------------------------------ */
 
-export function toWorkspaceFile(workspace: Workspace): WorkspaceFile {
+export function toProjectFile(project: Project): ProjectFile {
   return {
-    format: WORKSPACE_FILE_FORMAT,
-    version: WORKSPACE_FILE_VERSION,
+    format: PROJECT_FILE_FORMAT,
+    version: PROJECT_FILE_VERSION,
     exportedAt: new Date().toISOString(),
-    workspace: { ...workspace, updatedAt: new Date().toISOString() },
+    project: { ...project, updatedAt: new Date().toISOString() },
   };
 }
 
-export function exportJson(workspace: Workspace): string {
-  return JSON.stringify(toWorkspaceFile(workspace), null, 2);
+export function exportJson(project: Project): string {
+  return JSON.stringify(toProjectFile(project), null, 2);
 }
 
 /* ------------------------------------------------------------------ */
 /* Markdown                                                            */
 /* ------------------------------------------------------------------ */
 
-export function exportMarkdown(workspace: Workspace): string {
-  const byId = indexElements(workspace);
-  const lines: string[] = [`# ${workspace.name}`, ""];
-  if (clean(workspace.description)) lines.push(clean(workspace.description), "");
+function markdownUseCase(sheet: Sheet, useCase: DiagramElement, lines: string[]) {
+  const meta = useCase.meta ?? {};
+  const steps = sheet.elements
+    .filter((element) => element.kind === "step" && element.parentId === useCase.id)
+    .sort((a, b) => (a.order ?? Number.MAX_SAFE_INTEGER) - (b.order ?? Number.MAX_SAFE_INTEGER));
 
-  const label = (elementId: string): string => {
-    const element = byId.get(elementId);
-    if (!element) return "?";
-    const technology = clean(element.technology);
-    return technology ? `${element.name} (${technology})` : element.name;
-  };
-
-  for (const { level, scopeId } of diagramScopes(workspace)) {
-    const view = buildView(workspace, level, scopeId, null);
-    const visible = view.nodes.filter(isElementNode);
-    if (visible.length === 0) continue;
-
-    const scopeName = scopeId ? byId.get(scopeId)?.name : undefined;
-    lines.push(scopeName ? `## ${levelMeta(level).label} de ${scopeName}` : `## ${levelMeta(level).label}`);
+  lines.push(`#### ${clean(useCase.name)}`, "");
+  if (clean(useCase.description)) lines.push(clean(useCase.description), "");
+  if (meta.preconditions) lines.push(`**Precondiciones:** ${clean(meta.preconditions)}`, "");
+  if (steps.length > 0) {
+    lines.push("**Pasos:**", "");
+    steps.forEach((step, index) => {
+      const detail = clean(step.description);
+      lines.push(`${index + 1}. ${clean(step.name)}${detail ? ` — ${detail}` : ""}`);
+    });
     lines.push("");
+  }
+  if (meta.postconditions) lines.push(`**Postcondiciones:** ${clean(meta.postconditions)}`, "");
+}
 
-    lines.push("| Origen | Relación | Destino | Tecnología |", "| --- | --- | --- | --- |");
-    for (const edge of view.edges) {
-      const relationship = edge.data?.relationship;
-      if (!relationship) continue;
-      lines.push(
-        `| ${label(relationship.source)} | ${clean(relationship.label) || "—"} | ${label(
-          relationship.target,
-        )} | ${clean(relationship.technology) || "—"} |`,
-      );
+export function exportMarkdown(project: Project): string {
+  const lines: string[] = [`# ${project.name}`, ""];
+  if (clean(project.description)) lines.push(clean(project.description), "");
+
+  for (const sheet of project.sheets) {
+    lines.push(`## ${sheet.name}`, "");
+
+    const elements = sheet.elements.filter((element) => element.kind !== "note");
+    lines.push(
+      `*${elements.length} elemento${elements.length === 1 ? "" : "s"} · ${
+        sheet.relationships.length
+      } relación${sheet.relationships.length === 1 ? "" : "es"}*`,
+      "",
+    );
+
+    if (sheet.relationships.length > 0) {
+      lines.push("| Origen | Estilo | Destino |", "| --- | --- | --- |");
+      const byId = indexElements(sheet);
+      for (const relationship of sheet.relationships) {
+        const source = byId.get(relationship.source)?.name ?? "?";
+        const target = byId.get(relationship.target)?.name ?? "?";
+        const style = styleLabel(relationship.style);
+        const label = clean(relationship.label);
+        lines.push(`| ${md(source)} | ${style}${label ? ` (${md(label)})` : ""} | ${md(target)} |`);
+      }
+      lines.push("");
     }
-    lines.push("");
 
-    lines.push("| Elemento | Tipo | Descripción |", "| --- | --- | --- |");
-    for (const node of visible) {
-      const element = node.data.element;
-      lines.push(
-        `| ${element.name} | ${kindMeta(element.kind).label} | ${clean(element.description) || "—"} |`,
-      );
+    if (elements.length > 0) {
+      lines.push("| Elemento | Tipo | Descripción |", "| --- | --- | --- |");
+      for (const element of elements) {
+        lines.push(
+          `| ${md(element.name)} | ${kindMeta(sheet.diagram, element.kind).label} | ${
+            md(clean(element.description)) || "—"
+          } |`,
+        );
+      }
+      lines.push("");
     }
-    lines.push("");
+
+    // Los casos de uso añaden su semántica: precondiciones, pasos y postcondiciones.
+    if (sheet.diagram === "usecase") {
+      const useCases = elements
+        .filter((element) => element.kind === "useCase")
+        .sort((a, b) => a.name.localeCompare(b.name));
+      for (const useCase of useCases) {
+        markdownUseCase(sheet, useCase, lines);
+      }
+    }
   }
 
   return lines.join("\n");
 }
 
 /* ------------------------------------------------------------------ */
+/* JWT                                                                 */
+/* ------------------------------------------------------------------ */
+
+import { encodeProjectToJwtSync } from "./jwt";
+
+export function exportJwt(project: Project): string {
+  return encodeProjectToJwtSync(project);
+}
+
+/* ------------------------------------------------------------------ */
 /* Formatos y descarga                                                 */
 /* ------------------------------------------------------------------ */
 
-import { encodeWorkspaceToJwtSync } from "./jwt";
-
-export const C4_DEVELOPER_NOTE =
-  "As an educator and teacher, my duty is to ensure my students learn how to create projects and explain them in the simplest, most effective way. The C4 model has been of tremendous help across all my architectural developments, both in the professional software industry and in shaping the careers of my students.";
-
-export interface C4ModelFile {
-  format: "c4model";
-  version: 1;
-  savedAt: string;
-  developerNote: string;
-  workspace: Workspace;
-}
-
-export function exportC4Model(workspace: Workspace): string {
-  const file: C4ModelFile = {
-    format: "c4model",
-    version: 1,
-    savedAt: new Date().toISOString(),
-    developerNote: C4_DEVELOPER_NOTE,
-    workspace: { ...workspace, updatedAt: new Date().toISOString() },
-  };
-  return JSON.stringify(file, null, 2);
-}
-
-export type ExportFormat = "c4model" | "json" | "plantuml" | "mermaid" | "markdown" | "jwt";
+export type ExportFormat = "json" | "markdown" | "jwt";
 
 export const EXPORT_FORMATS: {
   id: ExportFormat;
   label: string;
   extension: string;
 }[] = [
-  { id: "c4model", label: "C4 Model (.c4model)", extension: "c4model" },
-  { id: "json", label: "JSON", extension: "json" },
-  { id: "plantuml", label: "PlantUML (C4)", extension: "puml" },
-  { id: "mermaid", label: "Mermaid (C4)", extension: "mmd" },
+  { id: "json", label: "JSON (4plus1-modeler)", extension: "json" },
   { id: "markdown", label: "Markdown", extension: "md" },
   { id: "jwt", label: "JWT (JSON Web Token)", extension: "jwt" },
 ];
 
-export function renderExport(workspace: Workspace, format: ExportFormat): string {
+export function renderExport(project: Project, format: ExportFormat): string {
   switch (format) {
-    case "c4model":
-      return exportC4Model(workspace);
-    case "plantuml":
-      return exportPlantUml(workspace);
-    case "mermaid":
-      return exportMermaid(workspace);
     case "markdown":
-      return exportMarkdown(workspace);
+      return exportMarkdown(project);
     case "jwt":
-      return encodeWorkspaceToJwtSync(workspace);
+      return exportJwt(project);
     case "json":
     default:
-      return exportJson(workspace);
+      return exportJson(project);
   }
 }
 
@@ -406,10 +220,14 @@ export function downloadText(filename: string, content: string, mime = "text/pla
   URL.revokeObjectURL(url);
 }
 
-export function describeWorkspace(workspace: Workspace): string {
-  const elements = workspace.elements.length;
-  const relationships = workspace.relationships.length;
-  return `${elements} elemento${elements === 1 ? "" : "s"} · ${relationships} relación${
-    relationships === 1 ? "" : "es"
-  }`;
+export function describeProject(project: Project): string {
+  const elements = project.sheets.reduce((total, sheet) => total + sheet.elements.length, 0);
+  const relationships = project.sheets.reduce(
+    (total, sheet) => total + sheet.relationships.length,
+    0,
+  );
+  const sheets = project.sheets.length;
+  return `${sheets} hoja${sheets === 1 ? "" : "s"} · ${elements} elemento${
+    elements === 1 ? "" : "s"
+  } · ${relationships} relación${relationships === 1 ? "" : "es"}`;
 }

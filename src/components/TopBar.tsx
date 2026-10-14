@@ -1,15 +1,16 @@
 import { Button, Dropdown, Separator, useTheme } from "@heroui/react";
 import { useEffect, useState } from "react";
-import { LEVELS } from "@/lib/catalog";
+import { diagramDef, levelMeta, levelsOf } from "@/lib/diagrams";
 import type { Level } from "@/lib/types";
-import { navigableElements } from "@/lib/view";
-import { useWorkspace } from "@/lib/workspace-store";
+import { useProject } from "@/lib/project-store";
 import { LOCALES, useLocale, useT } from "@/i18n";
 import { useLevelDescription, useLevelLabel } from "@/i18n/labels";
 import { ExportDialog } from "./ExportDialog";
 import { FIT_VIEW_EVENT } from "./Canvas";
 import { Icon } from "./icons";
 import { ImportDialog } from "./ImportDialog";
+import { ExamplesDialog } from "./ExamplesDialog";
+import { buildProjectFor, findExampleByCode } from "@/lib/examples";
 import { buildEditUrl } from "@/lib/share";
 import { ShareDialog } from "./ShareDialog";
 import { notify } from "./Toaster";
@@ -17,19 +18,18 @@ import { IconButton, EditableTitle, Picker, SegmentedControl } from "./ui";
 import { useFullscreen } from "./useFullscreen";
 
 export function TopBar({
-  onOpenExamples,
   onOpenMobileLeft,
   onOpenMobileRight,
 }: {
-  openExample?: (code: string) => void;
-  onOpenExamples: () => void;
   onOpenMobileLeft?: () => void;
   onOpenMobileRight?: () => void;
 }) {
   const {
-    workspace,
+    project,
+    sheet,
     level,
     scopeId,
+    navigable,
     setLevel,
     setScope,
     goUp,
@@ -39,9 +39,10 @@ export function TopBar({
     redo,
     autoLayout,
     clearAll,
-    renameWorkspace,
+    renameProject,
+    importProject,
     readOnly,
-  } = useWorkspace();
+  } = useProject();
   const t = useT();
   const { setLocale, locale } = useLocale();
   const levelLabel = useLevelLabel();
@@ -51,7 +52,16 @@ export function TopBar({
   const [exportOpen, setExportOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
+  const [examplesOpen, setExamplesOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  const openExample = (code: string) => {
+    const target = findExampleByCode(code);
+    if (!target) return;
+    const project = buildProjectFor(target);
+    importProject(project, { force: true });
+    notify(t("import.done", { name: project.name }), "success");
+  };
 
   useEffect(() => {
     const syncThemeFromUrl = () => {
@@ -65,7 +75,12 @@ export function TopBar({
     return () => window.removeEventListener("popstate", syncThemeFromUrl);
   }, [setTheme]);
 
-  const scopes = navigableElements(workspace, level);
+  const def = diagramDef(sheet.diagram);
+  const levels = levelsOf(sheet.diagram);
+  const showLevels = levels.length > 1;
+  const currentLevel = levelMeta(sheet.diagram, level);
+  const showScope = currentLevel.scopeDepth >= 0;
+  const scopes = navigable;
 
   return (
     <header className="topbar scroll-thin flex items-center gap-3 overflow-x-auto px-3 py-2">
@@ -105,8 +120,8 @@ export function TopBar({
         <div className="min-w-0">
           <div className="flex items-center gap-2">
             <EditableTitle
-              value={workspace.name}
-              onCommit={(name) => renameWorkspace(name, workspace.description)}
+              value={project.name}
+              onCommit={(name) => renameProject(name, project.description)}
               placeholder={t("inspector.workspace")}
               label={t("inspector.workspace")}
               readOnly={readOnly}
@@ -120,42 +135,16 @@ export function TopBar({
           </div>
           <p className="truncate text-[11px] leading-tight text-muted">
             {t("topbar.summary", {
-              elements: workspace.elements.length,
-              relationships: workspace.relationships.length,
+              elements: sheet.elements.length,
+              relationships: sheet.relationships.length,
             })}
           </p>
         </div>
       </div>
 
-      {!readOnly ? (
-        <>
-          <Button
-            size="sm"
-            variant="secondary"
-            className="shrink-0 hidden md:inline-flex"
-            onPress={onOpenExamples}
-          >
-            <Icon name="grid" />
-            {t("examples.nav")}
-          </Button>
-          <Separator orientation="vertical" className="h-8 hidden md:block" />
-        </>
-      ) : null}
+      {/* El lienzo ahora es libre al estilo Draw.io; la navegación por vistas se realiza en las pestañas inferiores */}
 
-      <div className="hidden sm:block">
-        <SegmentedControl<Level>
-          label={t("topbar.level")}
-          value={level}
-          onChange={setLevel}
-          options={LEVELS.map((item) => ({
-            id: item.id,
-            label: levelLabel(item.id),
-            hint: levelDescription(item.id),
-          }))}
-        />
-      </div>
-
-      {level === "context" ? null : (
+      {!showScope ? null : (
         <div className="hidden sm:flex items-center gap-2">
           <Button size="sm" variant="ghost" onPress={goUp}>
             <Icon name="chevron-up" />
@@ -218,6 +207,8 @@ export function TopBar({
           onPress={() => window.dispatchEvent(new CustomEvent(FIT_VIEW_EVENT))}
         />
 
+        <Separator orientation="vertical" className="mx-1 h-6" />
+
         {!readOnly ? (
           <IconButton icon="link" label={t("share.title")} onPress={() => setShareOpen(true)} />
         ) : null}
@@ -263,38 +254,30 @@ export function TopBar({
           />
         </div>
 
-        <IconButton
-          icon="info"
-          label={t("about.nav")}
-          onPress={() => {
-            window.location.href = "/about";
-          }}
-        />
+        <Separator orientation="vertical" className="mx-1 h-6" />
 
-        {!readOnly ? (
-          <Dropdown>
-            <Dropdown.Trigger>
-              <Button isIconOnly size="sm" variant="ghost" aria-label={t("topbar.more")}>
-                <Icon name="chevron-down" />
-              </Button>
-            </Dropdown.Trigger>
-            <Dropdown.Popover>
-              <Dropdown.Menu<{ id: string }>
-                onAction={(key) => {
-                  if (String(key) === "examples") {
-                    onOpenExamples();
-                  } else if (String(key) === "clear") {
-                    clearAll();
-                    notify(t("toast.cleared"), "info");
-                  }
-                }}
-              >
-                <Dropdown.Item id="examples">{t("examples.nav")}</Dropdown.Item>
-                <Dropdown.Item id="clear">{t("topbar.menuClear")}</Dropdown.Item>
-              </Dropdown.Menu>
-            </Dropdown.Popover>
-          </Dropdown>
-        ) : null}
+        <Dropdown>
+          <Dropdown.Trigger>
+            <Button isIconOnly size="sm" variant="ghost" aria-label={t("topbar.more")}>
+              <Icon name="chevron-down" />
+            </Button>
+          </Dropdown.Trigger>
+          <Dropdown.Popover>
+            <Dropdown.Menu<{ id: string }>
+              onAction={(key) => {
+                if (String(key) === "clear") {
+                  clearAll();
+                  notify(t("toast.cleared"), "info");
+                } else if (String(key) === "about") {
+                  window.location.href = "/about";
+                }
+              }}
+            >
+              <Dropdown.Item id="about">{t("about.nav")}</Dropdown.Item>
+              {readOnly ? null : <Dropdown.Item id="clear">{t("topbar.menuClear")}</Dropdown.Item>}
+            </Dropdown.Menu>
+          </Dropdown.Popover>
+        </Dropdown>
       </div>
 
       {/* Controles rápidos en móvil */}
@@ -364,30 +347,32 @@ export function TopBar({
             </div>
 
             <div className="flex-1 overflow-y-auto px-4 py-3 space-y-4 scroll-thin">
-              {/* Nivel arquitectónico */}
-              <div>
-                <p className="mb-1.5 text-[11px] font-semibold text-muted uppercase tracking-wider">
-                  {t("topbar.level")}
-                </p>
-                <div className="grid grid-cols-2 gap-1">
-                  {LEVELS.map((item) => (
-                    <Button
-                      key={item.id}
-                      size="sm"
-                      variant={level === item.id ? "primary" : "outline"}
-                      className="text-xs justify-start"
-                      onPress={() => {
-                        setLevel(item.id);
-                        setMobileMenuOpen(false);
-                      }}
-                    >
-                      {levelLabel(item.id)}
-                    </Button>
-                  ))}
+              {/* Nivel del diagrama activo */}
+              {showLevels ? (
+                <div>
+                  <p className="mb-1.5 text-[11px] font-semibold text-muted uppercase tracking-wider">
+                    {t("topbar.level")}
+                  </p>
+                  <div className="grid grid-cols-2 gap-1">
+                    {levels.map((item) => (
+                      <Button
+                        key={item.id}
+                        size="sm"
+                        variant={level === item.id ? "primary" : "outline"}
+                        className="text-xs justify-start"
+                        onPress={() => {
+                          setLevel(item.id);
+                          setMobileMenuOpen(false);
+                        }}
+                      >
+                        {levelLabel(item.id)}
+                      </Button>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              ) : null}
 
-              {level !== "context" ? (
+              {showScope ? (
                 <div>
                   <p className="mb-1.5 text-[11px] font-semibold text-muted uppercase tracking-wider">
                     {t("topbar.scope")}
@@ -479,11 +464,11 @@ export function TopBar({
                         variant="ghost"
                         className="justify-start text-xs"
                         onPress={() => {
-                          onOpenExamples();
+                          setExamplesOpen(true);
                           setMobileMenuOpen(false);
                         }}
                       >
-                        <Icon name="grid" />
+                        <Icon name="book" />
                         {t("examples.nav")}
                       </Button>
                     </>
@@ -576,6 +561,11 @@ export function TopBar({
       <ExportDialog isOpen={exportOpen} onOpenChange={setExportOpen} />
       <ImportDialog isOpen={importOpen} onOpenChange={setImportOpen} />
       <ShareDialog isOpen={shareOpen} onOpenChange={setShareOpen} />
+      <ExamplesDialog
+        isOpen={examplesOpen}
+        onOpenChange={setExamplesOpen}
+        openExample={openExample}
+      />
     </header>
   );
 }

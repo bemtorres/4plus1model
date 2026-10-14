@@ -1,15 +1,13 @@
-import { defaultNodeSize } from "@/lib/catalog";
-import { diagramScopes } from "@/lib/exporters";
 import { centerPositions, computeLayout } from "@/lib/layout";
 import { createId } from "@/lib/id";
+import { defaultNodeSize } from "@/lib/diagrams";
 import type {
-  C4Element,
-  C4Relationship,
-  ElementKind,
+  DiagramElement,
+  DiagramRelationship,
+  Project,
   RelationshipStyle,
-  Workspace,
+  Sheet,
 } from "@/lib/types";
-import { buildView } from "@/lib/view";
 
 /**
  * Categorías temáticas del catálogo. Deben coincidir con `CATEGORY_ORDER`
@@ -30,44 +28,15 @@ export type CategoryId =
 export type Difficulty = "beginner" | "intermediate" | "advanced";
 
 /**
- * Especificación de un contenedor: `[nombre, tipo, tecnología, descripción]`.
+ * Especificación declarativa de un caso de estudio (diagrama de casos de uso).
  *
- * `tipo` sólo puede ser `container`, `database` o `queue` (los tres tipos
- * admitidos en el nivel 2). El nombre debe ser único en todo el ejemplo.
- */
-export type ContainerSpec = [string, ElementKind, string, string];
-
-/**
- * Especificación de una relación: `[origen, destino, etiqueta, tecnología?, estilo?]`.
- *
- * - `origen` / `destino` deben ser nombres declarados en `people`,
- *   `externalSystems`, `containers` o `componentSets`. El builder los
- *   resuelve a ids internos; si no existen, se ignora la relación (y en
- *   desarrollo se lanza un error, para no ocultar erratas).
- * - `tecnología` es el protocolo o mecanismo (HTTPS, gRPC, SQL, Kafka…).
- * - `estilo` es `"sync"` (por defecto), `"async"` (línea discontinua, para
- *   brokers y notificaciones) o `"bi"` (bidireccional).
- */
-export type RelationSpec = [string, string, string, string?, RelationshipStyle?];
-
-/**
- * Componentes de un contenedor (nivel 3). `container` debe coincidir con el
- * nombre de un contenedor declarado en `containers` y de tipo `container`
- * (las bases de datos y colas no se abren a nivel de componentes).
- */
-export interface ComponentSet {
-  /** Nombre del contenedor padre (debe existir en `containers`). */
-  container: string;
-  /** `[nombre, tecnología, descripción]` de cada componente. */
-  components: [string, string, string][];
-}
-
-/**
- * Especificación declarativa de un caso de estudio del catálogo.
- *
- * Un ejemplo describe la arquitectura completa en sus tres primeros niveles
- * C4 y el builder genera el workspace con los cuatro (contexto, contenedores,
- * componentes y código) colocados automáticamente.
+ * - `actors` son los actores primarios `[nombre, descripción]`.
+ * - `secondaryActors` son actores secundarios del mismo formato.
+ * - `useCases` son los casos de uso `[nombre, descripción, precondiciones?, postcondiciones?]`.
+ * - `flows` asocia cada caso de uso con su lista de pasos del flujo principal.
+ * - `relations` son `[origen, destino, etiqueta?, estilo?]`; los nombres se
+ *   resuelven contra actores y casos de uso, y si no existen se ignora la
+ *   relación (en desarrollo se lanza error para no ocultar erratas).
  */
 export interface ExampleSpec {
   /** Slug ASCII en minúsculas y guiones: forma la URL y el nombre de imagen. */
@@ -77,77 +46,92 @@ export interface ExampleSpec {
   /** Referencia conceptual (no afiliada) que inspira el ejemplo. */
   reference: string;
   summary: string;
-  /** Qué se ve bien en los diagramas C4 de este ejemplo. */
+  /** Qué se ve bien en el diagrama de este ejemplo. */
   focus: string;
   difficulty: Difficulty;
-  /** `[nombre, descripción]` — sin tecnología (son actores, no software). */
-  people: [string, string][];
-  /** `[nombre, descripción, tecnología?]` — sistemas fuera del perímetro. */
-  externalSystems?: [string, string, string?][];
-  containers: ContainerSpec[];
-  componentSets?: ComponentSet[];
-  relations: RelationSpec[];
+  /** Nombre del sistema bajo estudio (si falta se usa `name`). */
+  system?: string;
+  actors: [string, string][];
+  secondaryActors?: [string, string][];
+  useCases: [string, string, string?, string?][];
+  flows?: Record<string, string[]>;
+  relations?: [string, string, string?, RelationshipStyle?][];
   /** Imagen en `public/examples` (opcional, se puede añadir después). */
   image?: string;
 }
 
 /**
- * Convierte una especificación en un workspace C4 completo: crea los
- * elementos jerárquicos (personas y sistemas en contexto, contenedores bajo
- * el sistema, componentes bajo su contenedor), resuelve las relaciones por
- * nombre y coloca cada nivel con el algoritmo de distribución por capas.
+ * Convierte una especificación en un `Project` con una hoja de casos de uso
+ * completa: actores, sistema, casos de uso, flujo de pasos y relaciones por
+ * nombre, con el primer nivel colocado por el algoritmo de capas.
  *
- * Los ids se generan en cada construcción, por lo que la función es pura en
- * cuanto a contenido: dos llamadas producen el mismo modelo con otros ids.
+ * Los ids se generan en cada construcción: dos llamadas producen el mismo
+ * modelo con otros ids.
  */
-export function buildExampleWorkspace(spec: ExampleSpec): Workspace {
-  const elements: C4Element[] = [];
-  const relationships: C4Relationship[] = [];
+export function buildExampleProject(spec: ExampleSpec): Project {
+  const elements: DiagramElement[] = [];
+  const relationships: DiagramRelationship[] = [];
   /** Nombre → id. El orden de inserción define la precedencia en colisiones. */
   const idByName = new Map<string, string>();
   const skipped: string[] = [];
 
   const push = (
     name: string,
-    kind: ElementKind,
+    kind: DiagramElement["kind"],
     description: string,
-    technology: string,
     parentId: string | null,
+    meta?: Record<string, string>,
   ) => {
     const id = createId("ex");
     idByName.set(name, id);
-    elements.push({ id, kind, name, description, technology, tags: [], parentId, x: 0, y: 0 });
+    elements.push({ id, kind, name, description, tags: [], parentId, meta, x: 0, y: 0 });
     return id;
   };
 
-  // L1 · contexto: actores y el sistema propio (siempre primero, es el ámbito).
-  for (const [name, description] of spec.people) push(name, "person", description, "", null);
-
-  const systemId = push(spec.name, "softwareSystem", spec.summary, "", null);
-
-  for (const [name, description, technology] of spec.externalSystems ?? []) {
-    push(name, "externalSystem", description, technology ?? "", null);
+  // Nivel 1 · actores y sistema.
+  for (const [name, description] of spec.actors) {
+    push(name, "actor", description, null, { actorType: "primary" });
+  }
+  for (const [name, description] of spec.secondaryActors ?? []) {
+    push(name, "actor", description, null, { actorType: "secondary" });
   }
 
-  // L2 · contenedores: todos cuelgan del sistema propio.
-  for (const [name, kind, technology, description] of spec.containers) {
-    push(name, kind, description, technology, systemId);
+  const systemId = push(spec.system ?? spec.name, "system", spec.summary, null);
+
+  // Nivel 2 · casos de uso dentro del sistema.
+  for (const [name, description, preconditions, postconditions] of spec.useCases) {
+    push(name, "useCase", description, systemId, {
+      goalLevel: "user",
+      ...(preconditions ? { preconditions } : {}),
+      ...(postconditions ? { postconditions } : {}),
+    });
   }
 
-  // L3 · componentes: cuelgan del contenedor declarado en cada conjunto.
-  for (const set of spec.componentSets ?? []) {
-    const parent = idByName.get(set.container);
-    if (!parent) {
-      skipped.push(`componentSets → contenedor inexistente "${set.container}"`);
+  // Nivel 3 · flujo de pasos de cada caso de uso.
+  for (const [useCaseName, steps] of Object.entries(spec.flows ?? {})) {
+    const parentId = idByName.get(useCaseName);
+    if (!parentId) {
+      skipped.push(`flows → caso de uso inexistente "${useCaseName}"`);
       continue;
     }
-    for (const [name, technology, description] of set.components) {
-      push(name, "component", description, technology, parent);
-    }
+    steps.forEach((stepName, index) => {
+      const id = createId("ex");
+      elements.push({
+        id,
+        kind: "step",
+        name: stepName,
+        description: "",
+        tags: [],
+        parentId,
+        order: index,
+        x: 0,
+        y: 0,
+      });
+    });
   }
 
-  // Relaciones: se resuelven por nombre en cualquier nivel.
-  for (const [source, target, label, technology, style] of spec.relations) {
+  // Relaciones: se resuelven por nombre (actores ↔ casos de uso, etc.).
+  for (const [source, target, label, style] of spec.relations ?? []) {
     const sourceId = idByName.get(source);
     const targetId = idByName.get(target);
     if (!sourceId || !targetId) {
@@ -163,10 +147,9 @@ export function buildExampleWorkspace(spec: ExampleSpec): Workspace {
       target: targetId,
       sourceHandle: null,
       targetHandle: null,
-      label,
-      technology: technology ?? "",
+      label: label ?? "",
       description: "",
-      style: style ?? "sync",
+      style: style ?? "association",
     });
   }
 
@@ -177,55 +160,61 @@ export function buildExampleWorkspace(spec: ExampleSpec): Workspace {
     );
   }
 
-  const workspace: Workspace = {
-    id: createId("ws"),
+  const sheet: Sheet = {
+    id: createId("sh"),
     name: spec.name,
-    description: spec.summary,
-    elements,
+    diagram: "usecase",
+    elements: layoutExampleElements(elements, relationships),
     relationships,
-    updatedAt: new Date().toISOString(),
+    view: { level: "actors", scopeId: null },
   };
 
-  return layoutExample(workspace);
+  return {
+    id: createId("prj"),
+    name: spec.name,
+    description: spec.summary,
+    sheets: [sheet],
+    updatedAt: new Date().toISOString(),
+  };
 }
 
 /**
- * Coloca cada nivel con el algoritmo por capas. Cada elemento es «detalle» en
- * un único nivel (por su profundidad), así que se posiciona una sola vez: la
- * primera vista que lo incluya fija sus coordenadas para el resto de niveles.
+ * Coloca el nivel raíz (actores y sistema) con el algoritmo por capas; los
+ * casos de uso y pasos se posicionarán al hacer «auto layout» o al abrir la
+ * vista correspondiente.
  */
-export function layoutExample(workspace: Workspace): Workspace {
-  const positions = new Map<string, { x: number; y: number }>();
+function layoutExampleElements(
+  elements: DiagramElement[],
+  relationships: DiagramRelationship[],
+): DiagramElement[] {
+  const roots = elements.filter((element) => element.parentId === null);
+  if (roots.length === 0) return elements;
 
-  for (const { level, scopeId } of diagramScopes(workspace)) {
-    const view = buildView(workspace, level, scopeId, null);
-    const nodes = view.nodes.filter((node) => node.type === "c4");
-    if (nodes.length === 0) continue;
-    // Las personas arrancan en la primera capa para que queden a la izquierda.
-    const people = nodes
-      .filter((node) => node.data.element.kind === "person")
-      .map((node) => node.id);
-    const points = centerPositions(
-      computeLayout(
-        nodes.map((node) => ({
-          id: node.id,
-          ...defaultNodeSize(node.data.element.kind),
-          order: 0,
-        })),
-        view.edges.map((edge) => ({ source: edge.source, target: edge.target })),
-        { firstLayer: people },
-      ),
-    );
-    for (const [id, point] of points) {
-      if (!positions.has(id)) positions.set(id, point);
-    }
-  }
+  const firstLayer = roots
+    .filter((element) => element.kind === "actor")
+    .map((element) => element.id);
 
-  return {
-    ...workspace,
-    elements: workspace.elements.map((element) => {
-      const point = positions.get(element.id);
-      return point ? { ...element, x: point.x, y: point.y } : element;
-    }),
-  };
+  const points = centerPositions(
+    computeLayout(
+      roots.map((element) => ({
+        id: element.id,
+        ...defaultNodeSize("usecase", element.kind),
+        order: 0,
+      })),
+      relationships
+        .filter(
+          (relationship) =>
+            roots.some((root) => root.id === relationship.source) &&
+            roots.some((root) => root.id === relationship.target),
+        )
+        .map((relationship) => ({ source: relationship.source, target: relationship.target })),
+      { firstLayer },
+    ),
+  );
+
+  const byId = new Map(points);
+  return elements.map((element) => {
+    const point = element.parentId === null ? byId.get(element.id) : undefined;
+    return point ? { ...element, x: point.x, y: point.y } : element;
+  });
 }

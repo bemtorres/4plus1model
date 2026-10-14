@@ -1,24 +1,69 @@
 /**
- * Modelo de datos del modelador C4.
+ * Modelo de datos del modelador 4+1.
  *
- * Un workspace contiene elementos (personas, sistemas, contenedores,
- * componentes y código) y relaciones entre ellos. Cada elemento cuelga
- * opcionalmente de un elemento de nivel superior mediante `parentId`, lo que
- * permite "bajar" de nivel (contexto -> contenedores -> componentes -> código).
+ * Un proyecto contiene hojas (sheets); cada hoja es un diagrama de un tipo
+ * concreto (por ahora «casos de uso») con sus elementos y relaciones. Cada
+ * elemento cuelga opcionalmente de otro mediante `parentId`, lo que permite
+ * "bajar" de nivel (actores y sistemas -> casos de uso -> flujo de pasos).
  */
 
-export type Level = "context" | "container" | "component" | "code";
+export type DiagramId = "usecase" | "logical" | "process" | "development" | "physical";
 
 export type ElementKind =
-  | "person"
-  | "softwareSystem"
-  | "externalSystem"
-  | "container"
-  | "component"
-  | "code"
-  | "database"
+  // Formas generales (estilo Draw.io)
+  | "rectangle"
+  | "roundedRect"
+  | "text"
+  | "heading"
+  | "ellipse"
+  | "square"
+  | "circle"
+  | "process"
+  | "diamond"
+  | "parallelogram"
+  | "hexagon"
+  | "triangle"
+  | "cylinder"
+  | "cloud"
+  | "document"
+  | "table"
+  | "cube"
+  | "trapezoid"
+  | "callout"
+  | "window"
+  | "folder"
+  | "arrowRight"
+  // Escenarios (+1)
+  | "actor"
+  | "system"
+  | "useCase"
+  | "step"
+  // Lógica
+  | "class"
+  | "interface"
+  | "subsystem"
+  | "domainEntity"
+  // Procesos
+  | "thread"
   | "queue"
+  | "eventStream"
+  // Desarrollo
+  | "component"
+  | "module"
+  | "layer"
+  // Física
+  | "node"
+  | "virtualMachine"
+  | "container"
+  | "loadBalancer"
+  | "networkZone"
+  // Universal
   | "note";
+
+export type RelationshipStyle = "association" | "include" | "extend" | "generalization";
+
+/** Id de un nivel dentro de un diagrama (p. ej. "actors" | "usecases" | "steps"). */
+export type Level = string;
 
 /** Iconos disponibles en la interfaz (nodos, paneles y acciones). */
 export type IconName =
@@ -81,16 +126,13 @@ export type IconName =
   | "menu"
   | "x";
 
-export type RelationshipStyle = "sync" | "async" | "bi";
-
-export interface C4Element {
+export interface DiagramElement {
   id: string;
   kind: ElementKind;
   name: string;
   description: string;
-  technology: string;
   tags: string[];
-  /** Elemento que lo contiene en el nivel superior. `null` = nivel contexto. */
+  /** Elemento que lo contiene en el nivel superior. `null` = nivel raíz. */
   parentId: string | null;
   /** Icono personalizado; si no se indica se usa el del tipo de elemento. */
   icon?: IconName;
@@ -110,6 +152,14 @@ export interface C4Element {
   radius?: number | null;
   /** Opacidad del fondo en porcentaje (100 = opaco, 0 = transparente). */
   bgOpacity?: number | null;
+  /** Posición en el flujo (steps). Se reordena desde el inspector. */
+  order?: number | null;
+  /** Ancho en píxeles (sistema/boundary escalable). `null` = tamaño por defecto. */
+  width?: number | null;
+  /** Alto en píxeles (sistema/boundary escalable). `null` = tamaño por defecto. */
+  height?: number | null;
+  /** Datos específicos del tipo (actorType, preconditions, postconditions…). */
+  meta?: Record<string, string>;
   x: number;
   y: number;
 }
@@ -119,7 +169,7 @@ export type HandleSide = "top" | "right" | "bottom" | "left";
 
 export const HANDLE_SIDES: HandleSide[] = ["top", "right", "bottom", "left"];
 
-export interface C4Relationship {
+export interface DiagramRelationship {
   id: string;
   source: string;
   target: string;
@@ -128,7 +178,6 @@ export interface C4Relationship {
   /** Cara del nodo de destino. `null` = la elige la app. */
   targetHandle: HandleSide | null;
   label: string;
-  technology: string;
   description: string;
   style: RelationshipStyle;
   /** Color de la línea. `null` = el color por defecto. */
@@ -137,12 +186,22 @@ export interface C4Relationship {
   thickness?: number | null;
 }
 
-export interface Workspace {
+/** Una pestaña del editor: un diagrama concreto con su vista activa. */
+export interface Sheet {
+  id: string;
+  name: string;
+  diagram: DiagramId;
+  elements: DiagramElement[];
+  relationships: DiagramRelationship[];
+  /** Vista recordada de la hoja (nivel + ámbito). */
+  view: { level: Level; scopeId: string | null };
+}
+
+export interface Project {
   id: string;
   name: string;
   description: string;
-  elements: C4Element[];
-  relationships: C4Relationship[];
+  sheets: Sheet[];
   updatedAt: string;
 }
 
@@ -151,15 +210,13 @@ export type Selection =
   | { type: "relationship"; id: string }
   | null;
 
-export interface WorkspaceFile {
-  format: "c4-modeler" | "c4model";
+export interface ProjectFile {
+  format: "4plus1-modeler";
   version: 1;
   exportedAt?: string;
   savedAt?: string;
-  developerNote?: string;
-  workspace: Workspace;
+  project: Project;
 }
 
-export const WORKSPACE_FILE_FORMAT = "c4-modeler" as const;
-export const C4MODEL_FILE_FORMAT = "c4model" as const;
-export const WORKSPACE_FILE_VERSION = 1 as const;
+export const PROJECT_FILE_FORMAT = "4plus1-modeler" as const;
+export const PROJECT_FILE_VERSION = 1 as const;

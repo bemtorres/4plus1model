@@ -8,17 +8,24 @@ import {
   TextField,
 } from "@heroui/react";
 import { useState } from "react";
-import { ELEMENT_ICONS, KINDS_ALL, iconOf, kindMeta } from "@/lib/catalog";
+import {
+  ELEMENT_ICONS,
+  diagramDef,
+  iconOf,
+  kindMeta,
+  stylesOf,
+} from "@/lib/diagrams";
 import type {
-  C4Element,
-  C4Relationship,
+  DiagramElement,
+  DiagramRelationship,
+  ElementKind,
   HandleSide,
   RelationshipStyle,
-  Workspace,
+  Sheet,
 } from "@/lib/types";
-import { useWorkspace } from "@/lib/workspace-store";
+import { useProject } from "@/lib/project-store";
 import { indexElements } from "@/lib/view";
-import { useT } from "@/i18n";
+import { useT, type TranslationKey } from "@/i18n";
 import { useKindLabel, useLevelLabel, useStyleLabel } from "@/i18n/labels";
 import { Icon } from "./icons";
 import {
@@ -111,13 +118,13 @@ function DeleteButton({
   );
 }
 
-/** Todos los elementos que cuelgan de `id`. */
-function descendantsOf(workspace: Workspace, id: string): Set<string> {
+/** Todos los elementos que cuelgan de `id` (hijos, nietos…). */
+function descendantsOf(sheet: Sheet, id: string): Set<string> {
   const descendants = new Set<string>();
   let grew = true;
   while (grew) {
     grew = false;
-    for (const candidate of workspace.elements) {
+    for (const candidate of sheet.elements) {
       if (
         candidate.parentId &&
         (descendants.has(candidate.parentId) || candidate.parentId === id) &&
@@ -137,10 +144,10 @@ function IconPicker({
   kindLabel,
   onChange,
 }: {
-  value: C4Element["icon"];
-  defaultIcon: C4Element["icon"];
+  value: DiagramElement["icon"];
+  defaultIcon: DiagramElement["icon"];
   kindLabel: string;
-  onChange: (icon: C4Element["icon"]) => void;
+  onChange: (icon: DiagramElement["icon"]) => void;
 }) {
   const t = useT();
   const isCustom = value !== undefined && value !== defaultIcon;
@@ -190,11 +197,12 @@ function IconPicker({
   );
 }
 
-function NewRelationForm({ element }: { element: C4Element }) {
-  const { workspace, addRelationship, readOnly } = useWorkspace();
+function NewRelationForm({ element }: { element: DiagramElement }) {
+  const { sheet, addRelationship, readOnly } = useProject();
   const t = useT();
-  const descendants = descendantsOf(workspace, element.id);
-  const options = workspace.elements
+  const styleLabel = useStyleLabel();
+  const descendants = descendantsOf(sheet, element.id);
+  const options = sheet.elements
     .filter((item) => item.id !== element.id && !descendants.has(item.id))
     .map((item) => ({ value: item.id, label: item.name }));
 
@@ -202,6 +210,7 @@ function NewRelationForm({ element }: { element: C4Element }) {
   const [side, setSide] = useState<HandleSide | null>(null);
   const [targetSide, setTargetSide] = useState<HandleSide | null>(null);
   const [label, setLabel] = useState("");
+  const [style, setStyle] = useState<RelationshipStyle>("association");
 
   const create = () => {
     if (!target) return;
@@ -210,15 +219,15 @@ function NewRelationForm({ element }: { element: C4Element }) {
       target,
       sourceHandle: side,
       targetHandle: targetSide,
-      label: label.trim() || t("relation.defaultLabel"),
-      technology: "",
+      label: label.trim(),
       description: "",
-      style: "sync",
+      style,
     });
     setTarget("");
     setSide(null);
     setTargetSide(null);
     setLabel("");
+    setStyle("association");
   };
 
   return (
@@ -236,6 +245,19 @@ function NewRelationForm({ element }: { element: C4Element }) {
               ? [{ value: "", label: t("inspector.chooseElement") }, ...options]
               : [{ value: "", label: t("inspector.noElementsAvailable") }]
           }
+        />
+      </div>
+      <div className="flex flex-col gap-1.5">
+        <FieldLabel>{t("inspector.style")}</FieldLabel>
+        <Picker
+          label={t("inspector.style")}
+          disabled={readOnly}
+          value={style}
+          onChange={(value) => setStyle(value as RelationshipStyle)}
+          options={stylesOf(sheet.diagram).map((item) => ({
+            value: item,
+            label: styleLabel(item),
+          }))}
         />
       </div>
       <div className="flex flex-col gap-1.5">
@@ -274,34 +296,152 @@ const STYLE_PRESETS = [
   { id: "c4-gray", label: "C4 Gris", bg: "#6b7280", border: "#4b5563", text: "#ffffff" },
 ];
 
+const GOAL_LEVELS = ["summary", "user", "subfunction"] as const;
+
+function goalLevelKey(level: string) {
+  return `inspector.useCase.goal.${level}` as TranslationKey;
+}
+
+/** Editor del flujo principal de un caso de uso (pasos ordenados). */
+function UseCaseFlowEditor({
+  useCase,
+  readOnly,
+}: {
+  useCase: DiagramElement;
+  readOnly: boolean;
+}) {
+  const { sheet, select, addElement, updateElement, removeElement, reorderStep } = useProject();
+  const t = useT();
+
+  const steps = sheet.elements
+    .filter((item) => item.kind === "step" && item.parentId === useCase.id)
+    .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+
+  const move = (index: number, delta: number) => {
+    const next = [...steps];
+    const target = index + delta;
+    if (target < 0 || target >= next.length) return;
+    [next[index], next[target]] = [next[target], next[index]];
+    reorderStep(
+      useCase.id,
+      next.map((item) => item.id),
+    );
+  };
+
+  return (
+    <div className="flex flex-col gap-1.5">
+      <FieldLabel>{t("inspector.useCase.flow")}</FieldLabel>
+      {steps.length === 0 ? (
+        <p className="text-[11px] text-muted italic">{t("inspector.noContent")}</p>
+      ) : (
+        <ol className="flex flex-col gap-1">
+          {steps.map((step, index) => (
+            <li
+              key={step.id}
+              className="flex items-center gap-1 rounded-lg border border-border bg-surface-secondary/40 px-1.5 py-1"
+            >
+              <button
+                type="button"
+                onClick={() => select({ type: "element", id: step.id })}
+                className="grid size-5 shrink-0 place-items-center rounded bg-surface text-[10px] font-bold text-accent hover:bg-accent-soft"
+                aria-label={step.name}
+              >
+                {index + 1}
+              </button>
+              <input
+                defaultValue={step.name}
+                disabled={readOnly}
+                onBlur={(event) => {
+                  const next = event.target.value.trim();
+                  if (next && next !== step.name) updateElement(step.id, { name: next });
+                  else event.target.value = step.name;
+                }}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") event.currentTarget.blur();
+                }}
+                className="min-w-0 flex-1 bg-transparent px-1 text-xs text-foreground outline-none focus:bg-field"
+              />
+              {!readOnly ? (
+                <span className="flex shrink-0 items-center">
+                  <button
+                    type="button"
+                    disabled={index === 0}
+                    onClick={() => move(index, -1)}
+                    aria-label={t("inspector.useCase.moveUp")}
+                    className="grid size-6 place-items-center rounded text-muted hover:text-foreground disabled:opacity-30"
+                  >
+                    <Icon name="chevron-up" className="text-xs" />
+                  </button>
+                  <button
+                    type="button"
+                    disabled={index === steps.length - 1}
+                    onClick={() => move(index, 1)}
+                    aria-label={t("inspector.useCase.moveDown")}
+                    className="grid size-6 place-items-center rounded text-muted hover:text-foreground disabled:opacity-30"
+                  >
+                    <Icon name="chevron-down" className="text-xs" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => removeElement(step.id)}
+                    aria-label={t("common.delete")}
+                    className="grid size-6 place-items-center rounded text-muted hover:text-danger"
+                  >
+                    <Icon name="x" className="text-xs" />
+                  </button>
+                </span>
+              ) : null}
+            </li>
+          ))}
+        </ol>
+      )}
+      {readOnly ? null : (
+        <Button size="sm" variant="outline" onPress={() => addElement("step", undefined, useCase.id)}>
+          {t("inspector.useCase.addStep")}
+        </Button>
+      )}
+    </div>
+  );
+}
+
 function ElementContentTab({
   element,
   readOnly,
   name,
   description,
-  technology,
   tags,
-  siblingKinds,
   parentOptions,
   childrenCount,
   relationshipsCount,
 }: {
-  element: C4Element;
+  element: DiagramElement;
   readOnly: boolean;
   name: ReturnType<typeof useDraftField<string>>;
   description: ReturnType<typeof useDraftField<string>>;
-  technology: ReturnType<typeof useDraftField<string>>;
   tags: ReturnType<typeof useDraftField<string>>;
-  siblingKinds: C4Element["kind"][];
   parentOptions: { value: string; label: string }[];
   childrenCount: number;
   relationshipsCount: number;
 }) {
-  const { updateElement, removeElement, drillInto } = useWorkspace();
+  const { sheet, updateElement, removeElement, drillInto } = useProject();
   const t = useT();
-  const meta = kindMeta(element.kind);
-  const kindLabel = useKindLabel();
+  const diagram = sheet.diagram;
+  const meta = kindMeta(diagram, element.kind);
   const levelLabel = useLevelLabel();
+
+  const actorType = element.meta?.actorType ?? "primary";
+  const goalLevel = element.meta?.goalLevel ?? "user";
+
+  const setMeta = (key: string, value: string) => {
+    updateElement(element.id, { meta: { ...element.meta, [key]: value } });
+  };
+
+  const preconditions = useDraftField(element.meta?.preconditions ?? "", (value) =>
+    setMeta("preconditions", value),
+  );
+  const postconditions = useDraftField(element.meta?.postconditions ?? "", (value) =>
+    setMeta("postconditions", value),
+  );
 
   return (
     <div className="flex flex-col gap-4">
@@ -316,7 +456,7 @@ function ElementContentTab({
           {childrenCount === 0
             ? t("inspector.noContent")
             : t("inspector.openLower", {
-                level: levelLabel(kindMeta(element.kind).level).toLowerCase(),
+                level: levelLabel(meta.drillLevel ?? "").toLowerCase(),
               })}
         </Button>
       ) : null}
@@ -334,49 +474,76 @@ function ElementContentTab({
         )}
       </TextField>
 
-      {siblingKinds.length > 1 ? (
+      {element.kind !== "note" ? (
+        <TextField value={description.value} onChange={description.onChange} isDisabled={readOnly}>
+          <Label>{t("inspector.description")}</Label>
+          <TextArea
+            rows={3}
+            onBlur={description.onBlur}
+            placeholder={t("inspector.descriptionPlaceholder")}
+          />
+        </TextField>
+      ) : null}
+
+      {element.kind === "actor" ? (
         <div className="flex flex-col gap-1.5">
-          <FieldLabel>{t("inspector.elementType")}</FieldLabel>
+          <FieldLabel>{t("inspector.actorType")}</FieldLabel>
           <Picker
-            label={t("inspector.elementType")}
+            label={t("inspector.actorType")}
             disabled={readOnly}
-            value={element.kind}
-            onChange={(value) => updateElement(element.id, { kind: value as C4Element["kind"] })}
-            options={siblingKinds.map((kind) => ({
-              value: kind,
-              label: kindLabel(kind),
-            }))}
+            value={actorType}
+            onChange={(value) => setMeta("actorType", value)}
+            options={[
+              { value: "primary", label: t("kind.actorType.primary") },
+              { value: "secondary", label: t("kind.actorType.secondary") },
+            ]}
           />
         </div>
       ) : null}
 
-      {element.kind !== "note" ? (
+      {element.kind === "useCase" ? (
         <>
-          <TextField value={technology.value} onChange={technology.onChange} isDisabled={readOnly}>
-            <Label>{t("inspector.technology")}</Label>
-            <Input
-              onBlur={technology.onBlur}
-              placeholder={
-                meta.depth === 0 ? t("inspector.technologyNA") : "React, PostgreSQL…"
-              }
-              disabled={meta.depth === 0}
+          <div className="flex flex-col gap-1.5">
+            <FieldLabel>{t("inspector.useCase.goalLevel")}</FieldLabel>
+            <Picker
+              label={t("inspector.useCase.goalLevel")}
+              disabled={readOnly}
+              value={goalLevel}
+              onChange={(value) => setMeta("goalLevel", value)}
+              options={GOAL_LEVELS.map((level) => ({
+                value: level,
+                label: t(goalLevelKey(level)),
+              }))}
             />
+          </div>
+
+          <TextField
+            value={preconditions.value}
+            onChange={preconditions.onChange}
+            isDisabled={readOnly}
+          >
+            <Label>{t("inspector.useCase.preconditions")}</Label>
+            <TextArea rows={2} onBlur={preconditions.onBlur} />
           </TextField>
 
-          <TextField value={description.value} onChange={description.onChange} isDisabled={readOnly}>
-            <Label>{t("inspector.description")}</Label>
-            <TextArea
-              rows={3}
-              onBlur={description.onBlur}
-              placeholder={t("inspector.descriptionPlaceholder")}
-            />
+          <TextField
+            value={postconditions.value}
+            onChange={postconditions.onChange}
+            isDisabled={readOnly}
+          >
+            <Label>{t("inspector.useCase.postconditions")}</Label>
+            <TextArea rows={2} onBlur={postconditions.onBlur} />
           </TextField>
 
-          <TextField value={tags.value} onChange={tags.onChange} isDisabled={readOnly}>
-            <Label>{t("inspector.tags")}</Label>
-            <Input onBlur={tags.onBlur} placeholder={t("inspector.tagsPlaceholder")} />
-          </TextField>
+          <UseCaseFlowEditor useCase={element} readOnly={readOnly} />
         </>
+      ) : null}
+
+      {element.kind === "actor" || element.kind === "system" ? (
+        <TextField value={tags.value} onChange={tags.onChange} isDisabled={readOnly}>
+          <Label>{t("inspector.tags")}</Label>
+          <Input onBlur={tags.onBlur} placeholder={t("inspector.tagsPlaceholder")} />
+        </TextField>
       ) : null}
 
       {meta.depth > 0 ? (
@@ -429,12 +596,12 @@ function ElementStyleTab({
   element,
   readOnly,
 }: {
-  element: C4Element;
+  element: DiagramElement;
   readOnly: boolean;
 }) {
-  const { updateElement } = useWorkspace();
+  const { sheet, updateElement } = useProject();
   const t = useT();
-  const meta = kindMeta(element.kind);
+  const meta = kindMeta(sheet.diagram, element.kind);
   const kindLabel = useKindLabel();
 
   const showFill = element.fill !== false && element.color !== "transparent";
@@ -442,7 +609,7 @@ function ElementStyleTab({
 
   return (
     <div className="flex flex-col gap-3">
-      {/* Estilos rÃ¡pidos / Swatches de muestra */}
+      {/* Estilos rápidos / Swatches de muestra */}
       <div className="flex flex-col gap-1.5">
         <FieldLabel>{t("inspector.presets")}</FieldLabel>
         <div className="grid grid-cols-4 gap-1.5">
@@ -604,7 +771,7 @@ function ElementStyleTab({
         </Details>
       ) : null}
 
-      {/* BotÃ³n para restablecer al estilo por defecto */}
+      {/* Botón para restablecer al estilo por defecto */}
       {!readOnly ? (
         <Button
           size="sm"
@@ -636,13 +803,13 @@ function ElementRelationsTab({
   element,
   relationships,
 }: {
-  element: C4Element;
-  relationships: C4Relationship[];
+  element: DiagramElement;
+  relationships: DiagramRelationship[];
 }) {
-  const { workspace, select, readOnly } = useWorkspace();
+  const { sheet, select, readOnly } = useProject();
   const t = useT();
   const styleLabel = useStyleLabel();
-  const byId = indexElements(workspace);
+  const byId = indexElements(sheet);
 
   return (
     <div className="flex flex-col gap-4">
@@ -691,11 +858,6 @@ function ElementRelationsTab({
                     <span className="rounded border border-border bg-surface px-1.5 py-0.5">
                       {styleLabel(rel.style)}
                     </span>
-                    {rel.technology ? (
-                      <span className="rounded border border-border bg-surface px-1.5 py-0.5">
-                        {rel.technology}
-                      </span>
-                    ) : null}
                   </div>
                 </div>
               );
@@ -719,22 +881,20 @@ function ElementRelationsTab({
 
 type InspectorTab = "content" | "style" | "relations";
 
-function ElementInspector({ element }: { element: C4Element }) {
-  const { workspace, updateElement, readOnly } = useWorkspace();
+function ElementInspector({ element }: { element: DiagramElement }) {
+  const { sheet, updateElement, readOnly } = useProject();
   const [activeTab, setActiveTab] = useState<InspectorTab>("content");
   const t = useT();
-  const meta = kindMeta(element.kind);
+  const diagram = sheet.diagram;
+  const meta = kindMeta(diagram, element.kind);
   const kindLabel = useKindLabel();
-  const byId = indexElements(workspace);
+  const byId = indexElements(sheet);
 
   const name = useDraftField(element.name, (value) =>
-    updateElement(element.id, { name: value.trim() || "Untitled" }),
+    updateElement(element.id, { name: value.trim() || t("inspector.name") }),
   );
   const description = useDraftField(element.description, (value) =>
     updateElement(element.id, { description: value }),
-  );
-  const technology = useDraftField(element.technology, (value) =>
-    updateElement(element.id, { technology: value }),
   );
   const tags = useDraftField(element.tags.join(", "), (value) =>
     updateElement(element.id, {
@@ -745,23 +905,20 @@ function ElementInspector({ element }: { element: C4Element }) {
     }),
   );
 
-  const siblingKinds = KINDS_ALL.filter(
-    (kind) => kind !== "note" && kindMeta(kind).depth === meta.depth,
-  );
-
-  const descendants = descendantsOf(workspace, element.id);
+  const descendants = descendantsOf(sheet, element.id);
   const parentOptions = [
     { value: "", label: t("inspector.scopeNone") },
-    ...workspace.elements
+    ...sheet.elements
       .filter(
         (candidate) =>
-          kindMeta(candidate.kind).depth === meta.depth - 1 && !descendants.has(candidate.id),
+          kindMeta(diagram, candidate.kind).depth === meta.depth - 1 &&
+          !descendants.has(candidate.id),
       )
       .map((candidate) => ({ value: candidate.id, label: candidate.name })),
   ];
 
-  const children = workspace.elements.filter((item) => item.parentId === element.id);
-  const relationships = workspace.relationships.filter(
+  const children = sheet.elements.filter((item) => item.parentId === element.id);
+  const relationships = sheet.relationships.filter(
     (relationship) => relationship.source === element.id || relationship.target === element.id,
   );
   const parentName = element.parentId ? (byId.get(element.parentId)?.name ?? "—") : null;
@@ -776,7 +933,7 @@ function ElementInspector({ element }: { element: C4Element }) {
               element.color && element.color !== "transparent" ? element.color : meta.bg,
           }}
         >
-          <Icon name={iconOf(element)} />
+          <Icon name={iconOf(diagram, element)} />
         </span>
         <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-semibold text-foreground">{element.name}</p>
@@ -842,9 +999,7 @@ function ElementInspector({ element }: { element: C4Element }) {
           readOnly={readOnly}
           name={name}
           description={description}
-          technology={technology}
           tags={tags}
-          siblingKinds={siblingKinds}
           parentOptions={parentOptions}
           childrenCount={children.length}
           relationshipsCount={relationships.length}
@@ -857,19 +1012,17 @@ function ElementInspector({ element }: { element: C4Element }) {
     </div>
   );
 }
-function RelationshipInspector({ relationship }: { relationship: C4Relationship }) {
-  const { workspace, updateRelationship, removeRelationship, select, readOnly } = useWorkspace();
+
+function RelationshipInspector({ relationship }: { relationship: DiagramRelationship }) {
+  const { sheet, updateRelationship, removeRelationship, select, readOnly } = useProject();
   const t = useT();
   const styleLabel = useStyleLabel();
-  const byId = indexElements(workspace);
+  const byId = indexElements(sheet);
   const source = byId.get(relationship.source);
   const target = byId.get(relationship.target);
 
   const label = useDraftField(relationship.label, (value) =>
     updateRelationship(relationship.id, { label: value }),
-  );
-  const technology = useDraftField(relationship.technology, (value) =>
-    updateRelationship(relationship.id, { technology: value }),
   );
   const description = useDraftField(relationship.description, (value) =>
     updateRelationship(relationship.id, { description: value }),
@@ -898,7 +1051,9 @@ function RelationshipInspector({ relationship }: { relationship: C4Relationship 
           onClick={() => select({ type: "element", id: relationship.source })}
           className="flex items-center gap-2 rounded-lg border border-border px-2.5 py-1.5 text-left text-sm transition-colors hover:bg-surface-secondary"
         >
-          {source ? <Icon name={iconOf(source)} style={{ color: kindMeta(source.kind).bg }} /> : null}
+          {source ? (
+            <Icon name={iconOf(sheet.diagram, source)} style={{ color: kindMeta(sheet.diagram, source.kind).bg }} />
+          ) : null}
           <span className="truncate">{source?.name ?? "?"}</span>
         </button>
         <span className="mt-2 block text-xs font-medium text-muted">
@@ -909,9 +1064,27 @@ function RelationshipInspector({ relationship }: { relationship: C4Relationship 
           onClick={() => select({ type: "element", id: relationship.target })}
           className="flex items-center gap-2 rounded-lg border border-border px-2.5 py-1.5 text-left text-sm transition-colors hover:bg-surface-secondary"
         >
-          {target ? <Icon name={iconOf(target)} style={{ color: kindMeta(target.kind).bg }} /> : null}
+          {target ? (
+            <Icon name={iconOf(sheet.diagram, target)} style={{ color: kindMeta(sheet.diagram, target.kind).bg }} />
+          ) : null}
           <span className="truncate">{target?.name ?? "?"}</span>
         </button>
+      </div>
+
+      <div className="flex flex-col gap-1.5">
+        <FieldLabel>{t("inspector.style")}</FieldLabel>
+        <Picker
+          label={t("inspector.style")}
+          disabled={readOnly}
+          value={relationship.style}
+          onChange={(value) =>
+            updateRelationship(relationship.id, { style: value as RelationshipStyle })
+          }
+          options={stylesOf(sheet.diagram).map((style) => ({
+            value: style,
+            label: styleLabel(style),
+          }))}
+        />
       </div>
 
       <TextField value={label.value} onChange={label.onChange} isDisabled={readOnly}>
@@ -935,39 +1108,15 @@ function RelationshipInspector({ relationship }: { relationship: C4Relationship 
         </div>
       )}
 
-      <TextField value={technology.value} onChange={technology.onChange} isDisabled={readOnly}>
-        <Label>{t("inspector.relationTechnology")}</Label>
-        <Input
-          onBlur={technology.onBlur}
-          placeholder={t("inspector.relationTechnologyPlaceholder")}
-        />
-      </TextField>
-
       <TextField value={description.value} onChange={description.onChange} isDisabled={readOnly}>
         <Label>{t("inspector.relationDescription")}</Label>
         <TextArea rows={3} onBlur={description.onBlur} placeholder={t("inspector.relationDescriptionPlaceholder")} />
       </TextField>
 
-<div className="flex flex-col gap-1.5">
-        <FieldLabel>{t("inspector.style")}</FieldLabel>
-        <Picker
-          label={t("inspector.style")}
-          disabled={readOnly}
-          value={relationship.style}
-          onChange={(value) =>
-            updateRelationship(relationship.id, { style: value as RelationshipStyle })
-          }
-          options={(["sync", "async", "bi"] as RelationshipStyle[]).map((style) => ({
-            value: style,
-            label: styleLabel(style),
-          }))}
-        />
-      </div>
-
       <ColorField
         label={t("inspector.color")}
         value={relationship.color}
-        fallback={relationship.style === "async" ? "#8a8a8a" : "#4a4a4a"}
+        fallback={relationship.style === "generalization" ? "#4a4a4a" : "#4a4a4a"}
         readOnly={readOnly}
         onChange={(color) => updateRelationship(relationship.id, { color })}
       />
@@ -981,7 +1130,7 @@ function RelationshipInspector({ relationship }: { relationship: C4Relationship 
       <Separator />
 
       {readOnly ? null : (
-<DeleteButton
+        <DeleteButton
           title={t("inspector.deleteRelationTitle")}
           message={t("inspector.deleteRelation")}
           onDelete={() => removeRelationship(relationship.id)}
@@ -991,21 +1140,53 @@ function RelationshipInspector({ relationship }: { relationship: C4Relationship 
   );
 }
 
-function WorkspaceInspector() {
-  const { workspace, renameWorkspace, level, readOnly } = useWorkspace();
+function UmlRelationPreview({ style }: { style: RelationshipStyle }) {
+  const dashed = style === "include" || style === "extend";
+  const stroke = {
+    stroke: "currentColor",
+    strokeWidth: 1.5,
+    fill: "none",
+  } as const;
+
+  return (
+    <svg viewBox="0 0 76 22" className="h-[22px] w-[76px] shrink-0 text-muted" aria-hidden="true">
+      {style === "generalization" ? (
+        <>
+          <line x1="4" y1="11" x2="60" y2="11" {...stroke} />
+          <path d="M60 5.5 L71 11 L60 16.5 Z" {...stroke} />
+        </>
+      ) : (
+        <>
+          <line
+            x1="4"
+            y1="11"
+            x2={style === "association" ? 72 : 61}
+            y2="11"
+            {...stroke}
+            strokeDasharray={dashed ? "5 4" : undefined}
+          />
+          {style === "association" ? null : <path d="M61 5.5 L71 11 L61 16.5" {...stroke} />}
+        </>
+      )}
+    </svg>
+  );
+}
+
+function ProjectInspector() {
+  const { project, sheet, renameProject, readOnly, level } = useProject();
   const t = useT();
   const levelLabel = useLevelLabel();
   const kindLabel = useKindLabel();
+  const styleLabel = useStyleLabel();
 
-  const name = useDraftField(
-    workspace.name,
-    (value) => renameWorkspace(value.trim() || "Workspace", workspace.description),
+  const name = useDraftField(project.name, (value) =>
+    renameProject(value.trim() || t("inspector.workspace"), project.description),
   );
-  const description = useDraftField(workspace.description, (value) =>
-    renameWorkspace(workspace.name, value),
+  const description = useDraftField(project.description, (value) =>
+    renameProject(project.name, value),
   );
 
-  const counts = workspace.elements.reduce<Record<string, number>>((accumulator, element) => {
+  const counts = sheet.elements.reduce<Record<string, number>>((accumulator, element) => {
     const label = kindLabel(element.kind);
     accumulator[label] = (accumulator[label] ?? 0) + 1;
     return accumulator;
@@ -1045,11 +1226,11 @@ function WorkspaceInspector() {
           </div>
           <div className="flex justify-between">
             <dt className="text-muted">{t("common.elements", { n: "" }).trim()}</dt>
-            <dd className="font-medium text-foreground">{workspace.elements.length}</dd>
+            <dd className="font-medium text-foreground">{sheet.elements.length}</dd>
           </div>
           <div className="flex justify-between">
             <dt className="text-muted">{t("common.relationships", { n: "" }).trim()}</dt>
-            <dd className="font-medium text-foreground">{workspace.relationships.length}</dd>
+            <dd className="font-medium text-foreground">{sheet.relationships.length}</dd>
           </div>
         </dl>
       </div>
@@ -1072,6 +1253,33 @@ function WorkspaceInspector() {
           ) : null}
         </ul>
       </div>
+
+      <Separator />
+
+      <div>
+        <p className="text-[11px] font-semibold tracking-wide text-muted uppercase">
+          {t("inspector.nomenclature")}
+        </p>
+        <p className="mt-1 text-[11px] leading-relaxed text-muted">
+          {t("inspector.nomenclatureHint")}
+        </p>
+        <ul className="mt-2 flex flex-col gap-2">
+          {stylesOf(sheet.diagram).map((style) => (
+            <li
+              key={style}
+              className="flex items-center gap-3 rounded-lg border border-border bg-surface-secondary/50 px-2.5 py-2"
+            >
+              <UmlRelationPreview style={style} />
+              <div className="min-w-0">
+                <p className="text-xs font-semibold text-foreground">{styleLabel(style)}</p>
+                <p className="text-[11px] leading-snug text-muted">
+                  {t(`inspector.nomenclature.${style}` as TranslationKey)}
+                </p>
+              </div>
+            </li>
+          ))}
+        </ul>
+      </div>
     </div>
   );
 }
@@ -1084,14 +1292,14 @@ export function Inspector({
   isOpenMobile?: boolean;
 } = {}) {
   const t = useT();
-  const { workspace, selection } = useWorkspace();
+  const { sheet, selection } = useProject();
   const element =
     selection?.type === "element"
-      ? workspace.elements.find((item) => item.id === selection.id)
+      ? sheet.elements.find((item) => item.id === selection.id)
       : undefined;
   const relationship =
     selection?.type === "relationship"
-      ? workspace.relationships.find((item) => item.id === selection.id)
+      ? sheet.relationships.find((item) => item.id === selection.id)
       : undefined;
 
   return (
@@ -1099,7 +1307,7 @@ export function Inspector({
       {onClose ? (
         <div className="flex items-center justify-between border-b border-separator px-3 py-2 lg:hidden">
           <span className="text-xs font-semibold text-foreground">
-            {element ? t("inspector.elementType") : relationship ? t("inspector.relationship") : t("inspector.workspace")}
+            {element ? (element.name || t("inspector.name")) : relationship ? t("inspector.relationship") : t("inspector.workspace")}
           </span>
           <Button isIconOnly size="sm" variant="ghost" onPress={onClose} aria-label="Cerrar panel">
             <Icon name="x" />
@@ -1112,7 +1320,7 @@ export function Inspector({
         ) : relationship ? (
           <RelationshipInspector relationship={relationship} />
         ) : (
-          <WorkspaceInspector />
+          <ProjectInspector />
         )}
       </div>
     </aside>

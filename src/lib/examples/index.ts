@@ -1,12 +1,12 @@
 import { EXAMPLES } from "./catalog";
-import { buildExampleWorkspace, type CategoryId, type ExampleSpec } from "./builder";
-import { createSampleWorkspace } from "@/lib/sample";
+import { buildExampleProject, type CategoryId, type ExampleSpec } from "./builder";
+import { createSampleProject } from "@/lib/sample";
 import { sanitizeExampleCode } from "./url";
-import type { Workspace } from "@/lib/types";
+import type { Project } from "@/lib/types";
 
 export type { CategoryId, Difficulty, ExampleSpec } from "./builder";
 export { CATEGORY_ICONS, CATEGORY_ORDER, DIFFICULTIES, EXAMPLES } from "./catalog";
-export { buildExampleWorkspace } from "./builder";
+export { buildExampleProject } from "./builder";
 
 /** Código del ejemplo de demostración que venía incluido con la app. */
 export const SAMPLE_CODE = "online-store";
@@ -26,10 +26,10 @@ export function findExampleByCode(code: string): ExampleTarget | null {
   return example ? { kind: "catalog", code: example.id, example } : null;
 }
 
-export function buildWorkspaceFor(target: ExampleTarget): Workspace {
+export function buildProjectFor(target: ExampleTarget): Project {
   return target.kind === "sample"
-    ? createSampleWorkspace()
-    : buildExampleWorkspace(target.example);
+    ? createSampleProject()
+    : buildExampleProject(target.example);
 }
 
 /** Normaliza texto para las búsquedas (sin acentos ni mayúsculas). */
@@ -60,7 +60,7 @@ export function filterExamples({ query, category, difficulty }: ExampleFilter): 
         example.summary,
         example.focus,
         example.category,
-        example.containers.map(([name]) => name).join(" "),
+        example.useCases.map(([name]) => name).join(" "),
       ].join(" "),
     );
     return needle.split(/\s+/).every((word) => haystack.includes(word));

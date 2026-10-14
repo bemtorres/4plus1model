@@ -1,6 +1,16 @@
 import type { LocaleCode } from "@/i18n";
 
+export interface HomeViewText {
+  tag: string;
+  name: string;
+  question: string;
+  detail: string;
+  available: boolean;
+}
+
 export interface HomeTexts {
+  brand: string;
+  brandTagline: string;
   heroBadge: string;
   heroTitle: string;
   heroSubtitle: string;
@@ -10,16 +20,15 @@ export interface HomeTexts {
   actionCreateTitle: string;
   actionCreateDesc: string;
   actionCreateBtn: string;
-  actionExampleTitle: string;
-  actionExampleDesc: string;
-  actionExampleBtn: string;
-  levelsTitle: string;
-  levelsSubtitle: string;
-  catalogTitle: string;
-  catalogSubtitle: string;
-  catalogSearchPlaceholder: string;
-  catalogAll: string;
-  catalogOpenBtn: string;
+  actionLearnTitle: string;
+  actionLearnDesc: string;
+  actionLearnBtn: string;
+  viewsTitle: string;
+  viewsSubtitle: string;
+  viewsIntro: string;
+  views: HomeViewText[];
+  availableNow: string;
+  comingSoon: string;
   featuresTitle: string;
   featuresSubtitle: string;
   feature1Title: string;
@@ -35,235 +44,578 @@ export interface HomeTexts {
 
 const HOME_TEXTS: Record<LocaleCode, HomeTexts> = {
   es: {
-    heroBadge: "Modelado visual de arquitectura de software",
-    heroTitle: "Modela y documenta tu arquitectura con el Modelo C4",
+    brand: "4+1 Modeler",
+    brandTagline: "Arquitectura de Software",
+    heroBadge: "Modelo arquitectónico 4+1 · Philippe Kruchten",
+    heroTitle: "Documenta tu arquitectura con las 5 vistas del modelo 4+1",
     heroSubtitle:
-      "Diseña sistemas en el nivel de abstracción adecuado: desde el contexto general hasta contenedores, componentes y código. Visual, interactivo, con drill-down y exportaciones para tu repositorio.",
-    actionOpenTitle: "Abrir C4 Modeler",
-    actionOpenDesc: "Entra al editor interactivo y continúa con tu modelo guardado en este navegador.",
-    actionOpenBtn: "Ir al Editor",
-    actionCreateTitle: "Crear Nuevo Modelo",
-    actionCreateDesc: "Inicia un espacio de trabajo limpio en blanco listo para diseñar tu propio sistema.",
+      "El modelo 4+1 describe el sistema desde cinco puntos de vista: cuatro vistas técnicas —lógica, proceso, desarrollo y física— más la vista de escenarios que las une. Empieza por los casos de uso y da forma al resto.",
+    actionOpenTitle: "Editor de Casos de Uso",
+    actionOpenDesc:
+      "Modela actores, sistemas, casos de uso y flujos principales en un lienzo interactivo con drill-down.",
+    actionOpenBtn: "Abrir el Editor",
+    actionCreateTitle: "Nuevo Proyecto en Blanco",
+    actionCreateDesc:
+      "Crea un proyecto limpio con pestañas de hojas, listo para modelar desde cero.",
     actionCreateBtn: "Empezar en Blanco",
-    actionExampleTitle: "Cargar Ejemplo",
-    actionExampleDesc: "Explora 50 casos de estudio reales: streaming, fintech, IA, comercio e infraestructura.",
-    actionExampleBtn: "Ver Ejemplos",
-    levelsTitle: "Los 4 Niveles de Abstracción C4",
-    levelsSubtitle: "Haz zoom progresivo sin mezclar conceptos ni saturar los diagramas.",
-    catalogTitle: "Catálogo de Arquitecturas de Estudio",
-    catalogSubtitle: "Selecciona cualquiera de los 50 ejemplos para cargarlo directamente en el editor.",
-    catalogSearchPlaceholder: "Buscar por nombre, tecnología o referencia...",
-    catalogAll: "Todas las categorías",
-    catalogOpenBtn: "Abrir en Editor",
-    featuresTitle: "Todo lo que necesitas para documentar sistemas vivos",
-    featuresSubtitle: "Una herramienta pensada para desarrolladores, arquitectos, docentes y estudiantes.",
-    feature1Title: "Drill-down interactivo",
-    feature1Desc: "Doble clic en un sistema o contenedor para descender de nivel y regresar cuando quieras.",
+    actionLearnTitle: "¿Qué es el 4+1?",
+    actionLearnDesc:
+      "Descubre las cinco vistas de Kruchten y cómo se conectan entre sí.",
+    actionLearnBtn: "Ver las vistas",
+    viewsTitle: "Las cinco vistas del modelo 4+1",
+    viewsSubtitle:
+      "Cada vista responde una pregunta distinta del arquitecto; juntas describen el sistema completo.",
+    viewsIntro:
+      "Philippe Kruchten propuso en 1995 describir la arquitectura de software mediante cuatro vistas técnicas —la lógica, la de proceso, la de desarrollo y la física— gobernadas por una quinta vista, la de escenarios (casos de uso), que actúa de hilo conductor y valida que las cuatro anteriores se sostienen entre sí.",
+    views: [
+      {
+        tag: "+1",
+        name: "Escenarios",
+        question: "¿Qué hace el sistema y quién lo usa?",
+        detail:
+          "Casos de uso con actores, flujos de pasos y reglas: la vista que da sentido a las demás. Es la primera vista disponible en el editor.",
+        available: true,
+      },
+      {
+        tag: "V1",
+        name: "Lógica",
+        question: "¿Cómo es la estructura estática del sistema?",
+        detail:
+          "Entidades, clases y sus relaciones: qué elementos componen el software y cómo se organizan conceptualmente.",
+        available: false,
+      },
+      {
+        tag: "V2",
+        name: "Proceso",
+        question: "¿Cómo se ejecuta y se coordina en tiempo de ejecución?",
+        detail:
+          "Procesos, hilos, concurrencia y sincronización: el comportamiento dinámico del sistema.",
+        available: false,
+      },
+      {
+        tag: "V3",
+        name: "Desarrollo",
+        question: "¿Cómo se organiza el código fuente?",
+        detail:
+          "Módulos, paquetes, capas y dependencias entre partes del software desde la mirada de quien lo programa.",
+        available: false,
+      },
+      {
+        tag: "V4",
+        name: "Física",
+        question: "¿Dónde y cómo se despliega?",
+        detail:
+          "Nodos, servidores, redes e infraestructura: el mapeo del software sobre el hardware.",
+        available: false,
+      },
+    ],
+    availableNow: "Disponible ahora",
+    comingSoon: "Próximamente",
+    featuresTitle: "Todo lo que necesitas para modelar con 4+1",
+    featuresSubtitle:
+      "Una herramienta pensada para arquitectos, desarrolladores, docentes y estudiantes.",
+    feature1Title: "Drill-down por casos de uso",
+    feature1Desc:
+      "Pasa de actores y sistemas a los casos de uso y al flujo de pasos con un clic; vuelve al nivel superior cuando quieras.",
     feature2Title: "Exportación nativa",
-    feature2Desc: "Genera diagramas en PlantUML, Mermaid, Markdown y JSON para mantenerlos en Git.",
+    feature2Desc:
+      "Descarga tu modelo en JSON, Markdown o JWT firmado para versionarlo junto al código en Git.",
     feature3Title: "100% privado en navegador",
-    feature3Desc: "Sin servidores ni cuentas requeridas. Todo se almacena localmente en tu equipo.",
-    ctaTitle: "¿Listo para estructurar tu arquitectura?",
-    ctaSubtitle: "Abre el editor ahora mismo y comienza a modelar en cuestión de segundos.",
-    ctaBtn: "Iniciar C4 Modeler",
+    feature3Desc:
+      "Sin servidores ni cuentas: el proyecto se guarda en tu navegador y se comparte por enlace.",
+    ctaTitle: "¿Listo para modelar tu arquitectura?",
+    ctaSubtitle: "Abre el editor de casos de uso y describe tu sistema en minutos.",
+    ctaBtn: "Iniciar 4+1 Modeler",
   },
   en: {
-    heroBadge: "Visual Software Architecture Modeling",
-    heroTitle: "Model and document your architecture with the C4 Model",
+    brand: "4+1 Modeler",
+    brandTagline: "Software Architecture",
+    heroBadge: "4+1 architectural model · Philippe Kruchten",
+    heroTitle: "Document your architecture with the five views of the 4+1 model",
     heroSubtitle:
-      "Design systems at the right level of abstraction: from high-level context down to containers, components, and code. Visual, interactive, with drill-down and ready-to-commit exports.",
-    actionOpenTitle: "Open C4 Modeler",
-    actionOpenDesc: "Jump into the interactive canvas and continue with your saved model in this browser.",
-    actionOpenBtn: "Launch Editor",
-    actionCreateTitle: "Create New Model",
-    actionCreateDesc: "Start with a clean, blank workspace ready to design your own system from scratch.",
-    actionCreateBtn: "Start Blank Canvas",
-    actionExampleTitle: "Load Example",
-    actionExampleDesc: "Explore 50 real-world architectures modeled across streaming, fintech, AI, and infra.",
-    actionExampleBtn: "Browse Examples",
-    levelsTitle: "The 4 Levels of the C4 Model",
-    levelsSubtitle: "Progressively zoom into details without mixing concerns or cluttering your diagrams.",
-    catalogTitle: "50 Industry Architecture Study Cases",
-    catalogSubtitle: "Pick any architecture example to load it directly into the canvas.",
-    catalogSearchPlaceholder: "Search by name, technology, or reference...",
-    catalogAll: "All categories",
-    catalogOpenBtn: "Open in Editor",
-    featuresTitle: "Everything you need to document living architectures",
-    featuresSubtitle: "Designed for software architects, engineering teams, educators, and students.",
-    feature1Title: "Interactive Drill-down",
-    feature1Desc: "Double click systems or containers to zoom into the next level, and jump back anytime.",
-    feature2Title: "Native Code Export",
-    feature2Desc: "Export diagrams to PlantUML, Mermaid, Markdown, and JSON to store alongside code in Git.",
-    feature3Title: "100% In-Browser Privacy",
-    feature3Desc: "No server backend or login required. All diagrams and models stay strictly on your machine.",
-    ctaTitle: "Ready to structure your architecture?",
-    ctaSubtitle: "Launch the editor now and start diagramming in seconds.",
-    ctaBtn: "Launch C4 Modeler",
+      "The 4+1 model describes a system from five viewpoints: four technical views — logical, process, development and physical — plus the scenario view that ties them together. Start with use cases and shape the rest.",
+    actionOpenTitle: "Use-Case Editor",
+    actionOpenDesc:
+      "Model actors, systems, use cases and main flows on an interactive canvas with drill-down.",
+    actionOpenBtn: "Open the Editor",
+    actionCreateTitle: "New Blank Project",
+    actionCreateDesc:
+      "Start a clean project with sheet tabs, ready to model from scratch.",
+    actionCreateBtn: "Start Blank",
+    actionLearnTitle: "What is 4+1?",
+    actionLearnDesc:
+      "Discover Kruchten's five views and how they connect to each other.",
+    actionLearnBtn: "Explore the views",
+    viewsTitle: "The five views of the 4+1 model",
+    viewsSubtitle:
+      "Each view answers a different question from the architect; together they describe the whole system.",
+    viewsIntro:
+      "Philippe Kruchten proposed in 1995 describing software architecture through four technical views — logical, process, development and physical — governed by a fifth, the scenario view (use cases), which acts as the golden thread and validates that the other four hold together.",
+    views: [
+      {
+        tag: "+1",
+        name: "Scenarios",
+        question: "What does the system do and who uses it?",
+        detail:
+          "Use cases with actors, step flows and rules: the view that gives meaning to the others. It is the first view available in the editor.",
+        available: true,
+      },
+      {
+        tag: "V1",
+        name: "Logical",
+        question: "What does the static structure of the system look like?",
+        detail:
+          "Entities, classes and their relationships: the elements that make up the software and how they are organized conceptually.",
+        available: false,
+      },
+      {
+        tag: "V2",
+        name: "Process",
+        question: "How does it run and coordinate at runtime?",
+        detail:
+          "Processes, threads, concurrency and synchronization: the dynamic behavior of the system.",
+        available: false,
+      },
+      {
+        tag: "V3",
+        name: "Development",
+        question: "How is the source code organized?",
+        detail:
+          "Modules, packages, layers and dependencies among software parts from the programmer's perspective.",
+        available: false,
+      },
+      {
+        tag: "V4",
+        name: "Physical",
+        question: "Where and how is it deployed?",
+        detail:
+          "Nodes, servers, networks and infrastructure: mapping the software onto the hardware.",
+        available: false,
+      },
+    ],
+    availableNow: "Available now",
+    comingSoon: "Coming soon",
+    featuresTitle: "Everything you need to model with 4+1",
+    featuresSubtitle:
+      "A tool designed for architects, developers, educators, and students.",
+    feature1Title: "Use-case drill-down",
+    feature1Desc:
+      "Move from actors and systems into use cases and step flows with one click; jump back to the upper level anytime.",
+    feature2Title: "Native export",
+    feature2Desc:
+      "Download your model as JSON, Markdown, or a signed JWT to version it alongside code in Git.",
+    feature3Title: "100% in-browser privacy",
+    feature3Desc:
+      "No servers or accounts: the project stays in your browser and is shared through a link.",
+    ctaTitle: "Ready to model your architecture?",
+    ctaSubtitle: "Open the use-case editor and describe your system in minutes.",
+    ctaBtn: "Launch 4+1 Modeler",
   },
   pt: {
-    heroBadge: "Modelagem visual de arquitetura de software",
-    heroTitle: "Modele e documente a sua arquitetura com o Modelo C4",
+    brand: "4+1 Modeler",
+    brandTagline: "Arquitetura de Software",
+    heroBadge: "Modelo arquitetônico 4+1 · Philippe Kruchten",
+    heroTitle: "Documente a sua arquitetura com as cinco visões do modelo 4+1",
     heroSubtitle:
-      "Desenhe sistemas no nível certo de abstração: do contexto geral a contentores, componentes e código. Visual, interativo, com drill-down e exportações para o seu repositório.",
-    actionOpenTitle: "Abrir C4 Modeler",
-    actionOpenDesc: "Aceda à tela interativa e continue com o seu modelo guardado neste navegador.",
-    actionOpenBtn: "Ir para o Editor",
-    actionCreateTitle: "Criar Novo Modelo",
-    actionCreateDesc: "Inicie um espaço de trabalho em branco para desenhar o seu próprio sistema do zero.",
+      "O modelo 4+1 descreve o sistema a partir de cinco pontos de vista: quatro visões técnicas — lógica, processo, desenvolvimento e física — mais a visão de cenários que as une. Comece pelos casos de uso e dê forma ao resto.",
+    actionOpenTitle: "Editor de Casos de Uso",
+    actionOpenDesc:
+      "Modele atores, sistemas, casos de uso e fluxos principais num canvas interativo com drill-down.",
+    actionOpenBtn: "Abrir o Editor",
+    actionCreateTitle: "Novo Projeto em Branco",
+    actionCreateDesc:
+      "Crie um projeto limpo com separadores de folhas, pronto para modelar do zero.",
     actionCreateBtn: "Começar em Branco",
-    actionExampleTitle: "Carregar Exemplo",
-    actionExampleDesc: "Explore 50 arquiteturas reais modeladas em streaming, fintech, IA, ecommerce e infraestrutura.",
-    actionExampleBtn: "Ver Exemplos",
-    levelsTitle: "Os 4 Níveis de Abstração C4",
-    levelsSubtitle: "Faça zoom progressivo sem misturar conceitos nem saturar os diagramas.",
-    catalogTitle: "Catálogo de Arquiteturas de Estudo",
-    catalogSubtitle: "Selecione qualquer exemplo para carregá-lo diretamente no editor.",
-    catalogSearchPlaceholder: "Pesquisar por nome, tecnologia ou referência...",
-    catalogAll: "Todas as categorias",
-    catalogOpenBtn: "Abrir no Editor",
-    featuresTitle: "Tudo o que precisa para documentar sistemas vivos",
-    featuresSubtitle: "Uma ferramenta pensada para desenvolvedores, arquitetos, professores e alunos.",
-    feature1Title: "Drill-down interativo",
-    feature1Desc: "Clique duas vezes num sistema ou contentor para descer de nível e voltar quando quiser.",
+    actionLearnTitle: "O que é o 4+1?",
+    actionLearnDesc:
+      "Descubra as cinco visões de Kruchten e como se conectam entre si.",
+    actionLearnBtn: "Ver as visões",
+    viewsTitle: "As cinco visões do modelo 4+1",
+    viewsSubtitle:
+      "Cada visão responde a uma pergunta diferente do arquiteto; juntas descrevem o sistema completo.",
+    viewsIntro:
+      "Philippe Kruchten propôs em 1995 descrever a arquitetura de software através de quatro visões técnicas — a lógica, a de processo, a de desenvolvimento e a física — governadas por uma quinta, a de cenários (casos de uso), que atua como fio condutor e valida que as quatro anteriores se sustentam entre si.",
+    views: [
+      {
+        tag: "+1",
+        name: "Cenários",
+        question: "O que o sistema faz e quem o utiliza?",
+        detail:
+          "Casos de uso com atores, fluxos de passos e regras: a visão que dá sentido às demais. É a primeira visão disponível no editor.",
+        available: true,
+      },
+      {
+        tag: "V1",
+        name: "Lógica",
+        question: "Como é a estrutura estática do sistema?",
+        detail:
+          "Entidades, classes e suas relações: os elementos que compõem o software e como se organizam conceitualmente.",
+        available: false,
+      },
+      {
+        tag: "V2",
+        name: "Processo",
+        question: "Como executa e se coordena em tempo de execução?",
+        detail:
+          "Processos, threads, concorrência e sincronização: o comportamento dinâmico do sistema.",
+        available: false,
+      },
+      {
+        tag: "V3",
+        name: "Desenvolvimento",
+        question: "Como se organiza o código-fonte?",
+        detail:
+          "Módulos, pacotes, camadas e dependências entre partes do software na perspectiva de quem o programa.",
+        available: false,
+      },
+      {
+        tag: "V4",
+        name: "Física",
+        question: "Onde e como é implantado?",
+        detail:
+          "Nós, servidores, redes e infraestrutura: o mapeamento do software sobre o hardware.",
+        available: false,
+      },
+    ],
+    availableNow: "Disponível agora",
+    comingSoon: "Em breve",
+    featuresTitle: "Tudo o que precisa para modelar com 4+1",
+    featuresSubtitle:
+      "Uma ferramenta pensada para arquitetos, desenvolvedores, professores e alunos.",
+    feature1Title: "Drill-down por casos de uso",
+    feature1Desc:
+      "Passe de atores e sistemas para os casos de uso e o fluxo de passos com um clique; volte ao nível superior quando quiser.",
     feature2Title: "Exportação nativa",
-    feature2Desc: "Gere diagramas em PlantUML, Mermaid, Markdown e JSON para manter no Git.",
+    feature2Desc:
+      "Descarregue o seu modelo em JSON, Markdown ou JWT assinado para versionar junto com o código no Git.",
     feature3Title: "100% privado no navegador",
-    feature3Desc: "Sem servidores nem contas. Tudo fica guardado localmente no seu computador.",
-    ctaTitle: "Pronto para estruturar a sua arquitetura?",
-    ctaSubtitle: "Abra o editor agora e comece a modelar em segundos.",
-    ctaBtn: "Iniciar C4 Modeler",
+    feature3Desc:
+      "Sem servidores nem contas: o projeto fica no seu navegador e é partilhado por link.",
+    ctaTitle: "Pronto para modelar a sua arquitetura?",
+    ctaSubtitle: "Abra o editor de casos de uso e descreva o seu sistema em minutos.",
+    ctaBtn: "Iniciar 4+1 Modeler",
   },
   fr: {
-    heroBadge: "Modélisation visuelle d'architecture logicielle",
-    heroTitle: "Modélisez et documentez votre architecture avec le Modèle C4",
+    brand: "4+1 Modeler",
+    brandTagline: "Architecture Logicielle",
+    heroBadge: "Modèle architectural 4+1 · Philippe Kruchten",
+    heroTitle: "Documentez votre architecture avec les cinq vues du modèle 4+1",
     heroSubtitle:
-      "Concevez des systèmes au bon niveau d'abstraction : du contexte général aux conteneurs, composants et code. Visuel, interactif et prêt à exporter.",
-    actionOpenTitle: "Ouvrir C4 Modeler",
-    actionOpenDesc: "Accédez au canevas interactif et continuez avec votre modèle enregistré.",
-    actionOpenBtn: "Aller à l'Éditeur",
-    actionCreateTitle: "Créer un Nouveau Modèle",
-    actionCreateDesc: "Démarrez avec un espace de travail vierge pour concevoir votre propre système.",
+      "Le modèle 4+1 décrit un système depuis cinq points de vue : quatre vues techniques — logique, processus, développement et physique — plus la vue des scénarios qui les relie. Commencez par les cas d'utilisation.",
+    actionOpenTitle: "Éditeur de Cas d'Utilisation",
+    actionOpenDesc:
+      "Modélisez acteurs, systèmes, cas d'utilisation et flux principaux sur un canevas interactif avec drill-down.",
+    actionOpenBtn: "Ouvrir l'Éditeur",
+    actionCreateTitle: "Nouveau Projet Vide",
+    actionCreateDesc:
+      "Créez un projet propre avec des onglets de feuilles, prêt à modéliser depuis zéro.",
     actionCreateBtn: "Démarrer de Zéro",
-    actionExampleTitle: "Charger un Exemple",
-    actionExampleDesc: "Explorez 50 cas réels : streaming, fintech, IA, e-commerce et infrastructure.",
-    actionExampleBtn: "Voir les Exemples",
-    levelsTitle: "Les 4 Niveaux d'Abstraction C4",
-    levelsSubtitle: "Zoomez progressivement sans mélanger les préoccupations.",
-    catalogTitle: "Catalogue d'Architectures Réelles",
-    catalogSubtitle: "Choisissez un exemple pour l'ouvrir directement dans l'éditeur.",
-    catalogSearchPlaceholder: "Rechercher par nom, technologie ou référence...",
-    catalogAll: "Toutes les catégories",
-    catalogOpenBtn: "Ouvrir dans l'Éditeur",
-    featuresTitle: "Tout ce dont vous avez besoin pour documenter vos systèmes",
-    featuresSubtitle: "Un outil conçu pour les développeurs, architectes, formateurs et étudiants.",
-    feature1Title: "Drill-down interactif",
-    feature1Desc: "Double-cliquez pour plonger dans les niveaux inférieurs et revenir facilement.",
+    actionLearnTitle: "Qu'est-ce que le 4+1 ?",
+    actionLearnDesc:
+      "Découvrez les cinq vues de Kruchten et comment elles se connectent.",
+    actionLearnBtn: "Voir les vues",
+    viewsTitle: "Les cinq vues du modèle 4+1",
+    viewsSubtitle:
+      "Chaque vue répond à une question différente de l'architecte ; ensemble, elles décrivent le système complet.",
+    viewsIntro:
+      "Philippe Kruchten a proposé en 1995 de décrire l'architecture logicielle à travers quatre vues techniques — logique, processus, développement et physique — gouvernées par une cinquième, la vue des scénarios (cas d'utilisation), qui sert de fil conducteur et valide la cohérence des quatre autres.",
+    views: [
+      {
+        tag: "+1",
+        name: "Scénarios",
+        question: "Que fait le système et qui l'utilise ?",
+        detail:
+          "Cas d'utilisation avec acteurs, flux d'étapes et règles : la vue qui donne sens aux autres. C'est la première vue disponible dans l'éditeur.",
+        available: true,
+      },
+      {
+        tag: "V1",
+        name: "Logique",
+        question: "Quelle est la structure statique du système ?",
+        detail:
+          "Entités, classes et leurs relations : les éléments qui composent le logiciel et leur organisation conceptuelle.",
+        available: false,
+      },
+      {
+        tag: "V2",
+        name: "Processus",
+        question: "Comment s'exécute-t-il et se coordonne-t-il ?",
+        detail:
+          "Processus, threads, concurrence et synchronisation : le comportement dynamique du système.",
+        available: false,
+      },
+      {
+        tag: "V3",
+        name: "Développement",
+        question: "Comment le code source est-il organisé ?",
+        detail:
+          "Modules, paquetages, couches et dépendances entre parties du logiciel du point de vue du développeur.",
+        available: false,
+      },
+      {
+        tag: "V4",
+        name: "Physique",
+        question: "Où et comment est-il déployé ?",
+        detail:
+          "Nœuds, serveurs, réseaux et infrastructure : le logiciel mappé sur le matériel.",
+        available: false,
+      },
+    ],
+    availableNow: "Disponible maintenant",
+    comingSoon: "Bientôt disponible",
+    featuresTitle: "Tout ce dont vous avez besoin pour modéliser avec le 4+1",
+    featuresSubtitle:
+      "Un outil conçu pour les architectes, développeurs, formateurs et étudiants.",
+    feature1Title: "Drill-down par cas d'utilisation",
+    feature1Desc:
+      "Passez des acteurs et systèmes aux cas d'utilisation et au flux d'étapes en un clic ; revenez au niveau supérieur quand vous voulez.",
     feature2Title: "Export natif",
-    feature2Desc: "Générez du PlantUML, Mermaid, Markdown et JSON pour versionner dans Git.",
+    feature2Desc:
+      "Téléchargez votre modèle en JSON, Markdown ou JWT signé pour le versionner avec le code dans Git.",
     feature3Title: "100% privé dans le navigateur",
-    feature3Desc: "Aucun serveur ni compte requis. Vos données restent sur votre machine.",
-    ctaTitle: "Prêt à structurer votre architecture ?",
-    ctaSubtitle: "Ouvrez l'éditeur dès maintenant et commencez à modéliser.",
-    ctaBtn: "Lancer C4 Modeler",
+    feature3Desc:
+      "Aucun serveur ni compte : le projet reste dans votre navigateur et se partage par lien.",
+    ctaTitle: "Prêt à modéliser votre architecture ?",
+    ctaSubtitle: "Ouvrez l'éditeur de cas d'utilisation et décrivez votre système en quelques minutes.",
+    ctaBtn: "Lancer 4+1 Modeler",
   },
   de: {
-    heroBadge: "Visuelle Softwarearchitektur-Modellierung",
-    heroTitle: "Modellieren und dokumentieren Sie mit dem C4-Modell",
+    brand: "4+1 Modeler",
+    brandTagline: "Softwarearchitektur",
+    heroBadge: "4+1-Architekturmodell · Philippe Kruchten",
+    heroTitle:
+      "Dokumentieren Sie Ihre Architektur mit den fünf Sichten des 4+1-Modells",
     heroSubtitle:
-      "Entwerfen Sie Systeme auf der richtigen Abstraktionsebene: vom Kontext bis zu Containern, Komponenten und Code. Visuell, interaktiv und exportierbar.",
-    actionOpenTitle: "C4 Modeler öffnen",
-    actionOpenDesc: "Öffnen Sie das interaktive Canvas und arbeiten Sie an Ihrem Modell weiter.",
+      "Das 4+1-Modell beschreibt ein System aus fünf Blickwinkeln: vier technischen Sichten — logisch, Prozess, Entwicklung und physisch — sowie die Szenarien-Sicht, die sie verbindet. Beginnen Sie mit Use Cases.",
+    actionOpenTitle: "Use-Case-Editor",
+    actionOpenDesc:
+      "Modellieren Sie Akteure, Systeme, Use Cases und Hauptabläufe auf einer interaktiven Fläche mit Drill-down.",
     actionOpenBtn: "Editor öffnen",
-    actionCreateTitle: "Neues Modell erstellen",
-    actionCreateDesc: "Starten Sie mit einem leeren Arbeitsbereich für Ihr eigenes System.",
+    actionCreateTitle: "Neues leeres Projekt",
+    actionCreateDesc:
+      "Starten Sie ein sauberes Projekt mit Registerkarten, bereit zum Modellieren ab Null.",
     actionCreateBtn: "Leer starten",
-    actionExampleTitle: "Beispiel laden",
-    actionExampleDesc: "Erkunden Sie 50 reale Architekturen aus Streaming, Fintech, KI und Infrastruktur.",
-    actionExampleBtn: "Beispiele ansehen",
-    levelsTitle: "Die 4 Ebenen des C4-Modells",
-    levelsSubtitle: "Zoomen Sie schrittweise hinein, ohne Details zu vermischen.",
-    catalogTitle: "Katalog realer Architekturen",
-    catalogSubtitle: "Wählen Sie ein Beispiel, um es direkt im Editor zu öffnen.",
-    catalogSearchPlaceholder: "Nach Name, Technologie oder Referenz suchen...",
-    catalogAll: "Alle Kategorien",
-    catalogOpenBtn: "Im Editor öffnen",
-    featuresTitle: "Alles, was Sie zur Dokumentation von Architekturen brauchen",
-    featuresSubtitle: "Entwickelt für Architekten, Entwickler, Dozenten und Studierende.",
-    feature1Title: "Interaktiver Drill-down",
-    feature1Desc: "Doppelklicken Sie auf Container, um tiefer einzutauchen.",
+    actionLearnTitle: "Was ist 4+1?",
+    actionLearnDesc:
+      "Entdecken Sie die fünf Sichten von Kruchten und wie sie zusammenhängen.",
+    actionLearnBtn: "Sichten ansehen",
+    viewsTitle: "Die fünf Sichten des 4+1-Modells",
+    viewsSubtitle:
+      "Jede Sicht beantwortet eine andere Frage des Architekten; zusammen beschreiben sie das gesamte System.",
+    viewsIntro:
+      "Philippe Kruchten schlug 1995 vor, Softwarearchitektur durch vier technische Sichten — logisch, Prozess, Entwicklung und physisch — zu beschreiben, die durch eine fünfte, die Szenarien-Sicht (Use Cases), als roter Faden gegengeprüft wird.",
+    views: [
+      {
+        tag: "+1",
+        name: "Szenarien",
+        question: "Was macht das System und wer nutzt es?",
+        detail:
+          "Use Cases mit Akteuren, Schrittfolgen und Regeln: die Sicht, die den übrigen Sinn verleiht. Sie ist zuerst im Editor verfügbar.",
+        available: true,
+      },
+      {
+        tag: "V1",
+        name: "Logisch",
+        question: "Wie sieht die statische Struktur des Systems aus?",
+        detail:
+          "Entitäten, Klassen und ihre Beziehungen: die Bestandteile der Software und ihre konzeptionelle Ordnung.",
+        available: false,
+      },
+      {
+        tag: "V2",
+        name: "Prozess",
+        question: "Wie läuft und koordiniert es sich zur Laufzeit?",
+        detail:
+          "Prozesse, Threads, Nebenläufigkeit und Synchronisation: das dynamische Verhalten des Systems.",
+        available: false,
+      },
+      {
+        tag: "V3",
+        name: "Entwicklung",
+        question: "Wie ist der Quellcode organisiert?",
+        detail:
+          "Module, Pakete, Schichten und Abhängigkeiten zwischen Softwareteilen aus Sicht der Entwickler.",
+        available: false,
+      },
+      {
+        tag: "V4",
+        name: "Physisch",
+        question: "Wo und wie wird es bereitgestellt?",
+        detail:
+          "Knoten, Server, Netze und Infrastruktur: die Zuordnung der Software zur Hardware.",
+        available: false,
+      },
+    ],
+    availableNow: "Jetzt verfügbar",
+    comingSoon: "Demnächst",
+    featuresTitle: "Alles, was Sie zum Modellieren mit 4+1 brauchen",
+    featuresSubtitle:
+      "Ein Werkzeug für Architekten, Entwickler, Dozenten und Studierende.",
+    feature1Title: "Use-Case-Drill-down",
+    feature1Desc:
+      "Gehen Sie mit einem Klick von Akteuren und Systemen zu Use Cases und Schrittfolgen; kehren Sie jederzeit auf die obere Ebene zurück.",
     feature2Title: "Nativer Export",
-    feature2Desc: "Exportieren Sie nach PlantUML, Mermaid, Markdown und JSON für Git.",
+    feature2Desc:
+      "Laden Sie Ihr Modell als JSON, Markdown oder signiertes JWT herunter, um es mit dem Code in Git zu versionieren.",
     feature3Title: "100% privat im Browser",
-    feature3Desc: "Keine Server oder Accounts erforderlich. Alle Daten bleiben lokal.",
-    ctaTitle: "Bereit für saubere Architekturdiagramme?",
-    ctaSubtitle: "Starten Sie den Editor und legen Sie in Sekunden los.",
-    ctaBtn: "C4 Modeler starten",
+    feature3Desc:
+      "Keine Server oder Konten: Das Projekt bleibt in Ihrem Browser und wird über einen Link geteilt.",
+    ctaTitle: "Bereit, Ihre Architektur zu modellieren?",
+    ctaSubtitle:
+      "Öffnen Sie den Use-Case-Editor und beschreiben Sie Ihr System in Minuten.",
+    ctaBtn: "4+1 Modeler starten",
   },
   zh: {
-    heroBadge: "软件架构可视化建模工具",
-    heroTitle: "使用 C4 模型直观设计与记录软件架构",
+    brand: "4+1 Modeler",
+    brandTagline: "软件架构",
+    heroBadge: "4+1 架构模型 · Philippe Kruchten",
+    heroTitle: "用 4+1 模型的五个视图记录你的架构",
     heroSubtitle:
-      "在适当的抽象层次上设计系统：从全局上下文深入到容器、组件和代码。可视化、可交互并支持导出至 Git 仓库。",
-    actionOpenTitle: "打开 C4 Modeler",
-    actionOpenDesc: "进入交互式画布，继续编辑保存在当前浏览器中的模型。",
-    actionOpenBtn: "进入编辑器",
-    actionCreateTitle: "创建空白模型",
-    actionCreateDesc: "从干净的空白工作区开始，从零设计你自己的软件系统。",
-    actionCreateBtn: "新建空白画布",
-    actionExampleTitle: "加载案例模型",
-    actionExampleDesc: "探索涵盖流媒体、金融科技、AI、电商和基础设施的 50 个真实架构案例。",
-    actionExampleBtn: "查看案例目录",
-    levelsTitle: "C4 模型的 4 个抽象层级",
-    levelsSubtitle: "逐层展开系统细节，不混淆关注点，让架构图清晰易懂。",
-    catalogTitle: "50 个行业架构案例库",
-    catalogSubtitle: "选择任意案例即可一键加载到编辑器中交互体验。",
-    catalogSearchPlaceholder: "按名称、技术或参考产品搜索…",
-    catalogAll: "所有分类",
-    catalogOpenBtn: "在编辑器中打开",
-    featuresTitle: "记录活架构所需的一切工具",
-    featuresSubtitle: "专为软件架构师、工程师团队、高校师生打造。",
-    feature1Title: "双击深入（Drill-down）",
-    feature1Desc: "双击系统或容器即可展开下一层级，随时快速返回上一层。",
-    feature2Title: "原生代码导出",
-    feature2Desc: "导出为 PlantUML、Mermaid、Markdown 和 JSON，与代码一同纳入版本控制。",
+      "4+1 模型从五个视角描述系统：四个技术视图——逻辑、进程、开发和物理——再加上将它们联系在一起的场景视图。从用例开始，逐步完善其余部分。",
+    actionOpenTitle: "用例编辑器",
+    actionOpenDesc:
+      "在支持钻取的交互式画布上建模参与者、系统、用例与主流程。",
+    actionOpenBtn: "打开编辑器",
+    actionCreateTitle: "新建空白项目",
+    actionCreateDesc: "创建带工作表标签的干净项目，从零开始建模。",
+    actionCreateBtn: "从空白开始",
+    actionLearnTitle: "什么是 4+1？",
+    actionLearnDesc: "了解 Kruchten 的五个视图及其相互关系。",
+    actionLearnBtn: "查看视图",
+    viewsTitle: "4+1 模型的五个视图",
+    viewsSubtitle: "每个视图回答架构师的一个不同问题；合在一起描述完整的系统。",
+    viewsIntro:
+      "Philippe Kruchten 于 1995 年提出用四个技术视图——逻辑、进程、开发和物理——描述软件架构，并由第五个视图——场景（用例）——作为主线将它们串起并验证其一致性。",
+    views: [
+      {
+        tag: "+1",
+        name: "场景",
+        question: "系统做什么、谁在使用它？",
+        detail:
+          "包含参与者、步骤流程和规则的用例：赋予其他视图意义的视图。这是编辑器中首个可用的视图。",
+        available: true,
+      },
+      {
+        tag: "V1",
+        name: "逻辑",
+        question: "系统的静态结构是什么样的？",
+        detail: "实体、类及其关系：构成软件的元素及其概念上的组织方式。",
+        available: false,
+      },
+      {
+        tag: "V2",
+        name: "进程",
+        question: "系统在运行时如何执行与协调？",
+        detail: "进程、线程、并发与同步：系统的动态行为。",
+        available: false,
+      },
+      {
+        tag: "V3",
+        name: "开发",
+        question: "源代码如何组织？",
+        detail: "模块、包、分层以及软件各部分之间的依赖关系（开发者视角）。",
+        available: false,
+      },
+      {
+        tag: "V4",
+        name: "物理",
+        question: "部署在哪里、如何部署？",
+        detail: "节点、服务器、网络与基础设施：软件到硬件的映射。",
+        available: false,
+      },
+    ],
+    availableNow: "现已可用",
+    comingSoon: "即将推出",
+    featuresTitle: "使用 4+1 建模所需的一切",
+    featuresSubtitle: "专为架构师、开发者、教师和学生打造的工具。",
+    feature1Title: "用例钻取",
+    feature1Desc:
+      "一键从参与者和系统进入用例与步骤流程，随时返回上一层级。",
+    feature2Title: "原生导出",
+    feature2Desc:
+      "将模型导出为 JSON、Markdown 或签名 JWT，与代码一起纳入 Git 版本管理。",
     feature3Title: "100% 浏览器本地隐私",
-    feature3Desc: "无需注册账号，无需后端服务器，所有模型安全存放在本地设备中。",
-    ctaTitle: "准备好绘制清晰的架构图了吗？",
-    ctaSubtitle: "立即启动编辑器，数秒内开启建模之旅。",
-    ctaBtn: "启动 C4 Modeler",
+    feature3Desc: "无需服务器或账号：项目保存在浏览器中，通过链接分享。",
+    ctaTitle: "准备好为你的架构建模了吗？",
+    ctaSubtitle: "打开用例编辑器，几分钟内描述你的系统。",
+    ctaBtn: "启动 4+1 Modeler",
   },
   ko: {
-    heroBadge: "소프트웨어 아키텍처 시각적 모델링",
-    heroTitle: "C4 모델로 소프트웨어 아키텍처 모델링 및 문서화",
+    brand: "4+1 Modeler",
+    brandTagline: "소프트웨어 아키텍처",
+    heroBadge: "4+1 아키텍처 모델 · Philippe Kruchten",
+    heroTitle: "4+1 모델의 다섯 가지 뷰로 아키텍처를 문서화하세요",
     heroSubtitle:
-      "적절한 추상화 수준에서 시스템을 설계하세요: 컨텍스트부터 컨테이너, 컴포넌트, 코드까지. 대화형 인터랙션과 내보내기 지원.",
-    actionOpenTitle: "C4 Modeler 열기",
-    actionOpenDesc: "대화형 캔버스에 접속하여 브라우저에 저장된 모델을 계속 편집합니다.",
-    actionOpenBtn: "편집기로 이동",
-    actionCreateTitle: "새 모델 만들기",
-    actionCreateDesc: "처음부터 고유한 시스템을 설계할 수 있는 빈 작업 공간을 시작합니다.",
-    actionCreateBtn: "빈 캔버스로 시작",
-    actionExampleTitle: "예제 아키텍처 로드",
-    actionExampleDesc: "스트리밍, 핀테크, AI, 인프라 등 50가지 실제 아키텍처 사례를 탐색하세요.",
-    actionExampleBtn: "예제 살펴보기",
-    levelsTitle: "C4 모델의 4가지 추상화 수준",
-    levelsSubtitle: "다이어그램을 복잡하게 만들지 않고 점진적으로 세부 사항을 확대하세요.",
-    catalogTitle: "50가지 실제 아키텍처 사례 카탈로그",
-    catalogSubtitle: "원하는 예제를 선택하여 편집기로 바로 로드하세요.",
-    catalogSearchPlaceholder: "이름, 기술 스택 또는 참조 제품 검색...",
-    catalogAll: "전체 카테고리",
-    catalogOpenBtn: "편집기에서 열기",
-    featuresTitle: "살아있는 아키텍처를 문서화하는 데 필요한 모든 것",
-    featuresSubtitle: "소프트웨어 아키텍트, 엔지니어, 교사 및 학생을 위해 제작되었습니다.",
-    feature1Title: "대화형 드릴다운",
-    feature1Desc: "시스템 또는 컨테이너를 두 번 클릭하여 다음 레벨로 이동하고 언제든지 돌아갈 수 있습니다.",
-    feature2Title: "코드 내보내기 지원",
-    feature2Desc: "PlantUML, Mermaid, Markdown, JSON으로 내보내 Git 저장소에 보관하세요.",
+      "4+1 모델은 시스템을 다섯 가지 관점에서 기술합니다: 네 가지 기술 뷰 — 논리, 프로세스, 개발, 물리 — 그리고 이들을 연결하는 시나리오 뷰. 유스케이스부터 시작하세요.",
+    actionOpenTitle: "유스케이스 편집기",
+    actionOpenDesc:
+      "드릴다운이 가능한 대화형 캔버스에서 액터, 시스템, 유스케이스와 주 흐름을 모델링하세요.",
+    actionOpenBtn: "편집기 열기",
+    actionCreateTitle: "새 빈 프로젝트",
+    actionCreateDesc: "시트 탭이 있는 깨끗한 프로젝트를 만들어 처음부터 모델링하세요.",
+    actionCreateBtn: "빈 상태로 시작",
+    actionLearnTitle: "4+1이란?",
+    actionLearnDesc: "Kruchten의 다섯 가지 뷰와 그 관계를 알아보세요.",
+    actionLearnBtn: "뷰 살펴보기",
+    viewsTitle: "4+1 모델의 다섯 가지 뷰",
+    viewsSubtitle: "각 뷰는 아키텍트의 서로 다른 질문에 답하며, 합쳐져 전체 시스템을 기술합니다.",
+    viewsIntro:
+      "Philippe Kruchten은 1995년에 소프트웨어 아키텍처를 네 가지 기술 뷰(논리, 프로세스, 개발, 물리)로 기술하고, 다섯 번째 뷰인 시나리오(유스케이스)가 이를 관통하며 나머지 네 뷰의 정합성을 검증한다고 제안했습니다.",
+    views: [
+      {
+        tag: "+1",
+        name: "시나리오",
+        question: "시스템이 무엇을 하고 누가 사용하나요?",
+        detail:
+          "액터, 단계 흐름, 규칙을 포함한 유스케이스: 다른 뷰에 의미를 부여하는 뷰입니다. 편집기에서 가장 먼저 사용할 수 있습니다.",
+        available: true,
+      },
+      {
+        tag: "V1",
+        name: "논리",
+        question: "시스템의 정적 구조는 어떤가요?",
+        detail:
+          "엔터티, 클래스와 그 관계: 소프트웨어를 구성하는 요소와 개념적 구성입니다.",
+        available: false,
+      },
+      {
+        tag: "V2",
+        name: "프로세스",
+        question: "실행 시 어떻게 동작하고 조정되나요?",
+        detail: "프로세스, 스레드, 동시성 및 동기화: 시스템의 동적 행동입니다.",
+        available: false,
+      },
+      {
+        tag: "V3",
+        name: "개발",
+        question: "소스 코드는 어떻게 조직되나요?",
+        detail: "모듈, 패키지, 계층과 소프트웨어 부분 간 의존성(개발자 관점).",
+        available: false,
+      },
+      {
+        tag: "V4",
+        name: "물리",
+        question: "어디에 어떻게 배포되나요?",
+        detail: "노드, 서버, 네트워크, 인프라: 소프트웨어를 하드웨어에 매핑한 것입니다.",
+        available: false,
+      },
+    ],
+    availableNow: "지금 사용 가능",
+    comingSoon: "출시 예정",
+    featuresTitle: "4+1 모델링에 필요한 모든 것",
+    featuresSubtitle: "아키텍트, 개발자, 교사와 학생을 위해 설계된 도구입니다.",
+    feature1Title: "유스케이스 드릴다운",
+    feature1Desc:
+      "클릭 한 번으로 액터와 시스템에서 유스케이스와 단계 흐름으로 이동하고, 언제든지 상위 레벨로 돌아올 수 있습니다.",
+    feature2Title: "네이티브 내보내기",
+    feature2Desc:
+      "모델을 JSON, Markdown 또는 서명된 JWT로 내보내 Git에서 코드와 함께 버전 관리하세요.",
     feature3Title: "100% 브라우저 로컬 개인정보 보호",
-    feature3Desc: "서버나 계정이 필요하지 않습니다. 모든 데이터는 안전하게 기기에 보관됩니다.",
-    ctaTitle: "아키텍처를 구조화할 준비가 되셨나요?",
-    ctaSubtitle: "지금 바로 편집기를 실행하여 몇 초 만에 다이어그램 작성을 시작하세요.",
-    ctaBtn: "C4 Modeler 시작",
+    feature3Desc:
+      "서버나 계정이 필요 없습니다. 프로젝트는 브라우저에 머무르며 링크로 공유됩니다.",
+    ctaTitle: "아키텍처를 모델링할 준비가 되셨나요?",
+    ctaSubtitle: "유스케이스 편집기를 열고 몇 분 안에 시스템을 설명하세요.",
+    ctaBtn: "4+1 Modeler 시작",
   },
 };
 

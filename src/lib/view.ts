@@ -2,22 +2,23 @@ import { MarkerType } from "@xyflow/react";
 import type { CSSProperties } from "react";
 import type { Edge, EdgeMarker, Node } from "@xyflow/react";
 import {
-  LEVELS,
   NODE_HEIGHT,
   NODE_WIDTH,
   defaultNodeSize,
   depthOfKind,
+  diagramDef,
+  elementNodeSize,
   isDrillable,
   levelMeta,
-} from "./catalog";
-
-export { NODE_HEIGHT, NODE_WIDTH };
+} from "./diagrams";
 import type {
-  C4Element,
-  C4Relationship,
+  DiagramElement,
+  DiagramId,
+  DiagramRelationship,
+  ElementKind,
   Level,
   Selection,
-  Workspace,
+  Sheet,
 } from "./types";
 
 /** Tamaño de referencia usado para calcular separaciones y fronteras. */
@@ -49,8 +50,8 @@ export function boundaryBox(boxes: BoxInput[]): Box | null {
   return { x: minX, y: minY, width: maxX - minX, height: maxY - minY };
 }
 
-export interface C4NodeData extends Record<string, unknown> {
-  element: C4Element;
+export interface DiagramNodeData extends Record<string, unknown> {
+  element: DiagramElement;
   /** `true` si el elemento pertenece al nivel/ámbito actual (no es contexto). */
   isDetail: boolean;
 }
@@ -61,47 +62,42 @@ export interface BoundaryNodeData extends Record<string, unknown> {
   subtitle: string;
 }
 
-export type C4FlowNode = Node<C4NodeData, "c4">;
-export type NoteFlowNode = Node<NoteNodeData, "note">;
+export type ElementFlowNode = Node<DiagramNodeData, "element">;
+export type NoteFlowNode = Node<DiagramNodeData, "note">;
 export type BoundaryFlowNode = Node<BoundaryNodeData, "boundary">;
-export type FlowNode = C4FlowNode | NoteFlowNode | BoundaryFlowNode;
+export type FlowNode = ElementFlowNode | NoteFlowNode | BoundaryFlowNode;
 
-export interface NoteNodeData extends Record<string, unknown> {
-  element: C4Element;
-  isDetail: boolean;
+export interface DiagramEdgeData extends Record<string, unknown> {
+  relationship: DiagramRelationship;
 }
 
-export interface C4EdgeData extends Record<string, unknown> {
-  relationship: C4Relationship;
-}
-
-export type C4FlowEdge = Edge<C4EdgeData, "c4">;
+export type DiagramFlowEdge = Edge<DiagramEdgeData, "element">;
 
 export interface ViewResult {
   nodes: FlowNode[];
-  edges: C4FlowEdge[];
+  edges: DiagramFlowEdge[];
   /** Elementos que pertenecen al ámbito actual (los "detalle"). */
   detailIds: string[];
   /** Elementos mostrados sólo como contexto externo. */
   contextIds: string[];
-  scope: C4Element | null;
+  scope: DiagramElement | null;
 }
 
 /* ------------------------------------------------------------------ */
 /* Consultas sobre el modelo                                           */
 /* ------------------------------------------------------------------ */
 
-export function indexElements(workspace: Workspace): Map<string, C4Element> {
-  return new Map(workspace.elements.map((element) => [element.id, element]));
+export function indexElements(sheet: Sheet): Map<string, DiagramElement> {
+  return new Map(sheet.elements.map((element) => [element.id, element]));
 }
 
-export function childrenOf(workspace: Workspace, parentId: string | null): C4Element[] {
-  return workspace.elements.filter((element) => element.parentId === parentId);
+export function childrenOf(sheet: Sheet, parentId: string | null): DiagramElement[] {
+  return sheet.elements.filter((element) => element.parentId === parentId);
 }
 
-export function ancestorsOf(workspace: Workspace, element: C4Element): C4Element[] {
-  const byId = indexElements(workspace);
-  const chain: C4Element[] = [];
+export function ancestorsOf(sheet: Sheet, element: DiagramElement): DiagramElement[] {
+  const byId = indexElements(sheet);
+  const chain: DiagramElement[] = [];
   let current = element.parentId ? byId.get(element.parentId) : undefined;
   while (current) {
     chain.push(current);
@@ -110,25 +106,32 @@ export function ancestorsOf(workspace: Workspace, element: C4Element): C4Element
   return chain;
 }
 
-export function depthOfElement(element: C4Element): number {
-  return depthOfKind(element.kind);
+export function depthOfElement(diagram: DiagramId, element: DiagramElement): number {
+  return depthOfKind(diagram, element.kind);
 }
 
-/** Nivel al que se entra cuando se abre un elemento (undefined si no se puede). */
-export function levelForElement(element: C4Element | undefined): Level | null {
+/** Nivel al que se entra cuando se abre un elemento (null si no se puede). */
+export function levelForElement(
+  diagram: DiagramId,
+  element: DiagramElement | undefined,
+): Level | null {
   if (!element) return null;
-  const depth = depthOfElement(element);
-  const level = LEVELS.find((item) => item.scopeDepth === depth);
-  return level ? level.id : null;
+  const depth = depthOfElement(diagram, element);
+  const found = diagramDef(diagram).levels.find((item) => item.scopeDepth === depth);
+  return found ? found.id : null;
 }
 
 /**
  * Elementos que pueden actuar como ámbito para un nivel: los de la profundidad
- * correcta que además admiten contenido (personas y códigos quedan fuera).
+ * correcta que además admiten contenido.
  */
-function scopeCandidates(workspace: Workspace, wantedDepth: number): C4Element[] {
-  return workspace.elements.filter(
-    (element) => depthOfElement(element) === wantedDepth && isDrillable(element.kind),
+function scopeCandidates(
+  diagram: DiagramId,
+  sheet: Sheet,
+  wantedDepth: number,
+): DiagramElement[] {
+  return sheet.elements.filter(
+    (element) => depthOfElement(diagram, element) === wantedDepth && isDrillable(diagram, element.kind),
   );
 }
 
@@ -137,30 +140,40 @@ function scopeCandidates(workspace: Workspace, wantedDepth: number): C4Element[]
  * correcto, o el primer elemento navegable del nivel.
  */
 export function resolveScopeId(
-  workspace: Workspace,
+  diagram: DiagramId,
+  sheet: Sheet,
   level: Level,
   preferredId?: string | null,
 ): string | null {
-  if (level === "context") return null;
-  const wantedDepth = levelMeta(level).scopeDepth;
-  const byId = indexElements(workspace);
+  const wantedDepth = levelMeta(diagram, level).scopeDepth;
+  if (wantedDepth < 0) return null;
+  const byId = indexElements(sheet);
   if (preferredId) {
     const preferred = byId.get(preferredId);
-    if (preferred && depthOfElement(preferred) === wantedDepth && isDrillable(preferred.kind)) {
+    if (
+      preferred &&
+      depthOfElement(diagram, preferred) === wantedDepth &&
+      isDrillable(diagram, preferred.kind)
+    ) {
       return preferredId;
     }
   }
-  const candidates = scopeCandidates(workspace, wantedDepth);
+  const candidates = scopeCandidates(diagram, sheet, wantedDepth);
   const withChildren = candidates.filter((candidate) =>
-    workspace.elements.some((element) => element.parentId === candidate.id),
+    sheet.elements.some((element) => element.parentId === candidate.id),
   );
   return (withChildren[0] ?? candidates[0])?.id ?? null;
 }
 
 /** Elementos navegables para el selector de ámbito. */
-export function navigableElements(workspace: Workspace, level: Level): C4Element[] {
-  if (level === "context") return [];
-  return scopeCandidates(workspace, levelMeta(level).scopeDepth);
+export function navigableElements(
+  diagram: DiagramId,
+  sheet: Sheet,
+  level: Level,
+): DiagramElement[] {
+  const wantedDepth = levelMeta(diagram, level).scopeDepth;
+  if (wantedDepth < 0) return [];
+  return scopeCandidates(diagram, sheet, wantedDepth);
 }
 
 /* ------------------------------------------------------------------ */
@@ -169,12 +182,17 @@ export function navigableElements(workspace: Workspace, level: Level): C4Element
 
 /**
  * Sube un elemento hasta la profundidad del contexto actual, para que un
- * componente de otro contenedor se represente como su contenedor.
+ * descendiente de otro ámbito se represente como su ancestro visible.
  */
-function liftToDepth(workspace: Workspace, element: C4Element, targetDepth: number): C4Element {
-  const byId = indexElements(workspace);
+function liftToDepth(
+  diagram: DiagramId,
+  sheet: Sheet,
+  element: DiagramElement,
+  targetDepth: number,
+): DiagramElement {
+  const byId = indexElements(sheet);
   let current = element;
-  while (depthOfElement(current) > targetDepth && current.parentId) {
+  while (depthOfElement(diagram, current) > targetDepth && current.parentId) {
     const parent = byId.get(current.parentId);
     if (!parent) break;
     current = parent;
@@ -185,16 +203,9 @@ function liftToDepth(workspace: Workspace, element: C4Element, targetDepth: numb
 /**
  * Elemento visible más próximo a un extremo de una relación: el propio si está
  * visible, o su ancestro visible más cercano.
- *
- * Las relaciones se declaran en el nivel en el que ocurren (una componente que
- * llama a una base de datos, una persona que usa una app), pero cada diagrama
- * sólo dibuja los elementos de su nivel: sin esta elevación, el extremo no
- * estaría en la vista y la flecha no se pintaría. Así una relación de nivel 3
- * aparece en L2 como contenedor → contenedor y en el contexto como sistema →
- * sistema, que es como se leen los diagramas C4.
  */
 function nearestVisible(
-  byId: Map<string, C4Element>,
+  byId: Map<string, DiagramElement>,
   id: string,
   visibleIds: Set<string>,
 ): string | null {
@@ -206,31 +217,43 @@ function nearestVisible(
   return null;
 }
 
+/** Orden estable de los pasos por `order` (los vacíos van al final). */
+function sortedSteps(steps: DiagramElement[]): DiagramElement[] {
+  return steps
+    .map((element, index) => ({ element, index }))
+    .sort((a, b) => {
+      const orderA = a.element.order ?? Number.MAX_SAFE_INTEGER;
+      const orderB = b.element.order ?? Number.MAX_SAFE_INTEGER;
+      if (orderA !== orderB) return orderA - orderB;
+      return a.index - b.index;
+    })
+    .map((entry) => entry.element);
+}
+
 export function buildView(
-  workspace: Workspace,
+  sheet: Sheet,
   level: Level,
   scopeId: string | null,
   selection: Selection,
 ): ViewResult {
-  const byId = indexElements(workspace);
-  const meta = levelMeta(level);
+  const diagram = sheet.diagram;
+  const def = diagramDef(diagram);
+  const byId = indexElements(sheet);
+  const meta = levelMeta(diagram, level);
   const detailDepth = meta.scopeDepth + 1;
-  const isContextLevel = level === "context";
+  const isRootLevel = meta.scopeDepth < 0;
 
-  const detail = workspace.elements.filter((element) =>
-    isContextLevel
-      ? depthOfElement(element) === detailDepth
-      : depthOfElement(element) === detailDepth &&
+  const detail = sheet.elements.filter((element) =>
+    isRootLevel
+      ? depthOfElement(diagram, element) === 0 && element.parentId === null
+      : depthOfElement(diagram, element) === detailDepth &&
         (scopeId ? element.parentId === scopeId : element.parentId === null),
   );
   const detailIds = new Set(detail.map((element) => element.id));
 
-  // Vecinos de un salto, elevado a la profundidad del contexto. Un extremo
-  // pertenece a la vista si él mismo o alguno de sus ancestros es «detalle»:
-  // así se llegan a ver los contenedores o personas que hablan con una
-  // componente del ámbito, aunque la relación no la declare esa componente.
+  // Vecinos de un salto, elevado a la profundidad del contexto.
   const contextIds = new Set<string>();
-  if (!isContextLevel && detail.length > 0) {
+  if (!isRootLevel && detail.length > 0) {
     const ownerOf = (id: string): string | null => {
       let current = byId.get(id);
       while (current) {
@@ -239,7 +262,7 @@ export function buildView(
       }
       return null;
     };
-    for (const relationship of workspace.relationships) {
+    for (const relationship of sheet.relationships) {
       const sourceOwner = ownerOf(relationship.source);
       const targetOwner = ownerOf(relationship.target);
       if (!sourceOwner && !targetOwner) continue;
@@ -247,16 +270,27 @@ export function buildView(
       if (otherId === scopeId) continue;
       const other = byId.get(otherId);
       if (!other) continue;
-      const lifted = liftToDepth(workspace, other, meta.scopeDepth);
+      const lifted = liftToDepth(diagram, sheet, other, meta.scopeDepth);
       if (lifted.id === scopeId || detailIds.has(lifted.id)) continue;
       contextIds.add(lifted.id);
+    }
+
+    // `showAllContext`: el contexto de ese nivel se muestra entero, aunque
+    // todavía no haya relaciones (p. ej. todos los actores del sistema).
+    if (def.flags?.showAllContext) {
+      for (const element of sheet.elements) {
+        if (element.id === scopeId) continue;
+        if (depthOfElement(diagram, element) !== meta.scopeDepth) continue;
+        if (detailIds.has(element.id)) continue;
+        contextIds.add(element.id);
+      }
     }
   }
 
   const visibleIds = new Set<string>([...detailIds, ...contextIds]);
 
   // Las notas son anotaciones: flotan sobre el diagrama en cualquier nivel.
-  for (const note of workspace.elements) {
+  for (const note of sheet.elements) {
     if (note.kind === "note") {
       visibleIds.add(note.id);
       detailIds.add(note.id);
@@ -265,12 +299,12 @@ export function buildView(
 
   const boundaryNodes: BoundaryFlowNode[] = [];
 
-  if (!isContextLevel && scopeId && detail.length > 0) {
+  if (!isRootLevel && scopeId && detail.length > 0) {
     const scope = byId.get(scopeId);
     if (scope) {
       const box = boundaryBox(
         detail.map((element) => {
-          const size = defaultNodeSize(element.kind);
+          const size = elementNodeSize(diagram, element);
           return { x: element.x, y: element.y, ...size };
         }),
       );
@@ -282,7 +316,7 @@ export function buildView(
           data: {
             elementId: scope.id,
             title: scope.name,
-            subtitle: scope.technology,
+            subtitle: "",
           },
           draggable: false,
           selectable: false,
@@ -296,10 +330,11 @@ export function buildView(
     }
   }
 
-  const elementNodes: (C4FlowNode | NoteFlowNode)[] = [];
-  for (const element of workspace.elements) {
+  const elementNodes: (ElementFlowNode | NoteFlowNode)[] = [];
+  for (const element of sheet.elements) {
     if (!visibleIds.has(element.id)) continue;
     const isSelected = selection?.type === "element" && selection.id === element.id;
+    const isResizable = element.width != null || element.kind === "system";
     const shared = {
       id: element.id,
       position: { x: element.x, y: element.y },
@@ -307,33 +342,33 @@ export function buildView(
       selected: isSelected,
       draggable: true,
       deletable: true,
+      // El sistema (rectángulo del escenario) fija ancho/alto en el nodo de RF.
+      ...(isResizable
+        ? { style: { ...elementNodeSize(diagram, element) } }
+        : {}),
     };
     elementNodes.push(
       element.kind === "note"
         ? { ...shared, type: "note", connectable: false }
-        : { ...shared, type: "c4" },
+        : { ...shared, type: "element" },
     );
   }
 
-  // React Flow pinta en el orden del array: los nodos de abajo van primero para
-  // que el nodo de arriba (y su caja) tape cualquier elemento que se solape.
+  // React Flow pinta en el orden del array: los nodos de abajo van primero.
   elementNodes.sort((a, b) => b.position.y - a.position.y || b.position.x - a.position.x);
   const nodes: FlowNode[] = [...elementNodes, ...boundaryNodes];
 
-  const edges: C4FlowEdge[] = [];
+  const edges: DiagramFlowEdge[] = [];
   const drawnPairs = new Set<string>();
-  for (const relationship of workspace.relationships) {
+  const addEdge = (relationship: DiagramRelationship) => {
     const source = nearestVisible(byId, relationship.source, visibleIds);
     const target = nearestVisible(byId, relationship.target, visibleIds);
-    if (!source || !target) continue;
-    if (source === scopeId || target === scopeId) continue;
-    if (source === target) continue;
-    if (!detailIds.has(source) && !detailIds.has(target)) continue;
-    // Al elevar, varias relaciones pueden colapsar en la misma flecha (p. ej.
-    // dos contenedores que llaman a la misma persona en el contexto). Se pinta
-    // la primera, la que aparece antes en el catálogo.
+    if (!source || !target) return;
+    if (source === scopeId || target === scopeId) return;
+    if (source === target) return;
+    if (!detailIds.has(source) && !detailIds.has(target)) return;
     const pair = JSON.stringify([source, target]);
-    if (drawnPairs.has(pair)) continue;
+    if (drawnPairs.has(pair)) return;
     drawnPairs.add(pair);
     const isSelected = selection?.type === "relationship" && selection.id === relationship.id;
     edges.push({
@@ -342,11 +377,35 @@ export function buildView(
       target,
       sourceHandle: relationship.sourceHandle ?? undefined,
       targetHandle: relationship.targetHandle ?? undefined,
-      type: "c4",
+      type: "element",
       data: { relationship },
       selected: isSelected,
       ...edgeAppearance(relationship, isSelected),
     });
+  };
+
+  for (const relationship of sheet.relationships) {
+    addEdge(relationship);
+  }
+
+  // `autoChain`: los pasos se encadenan automáticamente por `order`, sin
+  // cablear relaciones a mano (las manuales ya dibujadas no se duplican).
+  if (def.flags?.autoChain) {
+    const steps = sortedSteps(detail.filter((element) => element.kind === "step"));
+    for (let index = 0; index < steps.length - 1; index += 1) {
+      const source = steps[index];
+      const target = steps[index + 1];
+      addEdge({
+        id: `auto-${source.id}-${target.id}`,
+        source: source.id,
+        target: target.id,
+        sourceHandle: null,
+        targetHandle: null,
+        label: "",
+        description: "",
+        style: "association",
+      });
+    }
   }
 
   return {
@@ -366,20 +425,51 @@ export function edgeStroke(selected: boolean, color?: string | null): string {
 const THICKNESSES: Record<string, CSSProperties> = {
   idle: { strokeWidth: 1.5 },
   active: { strokeWidth: 2.25 },
-  idleAsync: { strokeWidth: 1.5, strokeDasharray: "7 5" },
-  activeAsync: { strokeWidth: 2.25, strokeDasharray: "7 5" },
+  idleDashed: { strokeWidth: 1.5, strokeDasharray: "7 5" },
+  activeDashed: { strokeWidth: 2.25, strokeDasharray: "7 5" },
 };
 
-/** Estilo de la arista: color, grosor, asincronía y selección. */
+/** Relaciones dibujadas con línea discontinua («include» y «extend»). */
+export function isDashedStyle(style: DiagramRelationship["style"]): boolean {
+  return style === "include" || style === "extend";
+}
+
+/**
+ * Etiqueta efectiva de una arista: si es «include» o «extend» y el usuario no
+ * escribió nada, se muestra el estereotipo entre guillemets.
+ */
+export function effectiveEdgeLabel(relationship: DiagramRelationship): string {
+  const label = relationship.label.trim();
+  if (label) return label;
+  if (relationship.style === "include" || relationship.style === "extend") {
+    return `«${relationship.style}»`;
+  }
+  return "";
+}
+
+/**
+ * Marcador hueco (triángulo abierto) para generalizaciones UML.
+ * Se define una sola vez en el lienzo (véase Canvas.tsx).
+ */
+export const UML_GENERALIZATION_MARKER = "url(#uml-generalization)";
+
+/**
+ * Estilo de la arista: color, grosor, discontinuidad y selección.
+ *
+ * UML clásico de casos de uso:
+ * - association: línea sólida sin punta.
+ * - include/extend: línea discontinua con punta abierta («...»).
+ * - generalization: línea sólida con triángulo hueco.
+ */
 export function edgeAppearance(
-  relationship: C4Relationship,
+  relationship: DiagramRelationship,
   selected: boolean,
-): Pick<C4FlowEdge, "style" | "markerEnd" | "markerStart"> {
-  const dashed = relationship.style === "async";
+): Pick<DiagramFlowEdge, "style" | "markerEnd" | "markerStart"> {
+  const dashed = isDashedStyle(relationship.style);
   const base = dashed
     ? selected
-      ? THICKNESSES.activeAsync
-      : THICKNESSES.idleAsync
+      ? THICKNESSES.activeDashed
+      : THICKNESSES.idleDashed
     : selected
       ? THICKNESSES.active
       : THICKNESSES.idle;
@@ -387,16 +477,27 @@ export function edgeAppearance(
   const width = typeof relationship.thickness === "number" ? relationship.thickness : undefined;
   const style: CSSProperties = { ...base, stroke };
   if (width) style.strokeWidth = width;
-  const marker: EdgeMarker = {
-    type: MarkerType.ArrowClosed,
-    color: stroke,
-    width: 16,
-    height: 16,
-  };
+
+  let markerEnd: EdgeMarker | string | undefined;
+  if (relationship.style === "association") {
+    markerEnd = undefined;
+  } else if (relationship.style === "generalization") {
+    markerEnd = UML_GENERALIZATION_MARKER;
+  } else {
+    // include / extend: punta abierta en V
+    markerEnd = {
+      type: MarkerType.Arrow,
+      color: stroke,
+      width: 14,
+      height: 14,
+    };
+  }
+
   return {
     style,
-    markerEnd: marker,
-    markerStart: relationship.style === "bi" ? { ...marker } : undefined,
+    markerEnd,
+    markerStart: undefined,
   };
 }
 
+export { NODE_HEIGHT, NODE_WIDTH };

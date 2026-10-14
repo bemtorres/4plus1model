@@ -2,17 +2,17 @@ import { Button } from "@heroui/react";
 import { useState } from "react";
 import { buildEditUrl } from "@/lib/share";
 import { useT } from "@/i18n";
-import { useWorkspace } from "@/lib/workspace-store";
+import { useProject } from "@/lib/project-store";
 import { Icon } from "./icons";
 import { FIT_VIEW_EVENT } from "./Canvas";
 import { useFullscreen } from "./useFullscreen";
 
 /**
  * Barra flotante de Modo Presentación sobre el lienzo.
- * Ofrece acceso rápido a Pantalla Completa, Ajustar Vista, Navegación de capas y Editar.
+ * Ofrece acceso rápido a Pantalla Completa, Ajustar Vista y Editar.
  */
 export function ReadOnlyBanner() {
-  const { readOnly } = useWorkspace();
+  const { readOnly } = useProject();
   const t = useT();
   const { isFullscreen, toggleFullscreen } = useFullscreen();
   const [minimized, setMinimized] = useState(false);

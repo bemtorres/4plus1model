@@ -2,8 +2,8 @@
 
 Este documento describe todos los parámetros que acepta **C4 Modeler** a través de la URL, las **nuevas reglas y validaciones estrictas** implementadas (sanitización de códigos, soporte de idioma y tema), y el catálogo completo de los 50 casos de estudio disponibles.
 
-URL de la página principal: [https://c4model.cafeycodigo.org](https://c4model.cafeycodigo.org)  
-URL del editor: [https://c4model.cafeycodigo.org/editor](https://c4model.cafeycodigo.org/editor)
+URL de la página principal: [https://4plus1model.cafeycodigo.org](https://4plus1model.cafeycodigo.org)  
+URL del editor: [https://4plus1model.cafeycodigo.org/editor](https://4plus1model.cafeycodigo.org/editor)
 
 ---
 
@@ -124,13 +124,13 @@ Puedes combinar los parámetros para crear enlaces completos:
 
 ```
 # Abrir CineNova en español y con tema oscuro
-https://c4model.cafeycodigo.org/editor?code=cinenova&lang=es&theme=dark
+https://4plus1model.cafeycodigo.org/editor?code=cinenova&lang=es&theme=dark
 
 # Abrir NovaBank en inglés y tema claro
-https://c4model.cafeycodigo.org/editor?code=novabank&lang=en&theme=light
+https://4plus1model.cafeycodigo.org/editor?code=novabank&lang=en&theme=light
 
 # Abrir el modelo de demostración en portugués
-https://c4model.cafeycodigo.org/editor?code=demo&lang=pt
+https://4plus1model.cafeycodigo.org/editor?code=demo&lang=pt
 ```
 
 ---

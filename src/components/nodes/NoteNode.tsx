@@ -1,5 +1,6 @@
 import type { NodeProps } from "@xyflow/react";
-import { kindMeta } from "@/lib/catalog";
+import { defaultNodeSize, kindMeta } from "@/lib/diagrams";
+import { useProject } from "@/lib/project-store";
 import type { NoteFlowNode } from "@/lib/view";
 
 const DEFAULT_BG = "#fff8c5";
@@ -19,7 +20,9 @@ function withAlpha(hex: string, percent: number): string {
  */
 export function NoteNode({ data, selected }: NodeProps<NoteFlowNode>) {
   const { element } = data;
-  const meta = kindMeta("note");
+  const { sheet } = useProject();
+  const meta = kindMeta(sheet.diagram, "note");
+  const box = defaultNodeSize(sheet.diagram, "note");
   const showBorder = element.border !== false;
   const showFill = element.fill !== false && element.color !== "transparent";
   const radius = element.radius ?? 10;
@@ -41,6 +44,8 @@ export function NoteNode({ data, selected }: NodeProps<NoteFlowNode>) {
         selected ? "c4-note--selected" : "",
       ].join(" ")}
       style={{
+        width: box.width,
+        minHeight: box.height,
         background: bg,
         color: element.textColor ?? DEFAULT_TEXT,
         fontSize: `${size}px`,

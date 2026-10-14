@@ -1,16 +1,16 @@
 import { useEffect, useState } from "react";
-import { clearShareParams, decodeWorkspace, isReadOnlyFromUrl, readSharePayload } from "@/lib/share";
+import { clearShareParams, decodeProject, isReadOnlyFromUrl, readSharePayload } from "@/lib/share";
 import { useT } from "@/i18n";
-import { useWorkspace } from "@/lib/workspace-store";
+import { useProject } from "@/lib/project-store";
 import { notify } from "./Toaster";
 
 /**
- * Carga un diagrama compartido (`?share=<payload>` o `?jwt=<token>`) o gestiona el modo bloqueado (`?edit=0`):
+ * Carga un proyecto compartido (`?share=<payload>` o `?jwt=<token>`) o gestiona el modo bloqueado (`?edit=0`):
  * - con `?edit=0` o `?edit=false` (o compartido sin `edit=1`) se abre en **solo lectura** y oculta el modo edición;
  * - con `?edit=1` o `?edit=true` se abre en modo edición completo.
  */
 export function useShareParam() {
-  const { importWorkspace, readOnly, setReadOnly } = useWorkspace();
+  const { importProject, readOnly, setReadOnly } = useProject();
   const t = useT();
   const [error, setError] = useState<string | null>(null);
 
@@ -31,16 +31,16 @@ export function useShareParam() {
     }
 
     let cancelled = false;
-    decodeWorkspace(shared.payload).then((workspace) => {
+    decodeProject(shared.payload).then((project) => {
       if (cancelled) return;
-      if (!workspace) {
+      if (!project) {
         setError(t("share.invalid"));
         clearShareParams();
         return;
       }
-      importWorkspace(workspace, { force: true });
+      importProject(project, { force: true });
       setReadOnly(!shared.editable);
-      if (!shared.editable) notify(t("share.loadedReadOnly", { name: workspace.name }), "info");
+      if (!shared.editable) notify(t("share.loadedReadOnly", { name: project.name }), "info");
     });
 
     return () => {

@@ -1,16 +1,17 @@
 import { useEffect, useState } from "react";
+import { ReactFlowProvider } from "@xyflow/react";
 import { LanguageProvider } from "@/i18n";
-import { WorkspaceProvider, useWorkspace } from "@/lib/workspace-store";
+import { ProjectProvider, useProject } from "@/lib/project-store";
 import { Canvas } from "./Canvas";
-import { ExamplesDialog } from "./ExamplesDialog";
 import { Inspector } from "./Inspector";
 import { LeftPanel } from "./LeftPanel";
+import { SheetTabs } from "./SheetTabs";
 import { Toaster } from "./Toaster";
 import { TopBar } from "./TopBar";
-import { useExampleParam } from "./useExampleParam";
 import { useShareParam } from "./useShareParam";
 
-function isTyping(target: EventTarget | null): boolean {  const element = target as HTMLElement | null;
+function isTyping(target: EventTarget | null): boolean {
+  const element = target as HTMLElement | null;
   if (!element) return false;
   return (
     element.tagName === "INPUT" ||
@@ -21,11 +22,18 @@ function isTyping(target: EventTarget | null): boolean {  const element = target
 }
 
 function Shell() {
-  const { selection, removeElement, removeRelationship, duplicateElement, undo, redo, autoLayout, readOnly, clearAll } =
-    useWorkspace();
-  const { openExample } = useExampleParam();
+  const {
+    selection,
+    removeElement,
+    removeRelationship,
+    duplicateElement,
+    undo,
+    redo,
+    autoLayout,
+    readOnly,
+    clearAll,
+  } = useProject();
   useShareParam();
-  const [examplesOpen, setExamplesOpen] = useState(false);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -83,28 +91,15 @@ function Shell() {
 
   const [mobileDrawer, setMobileDrawer] = useState<"left" | "right" | null>(null);
 
-  // Cerrar cajones móviles automáticamente cuando cambia la selección (si el usuario seleccionó algo en el lienzo)
-  useEffect(() => {
-    if (selection) {
-      // Si seleccionó un elemento o relación, si no hay cajón abierto en móvil, el usuario puede abrir el inspector manualmente
-    }
-  }, [selection]);
-
   return (
     <div className="app-shell">
       <TopBar
-        openExample={openExample}
-        onOpenExamples={() => setExamplesOpen(true)}
         onOpenMobileLeft={() => setMobileDrawer((prev) => (prev === "left" ? null : "left"))}
         onOpenMobileRight={() => setMobileDrawer((prev) => (prev === "right" ? null : "right"))}
       />
       <div className={readOnly ? "app-body app-body--presentation" : "app-body"}>
         {!readOnly ? (
           <LeftPanel
-            onOpenExamples={() => {
-              setMobileDrawer(null);
-              setExamplesOpen(true);
-            }}
             onClose={() => setMobileDrawer(null)}
             isOpenMobile={mobileDrawer === "left"}
           />
@@ -127,11 +122,7 @@ function Shell() {
           />
         ) : null}
       </div>
-      <ExamplesDialog
-        isOpen={examplesOpen}
-        onOpenChange={setExamplesOpen}
-        openExample={openExample}
-      />
+      <SheetTabs />
       <Toaster />
     </div>
   );
@@ -140,9 +131,11 @@ function Shell() {
 export function Modeler() {
   return (
     <LanguageProvider>
-      <WorkspaceProvider>
-        <Shell />
-      </WorkspaceProvider>
+      <ProjectProvider>
+        <ReactFlowProvider>
+          <Shell />
+        </ReactFlowProvider>
+      </ProjectProvider>
     </LanguageProvider>
   );
 }

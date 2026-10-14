@@ -1,156 +1,106 @@
-# C4 Modeler
+# 4+1 Modeler
 
-A browser-based tool for modeling and documenting software architecture using the C4 model (Context, Containers, Components, and Code).
+Herramienta web para aprender y documentar arquitectura de software con el modelo 4+1 de Philippe Kruchten. Incluye explicaciones de las cinco vistas y un editor visual para representar escenarios y casos de uso.
 
-This project helps teams describe systems at the right level of abstraction, from the big picture to implementation details, without mixing concerns in a single diagram.
+El objetivo del proyecto es ayudar a describir una arquitectura desde perspectivas complementarias, sin intentar concentrar todas sus preocupaciones en un único diagrama.
 
-It is designed to support students and teachers in learning and practicing the C4 modeling approach, turning architecture concepts into a clear and visual exercise.
+## ¿Qué es el modelo 4+1?
 
-This project was born from the cafeycodigo.org initiative.
+Propuesto por Philippe Kruchten, el modelo 4+1 organiza la descripción de una arquitectura de software en cuatro vistas técnicas y una vista de escenarios. Cada vista responde preguntas distintas sobre el sistema; juntas permiten entenderlo desde las necesidades de sus usuarios hasta su despliegue.
 
-Project website: https://c4model.cafeycodigo.org
+| Vista | Pregunta que responde | Qué describe |
+| --- | --- | --- |
+| **Escenarios (+1)** | ¿Qué hace el sistema y quién lo utiliza? | Actores, casos de uso y flujos que ilustran y validan la arquitectura. Conecta las otras cuatro vistas con requisitos y situaciones de uso. |
+| **Lógica** | ¿Cómo está organizada la estructura del sistema? | Elementos conceptuales —por ejemplo, clases o entidades— y sus responsabilidades y relaciones. |
+| **Proceso** | ¿Cómo se comporta el sistema mientras se ejecuta? | Procesos, hilos, concurrencia, comunicación y sincronización. |
+| **Desarrollo** | ¿Cómo se organiza el software para construirlo? | Módulos, componentes, capas, paquetes y dependencias del código. |
+| **Física** | ¿Dónde se ejecuta el software? | Nodos, dispositivos, servidores, redes y la distribución del software sobre la infraestructura. |
 
-## Why this project exists
+El “+1” representa la vista de escenarios: los casos de uso muestran cómo colaboran los elementos y ayudan a comprobar que las decisiones de las cuatro vistas técnicas satisfacen las necesidades planteadas.
 
-Most architecture diagrams fail because they try to show too much at once. The C4 model addresses this by encouraging progressive zooming:
+### Alcance actual del editor
 
-- Context: who uses the system and what external systems it interacts with
-- Containers: major applications, services, databases, and message brokers
-- Components: internal modules within a container
-- Code: key classes, functions, and responsibilities when needed
+La aplicación presenta las cinco vistas y explica su propósito. Actualmente, el editor permite modelar la vista de **Escenarios**: actores, sistemas, casos de uso y pasos de sus flujos. Las vistas Lógica, Proceso, Desarrollo y Física se explican como parte del modelo, pero todavía no están disponibles como editores independientes.
 
-C4 Modeler makes this workflow interactive and visual, so you can build diagrams, refine them, and export them for documentation or communication.
+## Funcionalidades
 
-## Features
+- Lienzo visual interactivo para modelar actores, sistemas, casos de uso, pasos y relaciones.
+- Navegación por niveles (drill-down) para pasar del contexto de escenarios al detalle de casos de uso y sus flujos.
+- Proyectos con varias hojas, notas, edición de relaciones y organización automática del diagrama.
+- Deshacer y rehacer cambios.
+- Guardado del proyecto en el almacenamiento local del navegador y opción para compartirlo mediante un enlace.
+- Exportación a JSON, Markdown y JWT.
+- Interfaz disponible en varios idiomas y temas claro y oscuro.
 
-- Visual editor for C4 architecture diagrams
-- Drill-down between levels: Context, Containers, Components, and Code
-- Drag-and-drop element palette
-- Relationship editing with labels and technologies
-- Auto-layout for elements at each level
-- Import/export support for JSON, PlantUML, Mermaid, and Markdown
-- Multi-language interface
-- Light and dark themes
-- Example-based architecture scenarios to explore the model
-
-## Tech stack
+## Tecnologías
 
 - Astro
-- React
-- TypeScript
+- React y TypeScript
 - Tailwind CSS
-- Hero UI
-- React Flow
+- HeroUI
+- React Flow (`@xyflow/react`)
 
-## Getting started
+## Empezar
 
-### Prerequisites
+### Requisitos
 
-- Node.js
+- Node.js 22.12.0 o posterior
 - npm
 
-### Install dependencies
+### Instalar dependencias
 
 ```bash
 npm install
 ```
 
-### Run locally
+### Ejecutar en desarrollo
 
 ```bash
 npm run dev
 ```
 
-Then open the local URL shown in the terminal, usually:
+Abre la URL local que indique la terminal; normalmente es `http://localhost:4321`.
 
-```text
-http://localhost:4321
-```
-
-### Production build
+### Compilar y previsualizar
 
 ```bash
 npm run build
-```
-
-To preview the production build locally:
-
-```bash
 npm run preview
 ```
 
-## Available scripts
+## Scripts disponibles
 
-```bash
-npm run dev
-npm run build
-npm run preview
-npm run check
-npm run check:examples
-npm run astro
-```
+- `npm run dev`: inicia el servidor local de desarrollo.
+- `npm run build`: compila la aplicación para producción.
+- `npm run preview`: previsualiza localmente la compilación.
+- `npm run check`: valida los tipos de TypeScript.
+- `npm run doc`: ejecuta el generador de documentación.
+- `npm run astro`: ejecuta comandos de Astro.
 
-### Script descriptions
-
-- `npm run dev`: starts the Astro development server
-- `npm run build`: builds the application for production
-- `npm run preview`: serves the built app locally
-- `npm run check`: runs TypeScript validation
-- `npm run check:examples`: validates the example catalog data
-- `npm run astro`: runs Astro CLI commands
-
-## Project structure
+## Estructura del proyecto
 
 ```text
 .
-├── public/                  # Static assets and example resources
-├── scripts/                 # Validation and build scripts
+├── public/          # Recursos estáticos
 ├── src/
-│   ├── components/          # UI and editor components
-│   ├── i18n/                # Translation dictionaries
-│   ├── layouts/             # Astro layouts
-│   ├── lib/                 # Domain logic, types, exports, and example data
-│   ├── pages/               # Astro pages
-│   ├── styles/              # Global styles
-│   └── env.d.ts
+│   ├── components/  # Interfaz, página informativa y editor
+│   ├── i18n/        # Traducciones
+│   ├── layouts/     # Layouts de Astro
+│   ├── lib/         # Modelo de datos, almacenamiento, diagramas y exportación
+│   ├── pages/       # Rutas de la aplicación
+│   └── styles/      # Estilos globales
 ├── astro.config.mjs
-├── CNAME                    # Custom domain configuration
 ├── package.json
-├── tsconfig.json
-├── .gitignore
-└── README.md
+└── tsconfig.json
 ```
 
-## Example catalog and URL parameters
+## Contribuir
 
-The project includes a catalog of example software architectures that can be explored in the app. These examples are defined in the `src/lib/examples` area and are validated by the example checker.
-
-You can load any example directly via URL using `?code=<id>` (e.g. `https://c4model.cafeycodigo.org/editor?code=cinenova`).
-
-- Full guide of parameters and list of all 50 codes: [docs/URL_PARAMETERS.md](docs/URL_PARAMETERS.md)
-- Guide on writing new examples: [src/lib/examples/README.md](src/lib/examples/README.md)
-
-If you want to add or modify example models, run:
-
-```bash
-npm run check:examples
-```
-
-## Development notes
-
-This app is designed for modeling architecture as a living artifact: the goal is not to generate a single polished diagram, but to create a structured understanding of a system that can evolve over time.
-
-The exported diagrams can be used in technical documentation, architecture reviews, onboarding, and system discussions.
-
-## Contributing
-
-Contributions are welcome. If you want to improve the tool, add example architectures, or refine the editor experience, please open a pull request with a clear description of the change.
+Las contribuciones son bienvenidas. Puedes proponer mejoras a las explicaciones del modelo, al editor de escenarios o a la implementación de las vistas técnicas. Describe claramente el cambio al abrir una solicitud de incorporación.
 
 ## License
 
 This project is licensed under the MIT License.
-
-This project was born from the cafeycodigo.org project and is distributed under the same open and permissive approach.
 
 Copyright (c) 2026 cafeycodigo.org
 

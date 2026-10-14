@@ -22,6 +22,13 @@ export const es: Dictionary = {
   "level.component.desc": "Módulos internos de un contenedor",
   "level.code.desc": "Clases y funciones clave",
 
+  "level.actors": "Actores y sistemas",
+  "level.usecases": "Casos de uso",
+  "level.steps": "Flujo del caso de uso",
+  "level.actors.desc": "Actores y el sistema bajo estudio",
+  "level.usecases.desc": "Casos de uso dentro del sistema",
+  "level.steps.desc": "Pasos del flujo principal",
+
   "kind.person": "Persona",
   "kind.softwareSystem": "Sistema de software",
   "kind.externalSystem": "Sistema externo",
@@ -31,10 +38,48 @@ export const es: Dictionary = {
   "kind.component": "Componente",
   "kind.code": "Elemento de código",
   "kind.note": "Nota de texto",
+  "kind.actor": "Actor",
+  "kind.system": "Sistema",
+  "kind.useCase": "Caso de uso",
+  "kind.step": "Paso",
+  "kind.actorType.primary": "Primario",
+  "kind.actorType.secondary": "Secundario",
 
   "style.sync": "Síncrona",
   "style.async": "Asíncrona (encolada)",
   "style.bi": "Bidireccional",
+  "style.association": "Asociación",
+  "style.include": "Include",
+  "style.extend": "Extend",
+  "style.generalization": "Generalización",
+
+  "diagram.usecase": "Casos de uso",
+  "diagram.logical": "Lógica",
+  "diagram.process": "Proceso",
+  "diagram.development": "Desarrollo",
+  "diagram.physical": "Física",
+
+  "sheet.new": "Nueva hoja",
+  "sheet.rename": "Renombrar",
+  "sheet.duplicate": "Duplicar",
+  "sheet.delete": "Eliminar",
+  "sheet.untitled": "Hoja sin nombre",
+  "sheet.lastOne": "El proyecto necesita al menos una hoja",
+  "sheet.comingSoon": "próximamente",
+
+  "inspector.actorType": "Tipo de actor",
+  "inspector.useCase.preconditions": "Precondiciones",
+  "inspector.useCase.postconditions": "Postcondiciones",
+  "inspector.useCase.goalLevel": "Nivel de objetivo",
+  "inspector.useCase.goal.summary": "Resumen",
+  "inspector.useCase.goal.user": "Objetivo de usuario",
+  "inspector.useCase.goal.subfunction": "Subfunción",
+  "inspector.useCase.flow": "Flujo principal",
+  "inspector.useCase.addStep": "Añadir paso",
+  "inspector.useCase.moveUp": "Subir",
+  "inspector.useCase.moveDown": "Bajar",
+
+  "topbar.home": "Inicio",
 
   "relation.defaultLabel": "Usa",
 
@@ -49,15 +94,6 @@ export const es: Dictionary = {
   "sidebar.dragHintScope": "Arrástralo al lienzo o haz clic para añadirlo a {scope}",
   "sidebar.elements": "Elementos",
   "sidebar.empty": "Todavía no hay elementos en el nivel de contexto.",
-  "sidebar.shortcuts": "Atajos",
-  "sidebar.shortcutDrag": "Arrastrar",
-  "sidebar.shortcutDragValue": "elemento nuevo",
-  "sidebar.shortcutConnect": "Conectar",
-  "sidebar.shortcutConnectValue": "desde cualquier cara",
-  "sidebar.shortcutOpen": "Doble clic",
-  "sidebar.shortcutOpenValue": "bajar de nivel",
-  "sidebar.shortcutDelete": "Supr",
-  "sidebar.shortcutDeleteValue": "eliminar",
 
   "canvas.emptyTitle": "Este nivel está vacío",
   "canvas.emptyBody":
@@ -157,6 +193,17 @@ export const es: Dictionary = {
   "inspector.activeLevel": "Nivel activo",
   "inspector.byType": "Por tipo",
   "inspector.noElementsYet": "Sin elementos todavía",
+
+  "inspector.nomenclature": "Nomenclatura UML",
+  "inspector.nomenclatureHint":
+    "Leyenda de las relaciones que puedes trazar en este diagrama de casos de uso.",
+  "inspector.nomenclature.association": "Línea continua: el actor realiza el caso de uso.",
+  "inspector.nomenclature.include":
+    "Línea discontinua con punta abierta: «include» reutiliza otro caso de uso.",
+  "inspector.nomenclature.extend":
+    "Línea discontinua con punta abierta: «extend» añade comportamiento opcional a otro caso de uso.",
+  "inspector.nomenclature.generalization":
+    "Línea continua con triángulo hueco: herencia entre actores o casos de uso.",
 
   "export.title": "Exportar diagrama",
   "export.format": "Formato",

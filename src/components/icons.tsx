@@ -1,5 +1,5 @@
 import type { CSSProperties, ReactNode } from "react";
-import type { IconName } from "@/lib/catalog";
+import type { IconName } from "@/lib/types";
 
 const PATHS: Record<IconName, ReactNode> = {
   user: (

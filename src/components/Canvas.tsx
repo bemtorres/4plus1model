@@ -14,41 +14,69 @@ import {
   type EdgeChange,
   type NodeChange,
 } from "@xyflow/react";
-import { kindMeta } from "@/lib/catalog";
+import { kindMeta } from "@/lib/diagrams";
 import { useT } from "@/i18n";
 import { mergeFlowEdges, mergeFlowNodes, withBoundaryGeometry } from "@/lib/flow-state";
-import type { C4Element, ElementKind, HandleSide } from "@/lib/types";
+import type { DiagramElement, ElementKind, HandleSide } from "@/lib/types";
 import { HANDLE_SIDES } from "@/lib/types";
-import { useWorkspace } from "@/lib/workspace-store";
-import { NODE_HEIGHT, NODE_WIDTH, type C4FlowEdge, type FlowNode } from "@/lib/view";
-import { C4Edge } from "./edges/C4Edge";
+import { useProject } from "@/lib/project-store";
+import { NODE_HEIGHT, NODE_WIDTH, type DiagramFlowEdge, type FlowNode } from "@/lib/view";
+import { DiagramEdge } from "./edges/DiagramEdge";
 import { BoundaryNode } from "./nodes/BoundaryNode";
-import { C4ElementNode } from "./nodes/C4ElementNode";
+import { DiagramElementNode } from "./nodes/DiagramElementNode";
 import { NoteNode } from "./nodes/NoteNode";
 import { NodeContextMenu } from "./NodeContextMenu";
 import { ReadOnlyBanner } from "./ReadOnlyBanner";
 
 const nodeTypes = {
-  c4: C4ElementNode,
+  element: DiagramElementNode,
   note: NoteNode,
   boundary: BoundaryNode,
 };
 
 const edgeTypes = {
-  c4: C4Edge,
+  element: DiagramEdge,
 };
 
-const DRAG_KIND = "application/x-c4-kind";
-const FIT_VIEW_EVENT = "c4:fit-view";
+const DRAG_KIND = "application/x-kind";
+const FIT_VIEW_EVENT = "modeler:fit-view";
 
-/** React Flow devuelve el id del handle; sólo aceptamos las 4 caras C4. */
+/** Marcador de triángulo hueco para generalizaciones UML (véase view.ts). */
+function UmlMarkers() {
+  return (
+    <svg width="0" height="0" className="absolute" aria-hidden="true" focusable="false">
+      <defs>
+        <marker
+          id="uml-generalization"
+          viewBox="0 0 12 12"
+          refX="11"
+          refY="6"
+          markerWidth="11"
+          markerHeight="11"
+          orient="auto-start-reverse"
+        >
+          <path
+            d="M1,1 L11,6 L1,11"
+            fill="none"
+            stroke="context-stroke"
+            strokeWidth="1.4"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </marker>
+      </defs>
+    </svg>
+  );
+}
+
+/** React Flow devuelve el id del handle; sólo aceptamos las 4 caras. */
 function asSide(handleId: string | null | undefined): HandleSide | null {
   return HANDLE_SIDES.includes(handleId as HandleSide) ? (handleId as HandleSide) : null;
 }
 
 function CanvasInner() {
   const {
-    workspace,
+    sheet,
     view,
     level,
     scopeId,
@@ -57,6 +85,7 @@ function CanvasInner() {
     readOnly,
     select,
     moveElement,
+    updateElement,
     addElement,
     removeElement,
     duplicateElement,
@@ -64,21 +93,21 @@ function CanvasInner() {
     drillInto,
     beginTransaction,
     endTransaction,
-  } = useWorkspace();
+  } = useProject();
   const { screenToFlowPosition, fitView } = useReactFlow();
   const t = useT();
 
   const [contextMenu, setContextMenu] = useState<{
     x: number;
     y: number;
-    element: C4Element;
+    element: DiagramElement;
   } | null>(null);
 
   const onNodeContextMenu = useCallback(
     (event: React.MouseEvent, node: FlowNode) => {
       event.preventDefault();
       if (readOnly) return;
-      const el = workspace.elements.find((e) => e.id === node.id);
+      const el = sheet.elements.find((e) => e.id === node.id);
       if (!el) return;
       select({ type: "element", id: node.id });
       setContextMenu({
@@ -87,13 +116,13 @@ function CanvasInner() {
         element: el,
       });
     },
-    [readOnly, select, workspace.elements],
+    [readOnly, select, sheet.elements],
   );
 
   // Estado propio del lienzo: React Flow necesita conservar la identidad y las
   // medidas de cada nodo, así que el modelo nunca reemplaza estos objetos.
   const [nodes, setNodes] = useState<FlowNode[]>([]);
-  const [edges, setEdges] = useState<C4FlowEdge[]>([]);
+  const [edges, setEdges] = useState<DiagramFlowEdge[]>([]);
 
   const detailIdsRef = useRef(view.detailIds);
   detailIdsRef.current = view.detailIds;
@@ -120,6 +149,14 @@ function CanvasInner() {
           if (!readOnly) {
             moveElement(change.id, change.position.x, change.position.y);
           }
+        } else if (change.type === "dimensions" && change.dimensions && !change.resizing) {
+          // Fin del redimensionado (NodeResizer): persistir el nuevo tamaño.
+          if (!readOnly) {
+            updateElement(change.id, {
+              width: Math.round(change.dimensions.width),
+              height: Math.round(change.dimensions.height),
+            });
+          }
         } else if (change.type === "select") {
           if (change.selected) {
             select({ type: "element", id: change.id });
@@ -129,12 +166,12 @@ function CanvasInner() {
         }
       }
     },
-    [moveElement, select, selection, readOnly],
+    [moveElement, updateElement, select, selection, readOnly],
   );
 
   const onEdgesChange = useCallback(
     (changes: EdgeChange[]) => {
-      setEdges((current) => applyEdgeChanges(changes, current) as C4FlowEdge[]);
+      setEdges((current) => applyEdgeChanges(changes, current) as DiagramFlowEdge[]);
       for (const change of changes) {
         if (change.type === "select") {
           if (change.selected) {
@@ -156,13 +193,12 @@ function CanvasInner() {
         target: connection.target,
         sourceHandle: asSide(connection.sourceHandle),
         targetHandle: asSide(connection.targetHandle),
-        label: t("relation.defaultLabel"),
-        technology: "",
+        label: "",
         description: "",
-        style: "sync",
+        style: "association",
       });
     },
-    [addRelationship, t, readOnly],
+    [addRelationship, readOnly],
   );
 
   const onNodeDragStart = useCallback(() => {
@@ -176,9 +212,11 @@ function CanvasInner() {
   const onNodeDoubleClick = useCallback(
     (_event: React.MouseEvent, node: { id: string; data: unknown }) => {
       const data = node.data as { element?: { kind: ElementKind } };
-      if (data.element && kindMeta(data.element.kind).drillable) drillInto(node.id);
+      if (data.element && kindMeta(sheet.diagram, data.element.kind).drillable) {
+        drillInto(node.id);
+      }
     },
-    [drillInto],
+    [drillInto, sheet.diagram],
   );
 
   const onDragOver = useCallback(
@@ -210,7 +248,7 @@ function CanvasInner() {
       void fitView({ padding: 0.2, duration: 320, maxZoom: 1 });
     }, 80);
     return () => window.clearTimeout(timer);
-  }, [`${level}:${scopeId ?? "root"}`, layoutSignal, fitView]);
+  }, [`${sheet.id}:${level}:${scopeId ?? "root"}`, layoutSignal, fitView]);
 
   useEffect(() => {
     const onFit = () => {
@@ -220,11 +258,12 @@ function CanvasInner() {
     return () => window.removeEventListener(FIT_VIEW_EVENT, onFit);
   }, [fitView]);
 
-  const isEmpty = nodes.filter((node) => node.type === "c4").length === 0;
+  const isEmpty = nodes.filter((node) => node.type === "element" || node.type === "note").length === 0;
 
   return (
     <div className="relative h-full w-full" onDrop={onDrop} onDragOver={onDragOver}>
       <ReadOnlyBanner />
+      <UmlMarkers />
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -261,7 +300,7 @@ function CanvasInner() {
         elementsSelectable
         minZoom={0.15}
         maxZoom={2.2}
-        defaultEdgeOptions={{ type: "c4" }}
+        defaultEdgeOptions={{ type: "element" }}
       >
         <Background variant={BackgroundVariant.Dots} gap={22} size={1.2} />
         <Controls showInteractive={false} position="bottom-left" />
@@ -270,9 +309,9 @@ function CanvasInner() {
           zoomable
           position="bottom-right"
           nodeColor={(node) => {
-            if (node.type === "boundary") return "rgba(147,112,219,0.18)";
+            if (node.type === "boundary") return "rgba(100,116,139,0.2)";
             const data = node.data as { element?: { kind: ElementKind } };
-            return data.element ? kindMeta(data.element.kind).bg : "#94a3b8";
+            return data.element ? kindMeta(sheet.diagram, data.element.kind).bg : "#94a3b8";
           }}
           nodeStrokeWidth={2}
           maskColor="color-mix(in oklab, var(--background) 70%, transparent)"
@@ -303,11 +342,7 @@ function CanvasInner() {
 }
 
 export function Canvas() {
-  return (
-    <ReactFlowProvider>
-      <CanvasInner />
-    </ReactFlowProvider>
-  );
+  return <CanvasInner />;
 }
 
 export { DRAG_KIND, FIT_VIEW_EVENT };

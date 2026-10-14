@@ -24,6 +24,13 @@ export const en = {
   "level.component.desc": "Modules inside a container",
   "level.code.desc": "Key classes and functions",
 
+  "level.actors": "Actors & systems",
+  "level.usecases": "Use cases",
+  "level.steps": "Use-case flow",
+  "level.actors.desc": "Actors and the system under study",
+  "level.usecases.desc": "Use cases inside the system",
+  "level.steps.desc": "Steps of the main flow",
+
   "kind.person": "Person",
   "kind.softwareSystem": "Software system",
   "kind.externalSystem": "External system",
@@ -33,10 +40,48 @@ export const en = {
   "kind.component": "Component",
   "kind.code": "Code element",
   "kind.note": "Text note",
+  "kind.actor": "Actor",
+  "kind.system": "System",
+  "kind.useCase": "Use case",
+  "kind.step": "Step",
+  "kind.actorType.primary": "Primary",
+  "kind.actorType.secondary": "Secondary",
 
   "style.sync": "Synchronous",
   "style.async": "Asynchronous (queued)",
   "style.bi": "Bidirectional",
+  "style.association": "Association",
+  "style.include": "Include",
+  "style.extend": "Extend",
+  "style.generalization": "Generalization",
+
+  "diagram.usecase": "Use cases",
+  "diagram.logical": "Logical",
+  "diagram.process": "Process",
+  "diagram.development": "Development",
+  "diagram.physical": "Physical",
+
+  "sheet.new": "New sheet",
+  "sheet.rename": "Rename",
+  "sheet.duplicate": "Duplicate",
+  "sheet.delete": "Delete",
+  "sheet.untitled": "Untitled sheet",
+  "sheet.lastOne": "The project needs at least one sheet",
+  "sheet.comingSoon": "coming soon",
+
+  "inspector.actorType": "Actor type",
+  "inspector.useCase.preconditions": "Preconditions",
+  "inspector.useCase.postconditions": "Postconditions",
+  "inspector.useCase.goalLevel": "Goal level",
+  "inspector.useCase.goal.summary": "Summary",
+  "inspector.useCase.goal.user": "User goal",
+  "inspector.useCase.goal.subfunction": "Subfunction",
+  "inspector.useCase.flow": "Main flow",
+  "inspector.useCase.addStep": "Add step",
+  "inspector.useCase.moveUp": "Move up",
+  "inspector.useCase.moveDown": "Move down",
+
+  "topbar.home": "Home",
 
   "relation.defaultLabel": "Uses",
 
@@ -51,15 +96,6 @@ export const en = {
   "sidebar.dragHintScope": "Drag it to the canvas or click to add it to {scope}",
   "sidebar.elements": "Elements",
   "sidebar.empty": "There are no elements at context level yet.",
-  "sidebar.shortcuts": "Shortcuts",
-  "sidebar.shortcutDrag": "Drag",
-  "sidebar.shortcutDragValue": "new element",
-  "sidebar.shortcutConnect": "Connect",
-  "sidebar.shortcutConnectValue": "from any side",
-  "sidebar.shortcutOpen": "Double click",
-  "sidebar.shortcutOpenValue": "drill down",
-  "sidebar.shortcutDelete": "Del",
-  "sidebar.shortcutDeleteValue": "delete",
 
   "canvas.emptyTitle": "This level is empty",
   "canvas.emptyBody": "Drag an element from the palette on the left to start modelling.",
@@ -158,6 +194,17 @@ export const en = {
   "inspector.activeLevel": "Active level",
   "inspector.byType": "By type",
   "inspector.noElementsYet": "No elements yet",
+
+  "inspector.nomenclature": "UML nomenclature",
+  "inspector.nomenclatureHint":
+    "Legend of the relationships you can draw in this use-case diagram.",
+  "inspector.nomenclature.association": "Solid line: the actor performs the use case.",
+  "inspector.nomenclature.include":
+    "Dashed line with open arrow: «include» reuses another use case.",
+  "inspector.nomenclature.extend":
+    "Dashed line with open arrow: «extend» adds optional behaviour to another use case.",
+  "inspector.nomenclature.generalization":
+    "Solid line with hollow triangle: inheritance between actors or use cases.",
 
   "export.title": "Export diagram",
   "export.format": "Format",

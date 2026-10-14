@@ -11,13 +11,13 @@ interface Props {
 
 const {
   title,
-  description = "Herramienta visual para modelar y documentar arquitectura de software con el Modelo C4 (Contexto, Contenedores, Componentes y Código). Diagrama en línea, interactivo y exportable a PlantUML, Mermaid y PNG.",
+  description = "Herramienta visual para documentar arquitectura de software con el modelo 4+1 de Philippe Kruchten: vistas de Escenarios (casos de uso), Lógica, Proceso, Desarrollo y Física. Diagrama en línea, interactivo y exportable a JSON, Markdown y JWT.",
   canonical,
-  image = "https://c4model.cafeycodigo.org/favicon.svg",
+  image = "https://4plus1model.cafeycodigo.org/favicon.svg",
   type = "website",
 } = Astro.props;
 
-const siteUrl = "https://c4model.cafeycodigo.org";
+const siteUrl = "https://4plus1model.cafeycodigo.org";
 const currentCanonical =
   canonical || new URL(Astro.url.pathname, siteUrl).toString();
 
@@ -27,10 +27,10 @@ const jsonLd = {
     {
       "@type": "WebApplication",
       "@id": `${siteUrl}/#app`,
-      name: "C4 Modeler - Software Architecture Visual Tool",
+      name: "4+1 Modeler - Software Architecture Visual Tool",
       url: siteUrl,
       description:
-        "Herramienta web interactiva para modelar, visualizar y compartir arquitectura de software siguiendo la metodología C4 Model de Simon Brown.",
+        "Herramienta web interactiva para modelar, visualizar y compartir arquitectura de software con el modelo 4+1 de Philippe Kruchten (Escenarios, Lógica, Proceso, Desarrollo y Física).",
       applicationCategory: "DeveloperApplication",
       operatingSystem: "All",
       browserRequirements:
@@ -46,24 +46,24 @@ const jsonLd = {
         url: "https://www.linkedin.com/in/benjamin-mora-torres/",
       },
       keywords: [
-        "C4 Model",
-        "Modelo C4",
+        "4+1 Model",
+        "Modelo 4+1",
         "Arquitectura de Software",
         "Software Architecture Diagrams",
-        "System Context",
-        "Containers",
-        "Components",
-        "Code",
-        "Structurizr",
-        "PlantUML",
-        "Mermaid",
+        "Use Cases",
+        "Casos de Uso",
+        "Kruchten",
+        "Logical View",
+        "Process View",
+        "Development View",
+        "Physical View",
       ],
     },
     {
       "@type": "WebSite",
       "@id": `${siteUrl}/#website`,
       url: siteUrl,
-      name: "C4 Modeler",
+      name: "4+1 Modeler",
       publisher: {
         "@type": "Person",
         name: "Benjamin Mora Torres",
@@ -82,7 +82,7 @@ const jsonLd = {
     <meta name="description" content={description} />
     <meta
       name="keywords"
-      content="c4 model, modelo c4, arquitectura de software, diagramas c4, modelado de sistemas, simon brown, contexto del sistema, contenedores, componentes, software architecture, plantuml, mermaid c4, structurizr"
+      content="4+1 model, modelo 4+1, arquitectura de software, casos de uso, use cases, modelado de sistemas, philippe kruchten, vista lógica, vista de proceso, vista de desarrollo, vista física, software architecture, software architecture diagrams"
     />
     <meta name="author" content="Benjamin Mora Torres" />
     <meta name="robots" content="index, follow" />
@@ -104,7 +104,7 @@ const jsonLd = {
     <meta property="og:image" content={image} />
     <meta
       property="og:site_name"
-      content="C4 Modeler · Software Architecture"
+      content="4+1 Modeler · Software Architecture"
     />
     <meta property="og:locale" content="es_ES" />
 

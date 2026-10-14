@@ -1,12 +1,13 @@
 import { useEffect, useRef } from "react";
 import { useT } from "@/i18n";
-import { kindMeta } from "@/lib/catalog";
-import type { C4Element } from "@/lib/types";
+import { kindMeta } from "@/lib/diagrams";
+import { useProject } from "@/lib/project-store";
+import type { DiagramElement } from "@/lib/types";
 
 interface NodeContextMenuProps {
   x: number;
   y: number;
-  element: C4Element;
+  element: DiagramElement;
   onDuplicate: () => void;
   onDelete: () => void;
   onClose: () => void;
@@ -22,7 +23,8 @@ export function NodeContextMenu({
 }: NodeContextMenuProps) {
   const t = useT();
   const menuRef = useRef<HTMLDivElement>(null);
-  const meta = kindMeta(element.kind);
+  const { sheet } = useProject();
+  const meta = kindMeta(sheet.diagram, element.kind);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {

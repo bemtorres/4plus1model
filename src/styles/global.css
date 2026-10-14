@@ -100,14 +100,14 @@ body {
   opacity: 1;
 }
 
-/* En la persona los lados se sitúan sobre el cuerpo, no sobre el círculo. */
-.c4-person .c4-handle--left,
-.c4-person .c4-handle--right {
-  top: 68%;
+/* En la figura de palito los lados se sitúan sobre el cuerpo. */
+.uc-actor .c4-handle--left,
+.uc-actor .c4-handle--right {
+  top: 55%;
 }
 
-.c4-person .c4-handle--bottom {
-  bottom: 0;
+.uc-actor .c4-handle--bottom {
+  bottom: 22%;
 }
 
 /* ---------- C4 node / edge visuals ---------- */
@@ -192,16 +192,6 @@ body {
   opacity: 0.9;
 }
 
-.c4-boundary {
-  /* El nodo de React Flow es un bloque vacío: sin esto la altura colapsa a 0
-     y sólo se ve la línea superior con rayas. */
-  width: 100%;
-  height: 100%;
-  border: 1.5px dashed #9370db;
-  border-radius: 12px;
-  background: color-mix(in oklab, #9370db 6%, transparent);
-}
-
 /* ---------- Nota de texto ---------- */
 
 .c4-note {
@@ -229,72 +219,271 @@ details[open] .details__chevron {
   transform: rotate(180deg);
 }
 
-/* ---------- Persona: silueta clásica de C4 ---------- */
+/* ---------- UML clásico: actor, sistema, caso de uso, boundary ---------- */
 
-.c4-person {
+/* Actor: figura de palito + nombre debajo */
+.uc-actor {
   position: relative;
-  width: var(--c4-node-width);
-  padding-top: 42px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 4px;
+  color: var(--c4-fg, #0f172a);
 }
 
-.c4-person .c4-node {
-  border-radius: 0;
-  background: transparent;
-  border: none;
-  box-shadow: none;
-  outline: none;
+.uc-actor__svg {
+  width: 56px;
+  height: 84px;
   overflow: visible;
 }
 
-.c4-person .c4-node--selected {
+.uc-actor__name {
+  max-width: 100%;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.25;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
+.uc-actor--selected .uc-actor__svg {
+  filter: drop-shadow(0 0 3px color-mix(in oklab, var(--accent) 60%, transparent));
+}
+
+.uc-actor--selected .uc-actor__name {
+  color: var(--accent);
+}
+
+/* Sistema: rectángulo del escenario, nombre arriba al centro */
+.uc-system {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  overflow: hidden;
   box-shadow: none;
 }
 
-.c4-person__head {
+.uc-system__title {
+  width: 100%;
+  padding: 10px 14px 8px;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.3;
+  text-align: center;
+  overflow-wrap: anywhere;
+  border-bottom: 1px solid color-mix(in oklab, var(--c4-border) 35%, transparent);
+  background: color-mix(in oklab, var(--c4-bg) 88%, var(--c4-border));
+}
+
+/* Caso de uso: rectángulo redondeado con el nombre centrado */
+.uc-usecase {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: none;
+}
+
+.uc-usecase__body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+  padding: 12px 18px;
+  text-align: center;
+}
+
+.uc-usecase__name {
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+.uc-usecase__desc {
+  font-size: 11px;
+  line-height: 1.3;
+  opacity: 0.75;
+  overflow-wrap: anywhere;
+}
+
+/* ---------- Draw.io Geometric Shapes ---------- */
+
+.drawio-shape {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 14px;
+  box-sizing: border-box;
+  text-align: center;
+  transition: border-color 120ms ease, box-shadow 120ms ease;
+}
+
+.drawio-shape__title {
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.drawio-shape__desc {
+  font-size: 11px;
+  line-height: 1.3;
+  opacity: 0.75;
+  margin-top: 2px;
+  overflow-wrap: anywhere;
+}
+
+/* Cilindro / Base de Datos */
+.drawio-cylinder {
+  border-radius: 0 0 16px 16px;
+  border-top: none;
+}
+.drawio-cylinder__top {
   position: absolute;
   top: 0;
+  left: 0;
+  right: 0;
+  height: 16px;
+  border: 1px solid var(--c4-border);
+  border-radius: 50%;
+  background: var(--c4-bg);
+}
+
+/* Nube */
+.drawio-cloud {
+  border-radius: 50px 50px 30px 30px;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.05));
+}
+
+/* Rombo / Decisión */
+.drawio-diamond {
+  transform: rotate(0deg);
+}
+
+/* Cubo 3D Isométrico */
+.drawio-cube {
+  box-shadow: 4px 4px 0 rgba(0,0,0,0.08);
+}
+
+/* Caja de Clase UML de 3 compartimentos */
+.drawio-classbox {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  padding: 0;
+  text-align: left;
+}
+.drawio-classbox__header {
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--c4-border);
+  text-align: center;
+  background: color-mix(in oklab, var(--c4-bg) 90%, var(--c4-border));
+}
+.drawio-classbox__stereo {
+  font-size: 10px;
+  font-style: italic;
+  color: var(--c4-stereo);
+}
+.drawio-classbox__name {
+  font-size: 13px;
+  font-weight: 700;
+}
+.drawio-classbox__section {
+  padding: 5px 10px;
+  font-size: 11px;
+  line-height: 1.4;
+  border-bottom: 1px solid color-mix(in oklab, var(--c4-border) 40%, transparent);
+}
+.drawio-classbox__section:last-child {
+  border-bottom: none;
+}
+
+/* Componente de Software */
+.drawio-componentbox {
+  position: relative;
+}
+.drawio-componentbox::before,
+.drawio-componentbox::after {
+  content: "";
+  position: absolute;
+  left: -7px;
+  width: 14px;
+  height: 8px;
+  border: 1px solid var(--c4-border);
+  background: var(--c4-bg);
+  border-radius: 1px;
+}
+.drawio-componentbox::before {
+  top: 14px;
+}
+.drawio-componentbox::after {
+  bottom: 14px;
+}
+
+/* Ventana de Aplicación */
+.drawio-window {
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  overflow: hidden;
+}
+.drawio-window__bar {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--c4-border);
+  background: color-mix(in oklab, var(--c4-bg) 85%, var(--c4-border));
+}
+.drawio-window__dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--c4-border);
+  opacity: 0.6;
+}
+.drawio-window__body {
+  padding: 10px 14px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Texto puro */
+.drawio-text {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 4px 6px;
+}
+
+/* Boundary (ámbito al entrar en un sistema): rectángulo sólido con nombre arriba */
+.uc-boundary {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  border: 1.5px solid #64748b;
+  border-radius: 2px;
+  background: color-mix(in oklab, #64748b 4%, transparent);
+}
+
+.uc-boundary__label {
+  position: absolute;
+  top: -10px;
   left: 50%;
   transform: translateX(-50%);
-  z-index: 0;
-  width: 62px;
-  height: 62px;
-  border-radius: 9999px;
-  background: var(--c4-bg);
-  border: 2px solid var(--c4-border);
-  box-shadow: 0 1px 2px rgb(0 0 0 / 0.12);
-  transition: box-shadow 120ms ease;
-}
-
-.c4-person--selected .c4-person__head,
-.c4-person--selected .c4-person__body {
-  box-shadow: 0 0 0 4px color-mix(in oklab, var(--accent) 25%, transparent);
-}
-
-.c4-person__body {
-  position: relative;
-  z-index: 1;
-  border-radius: 16px;
-  border: 2px solid var(--c4-border);
-  background: var(--c4-bg);
-  color: var(--c4-fg);
-  overflow: hidden;
-  transition: box-shadow 120ms ease;
-}
-
-.c4-boundary__label {
-  position: absolute;
-  top: -11px;
-  left: 16px;
-  display: flex;
-  align-items: baseline;
-  gap: 6px;
-  padding: 1px 8px;
-  border-radius: 9999px;
-  background: var(--surface);
-  border: 1.5px solid #9370db;
-  font-size: 11px;
-  font-weight: 600;
-  color: #7c4dff;
+  padding: 0 8px;
+  background: var(--background);
+  font-size: 12px;
+  font-weight: 700;
+  color: #475569;
   white-space: nowrap;
   pointer-events: none;
 }
@@ -318,6 +507,20 @@ details[open] .details__chevron {
   box-shadow: 0 0 0 2px var(--accent-subtle);
 }
 
+/* Estereotipos UML («include», «extend»): texto en cursiva sobre la línea. */
+.c4-edge__label--stereo {
+  border: none;
+  background: var(--background);
+  box-shadow: none;
+  padding: 0 4px;
+  font-style: italic;
+  color: var(--foreground);
+}
+
+.c4-edge__label--stereo.c4-edge__label--selected {
+  color: var(--accent);
+}
+
 .c4-edge__tech {
   display: block;
   font-size: 10px;
@@ -329,7 +532,7 @@ details[open] .details__chevron {
 
 .app-shell {
   display: grid;
-  grid-template-rows: auto 1fr;
+  grid-template-rows: auto 1fr auto;
   height: 100dvh;
   overflow: hidden;
 }
@@ -388,6 +591,146 @@ details[open] .details__chevron {
 .topbar {
   background: var(--surface);
   border-bottom: 1px solid var(--separator);
+}
+
+/* ---------- Sheet tabs (barra inferior de pestañas) ---------- */
+
+.sheet-tabs {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 2px;
+  padding: 4px 8px 0;
+  background: var(--surface);
+  border-top: 1px solid var(--separator);
+  overflow-x: auto;
+  min-height: 32px;
+}
+
+.sheet-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 8px 5px 10px;
+  font-size: 12px;
+  line-height: 1;
+  color: var(--muted);
+  background: color-mix(in oklab, var(--surface) 60%, var(--background));
+  border: 1px solid var(--separator);
+  border-bottom: none;
+  border-radius: 8px 8px 0 0;
+  cursor: pointer;
+  white-space: nowrap;
+  user-select: none;
+  transition: background 120ms ease, color 120ms ease;
+}
+
+.sheet-tab:hover {
+  color: var(--foreground);
+  background: color-mix(in oklab, var(--accent) 8%, var(--surface));
+}
+
+.sheet-tab--active {
+  color: var(--foreground);
+  background: var(--background);
+  font-weight: 600;
+  box-shadow: inset 0 2px 0 0 var(--accent);
+}
+
+.sheet-tab__icon {
+  font-size: 11px;
+  opacity: 0.85;
+}
+
+.sheet-tab__name {
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sheet-tab__input {
+  width: 130px;
+  font-size: 12px;
+  line-height: 1;
+  padding: 2px 4px;
+  color: var(--foreground);
+  background: var(--background);
+  border: 1px solid var(--accent);
+  border-radius: 4px;
+  outline: none;
+}
+
+.sheet-tab__menu {
+  display: grid;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  font-size: 12px;
+  line-height: 1;
+  color: var(--muted);
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.sheet-tab__menu:hover {
+  background: color-mix(in oklab, var(--accent) 15%, transparent);
+  color: var(--foreground);
+}
+
+.sheet-tab--new {
+  padding: 5px 8px;
+  border-radius: 8px 8px 0 0;
+}
+
+.sheet-menu {
+  position: fixed;
+  z-index: 60;
+  min-width: 170px;
+  padding: 4px;
+  background: var(--surface);
+  border: 1px solid var(--separator);
+  border-radius: 10px;
+  box-shadow: 0 10px 30px rgb(0 0 0 / 0.25);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  animation: c4-toast-in 100ms ease;
+}
+
+.sheet-menu button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+  font-size: 12px;
+  color: var(--foreground);
+  border-radius: 6px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.sheet-menu button:hover:not(:disabled) {
+  background: color-mix(in oklab, var(--accent) 12%, transparent);
+}
+
+.sheet-menu button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.sheet-menu__danger {
+  color: var(--danger, #dc2626) !important;
+}
+
+.sheet-menu__soon {
+  opacity: 0.55;
+}
+
+.sheet-menu button em {
+  margin-left: auto;
+  font-style: normal;
+  font-size: 10px;
+  color: var(--muted);
 }
 
 .drag-item {

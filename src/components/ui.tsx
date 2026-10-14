@@ -1,7 +1,7 @@
 import { Button, Tooltip } from "@heroui/react";
 import type { ReactNode } from "react";
 import { useEffect, useRef, useState } from "react";
-import type { IconName } from "@/lib/catalog";
+import type { IconName } from "@/lib/types";
 import type { HandleSide } from "@/lib/types";
 import { useT, type TranslationKey } from "@/i18n";
 import { Icon } from "./icons";

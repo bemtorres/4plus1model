@@ -1,10 +1,11 @@
+import { elementNodeSize } from "./diagrams";
 import {
   NODE_HEIGHT,
   NODE_WIDTH,
   boundaryBox,
   type BoundaryFlowNode,
-  type C4FlowEdge,
-  type C4FlowNode,
+  type DiagramFlowEdge,
+  type ElementFlowNode,
   type FlowNode,
 } from "./view";
 
@@ -34,7 +35,7 @@ function sizeOf(node: FlowNode): { width: number; height: number } {
  */
 function sameData(prev: FlowNode, next: FlowNode): boolean {
   if (
-    (prev.type === "c4" && next.type === "c4") ||
+    (prev.type === "element" && next.type === "element") ||
     (prev.type === "note" && next.type === "note")
   ) {
     return prev.data.element === next.data.element && prev.data.isDetail === next.data.isDetail;
@@ -58,7 +59,7 @@ export function withBoundaryGeometry(
   if (!boundary || detailIds.length === 0) return nodes;
 
   const children = nodes.filter(
-    (node): node is C4FlowNode => node.type === "c4" && detailIds.includes(node.id),
+    (node): node is ElementFlowNode => node.type === "element" && detailIds.includes(node.id),
   );
   const box = boundaryBox(
     children.map((node) => ({
@@ -139,7 +140,10 @@ export function mergeFlowNodes(
 }
 
 /** Equivalente a `mergeFlowNodes` para las aristas. */
-export function mergeFlowEdges(current: C4FlowEdge[], desired: C4FlowEdge[]): C4FlowEdge[] {
+export function mergeFlowEdges(
+  current: DiagramFlowEdge[],
+  desired: DiagramFlowEdge[],
+): DiagramFlowEdge[] {
   if (desired.length === current.length) {
     let changed = false;
     const merged = desired.map((edge) => {

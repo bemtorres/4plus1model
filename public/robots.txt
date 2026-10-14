@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://c4model.cafeycodigo.org/sitemap.xml
+Sitemap: https://4plus1model.cafeycodigo.org/sitemap.xml

@@ -1,10 +1,19 @@
 import { Button, Modal, TextArea, TextField } from "@heroui/react";
 import { useRef, useState } from "react";
-import { WorkspaceParseError, parseWorkspaceFile } from "@/lib/storage";
-import { useWorkspace } from "@/lib/workspace-store";
+import { ProjectParseError, parseProjectFile } from "@/lib/storage";
+import { useProject } from "@/lib/project-store";
 import { useT } from "@/i18n";
 import type { TranslationKey } from "@/i18n";
 import { notify } from "./Toaster";
+
+const ERROR_KEYS: Record<string, TranslationKey> = {
+  invalidProject: "import.invalidWorkspace",
+  missingSheets: "import.missingLists",
+  unknownKind: "import.unknownKind",
+  futureVersion: "import.futureVersion",
+  unknownFormat: "import.invalidWorkspace",
+  invalidJson: "import.invalidJson",
+};
 
 export function ImportDialog({
   isOpen,
@@ -13,7 +22,7 @@ export function ImportDialog({
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
-  const { importWorkspace } = useWorkspace();
+  const { importProject } = useProject();
   const t = useT();
   const [text, setText] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -26,17 +35,17 @@ export function ImportDialog({
 
   const apply = () => {
     try {
-      const workspace = parseWorkspaceFile(text);
-      importWorkspace(workspace);
+      const project = parseProjectFile(text);
+      importProject(project);
       onOpenChange(false);
       reset();
-      notify(t("import.done", { name: workspace.name }), "success");
+      notify(t("import.done", { name: project.name }), "success");
     } catch (cause) {
       const key: TranslationKey =
-        cause instanceof WorkspaceParseError
-          ? (cause.code as TranslationKey)
+        cause instanceof ProjectParseError
+          ? (ERROR_KEYS[cause.code] ?? "import.readError")
           : "import.readError";
-      setError(t(key, cause instanceof WorkspaceParseError ? cause.params : undefined));
+      setError(t(key, cause instanceof ProjectParseError ? cause.params : undefined));
     }
   };
 
@@ -64,7 +73,7 @@ export function ImportDialog({
                 <input
                   ref={fileInputRef}
                   type="file"
-                  accept="application/json,.json,.jwt,.c4model"
+                  accept="application/json,.json,.jwt"
                   className="hidden"
                   onChange={(event) => void onFile(event.target.files?.[0])}
                 />
@@ -76,7 +85,7 @@ export function ImportDialog({
                   {t("import.choose")}
                 </Button>
                 <TextField value={text} onChange={setText}>
-                  <TextArea rows={10} placeholder='{ "format": "c4model", ... } / .json / .c4model / JWT' />
+                  <TextArea rows={10} placeholder='{ "format": "4plus1-modeler", ... } / .json / JWT' />
                 </TextField>
                 {error ? (
                   <p className="rounded-lg border border-danger/40 bg-danger-soft px-3 py-2 text-xs text-danger-soft-foreground">

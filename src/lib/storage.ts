@@ -1,26 +1,27 @@
-import { createSampleWorkspace } from "./sample";
-import { KINDS_ALL, isElementIcon } from "./catalog";
+import { createSampleProject } from "./sample";
+import { DIAGRAMS, diagramDef, isElementIcon } from "./diagrams";
 import {
-  WORKSPACE_FILE_FORMAT,
-  WORKSPACE_FILE_VERSION,
+  PROJECT_FILE_FORMAT,
+  PROJECT_FILE_VERSION,
   HANDLE_SIDES,
-  type C4Element,
-  type C4Relationship,
+  type DiagramElement,
+  type DiagramId,
+  type DiagramRelationship,
   type ElementKind,
   type HandleSide,
   type Level,
+  type Project,
+  type ProjectFile,
   type RelationshipStyle,
-  type Workspace,
-  type WorkspaceFile,
+  type Sheet,
 } from "./types";
 import { createId } from "./id";
 
-const STORAGE_KEY = "c4-modeler:workspace:v1";
+const STORAGE_KEY = "4plus1:project:v1";
 
 export interface PersistedState {
-  workspace: Workspace;
-  level: Level;
-  scopeId: string | null;
+  project: Project;
+  activeSheetId: string;
 }
 
 export function loadPersistedState(): PersistedState | null {
@@ -29,13 +30,13 @@ export function loadPersistedState(): PersistedState | null {
     const raw = window.localStorage.getItem(STORAGE_KEY);
     if (!raw) return null;
     const parsed = JSON.parse(raw) as PersistedState;
-    const workspace = normalizeWorkspace(parsed.workspace);
-    const level: Level = parsed.level ?? "context";
-    return {
-      workspace,
-      level,
-      scopeId: typeof parsed.scopeId === "string" ? parsed.scopeId : null,
-    };
+    const project = normalizeProject(parsed.project);
+    const activeSheetId =
+      typeof parsed.activeSheetId === "string" &&
+      project.sheets.some((sheet) => sheet.id === parsed.activeSheetId)
+        ? parsed.activeSheetId
+        : project.sheets[0].id;
+    return { project, activeSheetId };
   } catch {
     return null;
   }
@@ -59,10 +60,6 @@ export function clearPersistedState(): void {
   }
 }
 
-const KINDS: ElementKind[] = KINDS_ALL;
-
-const STYLES: RelationshipStyle[] = ["sync", "async", "bi"];
-
 function side(value: unknown): HandleSide | null {
   return HANDLE_SIDES.includes(value as HandleSide) ? (value as HandleSide) : null;
 }
@@ -83,8 +80,8 @@ function color(value: unknown): string | null {
 
 const HEX = /^#[0-9a-f]{6}$/i;
 
-function appearance(element: Record<string, unknown>): Partial<C4Element> {
-  const result: Partial<C4Element> = {};
+function appearance(element: Record<string, unknown>): Partial<DiagramElement> {
+  const result: Partial<DiagramElement> = {};
   const fill = color(element.color);
   const lineColor = color(element.borderColor);
   const textColor = color(element.textColor);
@@ -99,112 +96,162 @@ function appearance(element: Record<string, unknown>): Partial<C4Element> {
   return result;
 }
 
+function metaMap(value: unknown): Record<string, string> | undefined {
+  if (!value || typeof value !== "object") return undefined;
+  const entries = Object.entries(value as Record<string, unknown>).filter(
+    (pair): pair is [string, string] => typeof pair[1] === "string",
+  );
+  return entries.length > 0 ? Object.fromEntries(entries) : undefined;
+}
+
 export type ParseErrorCode =
-  | "invalidWorkspace"
-  | "missingLists"
+  | "invalidProject"
+  | "missingSheets"
   | "unknownKind"
   | "futureVersion"
+  | "unknownFormat"
   | "invalidJson";
 
-export class WorkspaceParseError extends Error {
+export class ProjectParseError extends Error {
   constructor(
     public code: ParseErrorCode,
     public params: Record<string, string | number> = {},
   ) {
     super(code);
-    this.name = "WorkspaceParseError";
+    this.name = "ProjectParseError";
   }
 }
 
-/** Valida y normaliza un workspace desconocido (import o almacenamiento local). */
-export function normalizeWorkspace(input: unknown): Workspace {
-  if (!input || typeof input !== "object") {
-    throw new WorkspaceParseError("invalidWorkspace");
-  }
-  const raw = input as Record<string, unknown>;
-  if (!Array.isArray(raw.elements) || !Array.isArray(raw.relationships)) {
-    throw new WorkspaceParseError("missingLists");
-  }
+function diagramIdOf(value: unknown): DiagramId {
+  return typeof value === "string" && value in DIAGRAMS ? (value as DiagramId) : "usecase";
+}
+
+/** Valida y normaliza una hoja desconocida. Los kinds inválidos se descartan. */
+function normalizeSheet(input: unknown): Sheet {
+  const raw = (input ?? {}) as Record<string, unknown>;
+  const diagram = diagramIdOf(raw.diagram);
+  const def = diagramDef(diagram);
+  const validKinds = new Set(Object.keys(def.kinds));
 
   const ids = new Set<string>();
-  const elements: C4Element[] = raw.elements.map((item, index) => {
+  const elements: DiagramElement[] = [];
+  for (const item of Array.isArray(raw.elements) ? raw.elements : []) {
     const element = (item ?? {}) as Record<string, unknown>;
-    const kind = KINDS.includes(element.kind as ElementKind)
-      ? (element.kind as ElementKind)
-      : null;
-    if (!kind) {
-      throw new WorkspaceParseError("unknownKind", { n: index + 1 });
-    }
+    const kind = str(element.kind);
+    if (!validKinds.has(kind)) continue;
     let id = str(element.id) || createId("el");
     while (ids.has(id)) id = createId("el");
     ids.add(id);
-    return {
+    const meta = metaMap(element.meta);
+    elements.push({
       id,
-      kind,
+      kind: kind as ElementKind,
       name: str(element.name, "Untitled"),
       description: str(element.description),
-      technology: str(element.technology),
       tags: Array.isArray(element.tags)
         ? element.tags.filter((tag): tag is string => typeof tag === "string")
         : [],
       parentId: typeof element.parentId === "string" ? element.parentId : null,
       ...(isElementIcon(element.icon) ? { icon: element.icon } : {}),
       ...appearance(element),
+      ...(typeof element.order === "number" ? { order: num(element.order) } : {}),
+      ...(meta ? { meta } : {}),
       x: num(element.x),
       y: num(element.y),
-    } satisfies C4Element;
-  });
+    } satisfies DiagramElement);
+  }
 
+  const validStyles = new Set<string>(def.styles);
   const relationshipIds = new Set<string>();
-  const relationships: C4Relationship[] = raw.relationships
-    .filter((item) => item && typeof item === "object")
-    .map((item) => {
-      const relation = item as Record<string, unknown>;
-      const source = str(relation.source);
-      const target = str(relation.target);
-      if (!ids.has(source) || !ids.has(target)) return null;
-      let id = str(relation.id) || createId("rel");
-      while (relationshipIds.has(id)) id = createId("rel");
-      relationshipIds.add(id);
-      const relationship: C4Relationship = {
-        id,
-        source,
-        target,
-        sourceHandle: side(relation.sourceHandle),
-        targetHandle: side(relation.targetHandle),
-        label: str(relation.label),
-        technology: str(relation.technology),
-        description: str(relation.description),
-        style: STYLES.includes(relation.style as RelationshipStyle)
-          ? (relation.style as RelationshipStyle)
-          : "sync",
-      };
-      const custom = color(relation.color);
-      if (custom !== null) relationship.color = custom;
-      if (typeof relation.thickness === "number") {
-        relationship.thickness = num(relation.thickness, 1.5);
-      }
-      return relationship;
-    })
-    .filter((value): value is C4Relationship => value !== null);
+  const relationships: DiagramRelationship[] = [];
+  for (const item of Array.isArray(raw.relationships) ? raw.relationships : []) {
+    if (!item || typeof item !== "object") continue;
+    const relation = item as Record<string, unknown>;
+    const source = str(relation.source);
+    const target = str(relation.target);
+    if (!ids.has(source) || !ids.has(target)) continue;
+    let id = str(relation.id) || createId("rel");
+    while (relationshipIds.has(id)) id = createId("rel");
+    relationshipIds.add(id);
+    const style = str(relation.style);
+    const relationship: DiagramRelationship = {
+      id,
+      source,
+      target,
+      sourceHandle: side(relation.sourceHandle),
+      targetHandle: side(relation.targetHandle),
+      label: str(relation.label),
+      description: str(relation.description),
+      style: (validStyles.has(style) ? style : "association") as RelationshipStyle,
+    };
+    const custom = color(relation.color);
+    if (custom !== null) relationship.color = custom;
+    if (typeof relation.thickness === "number") {
+      relationship.thickness = num(relation.thickness, 1.5);
+    }
+    relationships.push(relationship);
+  }
 
-  // Los parents que no existen se convierten en elementos de nivel contexto.
+  // Los parents que no existen se convierten en elementos raíz.
   for (const element of elements) {
     if (element.parentId && !ids.has(element.parentId)) element.parentId = null;
   }
 
+  // Reindexar `order` de los pasos para evitar huecos o duplicados.
+  const stepGroups = new Map<string, DiagramElement[]>();
+  for (const element of elements) {
+    if (element.kind !== "step" || !element.parentId) continue;
+    const list = stepGroups.get(element.parentId);
+    if (list) list.push(element);
+    else stepGroups.set(element.parentId, [element]);
+  }
+  for (const steps of stepGroups.values()) {
+    steps
+      .sort((a, b) => (a.order ?? Number.MAX_SAFE_INTEGER) - (b.order ?? Number.MAX_SAFE_INTEGER))
+      .forEach((step, index) => {
+        step.order = index;
+      });
+  }
+
+  const viewRaw = (raw.view ?? {}) as Record<string, unknown>;
+  const levelIds = new Set(def.levels.map((item) => item.id));
+  const level = str(viewRaw.level, def.levels[0].id);
+  const scopeId = typeof viewRaw.scopeId === "string" && ids.has(viewRaw.scopeId) ? viewRaw.scopeId : null;
+
   return {
-    id: str(raw.id) || createId("ws"),
-    name: str(raw.name, "Workspace"),
-    description: str(raw.description),
+    id: str(raw.id) || createId("sh"),
+    name: str(raw.name, "Hoja"),
+    diagram,
     elements,
     relationships,
+    view: { level: levelIds.has(level) ? level : def.levels[0].id, scopeId },
+  };
+}
+
+/** Valida y normaliza un proyecto desconocido (import o almacenamiento local). */
+export function normalizeProject(input: unknown): Project {
+  if (!input || typeof input !== "object") {
+    throw new ProjectParseError("invalidProject");
+  }
+  const raw = input as Record<string, unknown>;
+  if (!Array.isArray(raw.sheets)) {
+    throw new ProjectParseError("missingSheets");
+  }
+  const sheets = raw.sheets.map((sheet) => normalizeSheet(sheet));
+  if (sheets.length === 0) {
+    throw new ProjectParseError("missingSheets");
+  }
+  return {
+    id: str(raw.id) || createId("pr"),
+    name: str(raw.name, "Proyecto"),
+    description: str(raw.description),
+    sheets,
     updatedAt: str(raw.updatedAt) || new Date().toISOString(),
   };
 }
 
-/** Acepta el archivo exportado por la app, un workspace suelto o un token JWT (RFC 7519). */
-export function parseWorkspaceFile(text: string): Workspace {
+/** Acepta el archivo exportado por la app, un proyecto suelto o un token JWT. */
+export function parseProjectFile(text: string): Project {
   const clean = text.trim();
   // Detección y desempaquetado de JWT (RFC 7519)
   if (clean.startsWith("eyJ") && clean.includes(".")) {
@@ -217,13 +264,11 @@ export function parseWorkspaceFile(text: string): Workspace {
       for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
       const decoded = new TextDecoder().decode(bytes);
       const payloadObj = JSON.parse(decoded) as Record<string, unknown>;
-      const candidateWs =
-        payloadObj.workspace ??
-        (Array.isArray(payloadObj.elements) && Array.isArray(payloadObj.relationships)
-          ? payloadObj
-          : null);
-      if (candidateWs) {
-        return normalizeWorkspace(candidateWs);
+      const candidate =
+        payloadObj.project ??
+        (Array.isArray(payloadObj.sheets) ? payloadObj : null);
+      if (candidate) {
+        return normalizeProject(candidate);
       }
     } catch {
       // Si falla como JWT, continuar con JSON estándar
@@ -234,28 +279,28 @@ export function parseWorkspaceFile(text: string): Workspace {
   try {
     parsed = JSON.parse(text);
   } catch {
-    throw new WorkspaceParseError("invalidJson");
+    throw new ProjectParseError("invalidJson");
   }
-  const candidate = parsed as Partial<WorkspaceFile> & Record<string, unknown>;
-  if (
-    candidate?.format === WORKSPACE_FILE_FORMAT ||
-    candidate?.format === "c4model" ||
-    candidate?.format === "c4-model"
-  ) {
+  const candidate = parsed as Partial<ProjectFile> & Record<string, unknown>;
+  if (candidate?.format === PROJECT_FILE_FORMAT) {
     const version = Number(candidate.version);
-    if (version > WORKSPACE_FILE_VERSION) {
-      throw new WorkspaceParseError("futureVersion", {
+    if (version > PROJECT_FILE_VERSION) {
+      throw new ProjectParseError("futureVersion", {
         version,
-        max: WORKSPACE_FILE_VERSION,
+        max: PROJECT_FILE_VERSION,
       });
     }
-    return normalizeWorkspace(candidate.workspace ?? candidate);
+    return normalizeProject(candidate.project ?? candidate);
   }
-  return normalizeWorkspace(parsed);
+  if (candidate?.format) {
+    throw new ProjectParseError("unknownFormat", { format: str(candidate.format) });
+  }
+  return normalizeProject(parsed);
 }
 
 export function createInitialState(): PersistedState {
   const persisted = loadPersistedState();
   if (persisted) return persisted;
-  return { workspace: createSampleWorkspace(), level: "context", scopeId: null };
+  const project = createSampleProject();
+  return { project, activeSheetId: project.sheets[0].id };
 }

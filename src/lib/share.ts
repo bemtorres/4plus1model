@@ -1,27 +1,27 @@
-import { normalizeWorkspace } from "./storage";
-import type { Workspace } from "./types";
+import { normalizeProject } from "./storage";
+import type { Project } from "./types";
 import {
   base64UrlToBytes,
   bytesToBase64Url,
-  decodeWorkspaceFromJwt,
-  encodeWorkspaceToJwt,
-  encodeWorkspaceToJwtSync,
+  decodeProjectFromJwt,
+  encodeProjectToJwt,
+  encodeProjectToJwtSync,
   isJwtString,
 } from "./jwt";
 
 export {
   base64UrlToBytes,
   bytesToBase64Url,
-  decodeWorkspaceFromJwt,
-  encodeWorkspaceToJwt,
-  encodeWorkspaceToJwtSync,
+  decodeProjectFromJwt,
+  encodeProjectToJwt,
+  encodeProjectToJwtSync,
   isJwtString,
 };
 
 /**
- * El diagrama viaja dentro de la propia URL (comprimido con gzip y codificado
+ * El proyecto viaja dentro de la propia URL (comprimido con gzip y codificado
  * en base64url, o empaquetado como un JWT estándar RFC 7519), así que no hace falta servidor:
- * cualquiera con el enlace ve el mismo modelo. Quien lo abre entra en modo solo lectura.
+ * cualquiera con el enlace ve el mismo modelo. Quien lo entra en modo solo lectura.
  */
 export const SHARE_PARAM = "share";
 export const EDIT_PARAM = "edit";
@@ -44,24 +44,24 @@ async function gunzip(data: Uint8Array): Promise<Uint8Array> {
   return new Uint8Array(await new Response(stream).arrayBuffer());
 }
 
-/** Serializa el workspace a un texto comprimido apto para la URL. */
-export async function encodeWorkspace(workspace: Workspace): Promise<string> {
-  const raw = encoder.encode(JSON.stringify(workspace));
+/** Serializa el proyecto a un texto comprimido apto para la URL. */
+export async function encodeProject(project: Project): Promise<string> {
+  const raw = encoder.encode(JSON.stringify(project));
   const packed = await gzip(raw);
   return packed ? `g${bytesToBase64Url(packed)}` : `j${bytesToBase64Url(raw)}`;
 }
 
-/** Reconstruye el workspace desde un enlace, payload comprimido o token JWT. */
-export async function decodeWorkspace(payload: string): Promise<Workspace | null> {
+/** Reconstruye el proyecto desde un enlace, payload comprimido o token JWT. */
+export async function decodeProject(payload: string): Promise<Project | null> {
   try {
     const clean: string = payload.trim();
     if (clean.startsWith("eyJ") && clean.includes(".")) {
-      return await decodeWorkspaceFromJwt(clean);
+      return await decodeProjectFromJwt(clean);
     }
     const flag = clean[0];
     const bytes = base64UrlToBytes(clean.slice(1));
     const raw = flag === "g" ? await gunzip(bytes) : bytes;
-    return normalizeWorkspace(JSON.parse(decoder.decode(raw)));
+    return normalizeProject(JSON.parse(decoder.decode(raw)));
   } catch {
     return null;
   }
