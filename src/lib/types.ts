@@ -124,6 +124,7 @@ export type IconName =
   | "minimize"
   | "sparkles"
   | "menu"
+  | "palette"
   | "x";
 
 export interface DiagramElement {
@@ -134,8 +135,8 @@ export interface DiagramElement {
   tags: string[];
   /** Elemento que lo contiene en el nivel superior. `null` = nivel raíz. */
   parentId: string | null;
-  /** Icono personalizado; si no se indica se usa el del tipo de elemento. */
-  icon?: IconName;
+  /** Icono personalizado; null = sin icono; undefined = usar el por defecto del tipo. */
+  icon?: IconName | null;
   /** Color de relleno. `null` = color por defecto, "transparent" = sin fondo. */
   color?: string | null;
   /** Color del borde. `null` = el color por defecto del tipo. */
@@ -195,6 +196,10 @@ export interface Sheet {
   relationships: DiagramRelationship[];
   /** Vista recordada de la hoja (nivel + ámbito). */
   view: { level: Level; scopeId: string | null };
+  /** Icono personalizado de la pestaña; null = sin icono. */
+  icon?: IconName | null;
+  /** Color distintivo de la pestaña. */
+  color?: string | null;
 }
 
 export interface Project {

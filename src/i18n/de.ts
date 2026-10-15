@@ -1,7 +1,7 @@
 import type { Dictionary } from "./en";
 
 export const de: Dictionary = {
-  "app.tagline": "Softwarearchitektur mit dem C4-Modell modellieren und dokumentieren",
+  "app.tagline": "Softwarearchitektur mit dem 4+1-Modell von Philippe Kruchten modellieren und dokumentieren",
 
   "common.delete": "Löschen",
   "common.confirm": "Bestätigen",
@@ -102,7 +102,7 @@ export const de: Dictionary = {
     "Ziehe ein Element aus der Palette links auf die Fläche, um mit dem Modellieren zu beginnen.",
 
   "topbar.summary": "{elements} Elemente · {relationships} Beziehungen",
-  "topbar.level": "C4-Ebene",
+  "topbar.level": "Ebene",
   "topbar.up": "Nach oben",
   "topbar.scope": "Umfang",
   "topbar.scopeEmpty": "Keine Elemente auf dieser Ebene",
@@ -216,9 +216,6 @@ export const de: Dictionary = {
   "export.copyError": "Kopieren fehlgeschlagen",
   "export.downloaded": "Datei {ext} heruntergeladen",
   "export.download": "{ext} herunterladen",
-  "export.format.c4model": "C4-Modell (.c4model)",
-  "export.format.plantuml": "PlantUML (C4)",
-  "export.format.mermaid": "Mermaid (C4)",
   "export.format.markdown": "Markdown",
   "export.format.json": "JSON",
   "export.format.jwt": "JWT (JSON Web Token)",
@@ -248,23 +245,23 @@ export const de: Dictionary = {
   "about.projectTitle": "Warum es dieses Werkzeug gibt",
   "about.projectBody":
     "Die meisten Architekturdiagramme scheitern aus demselben Grund: Sie wollen alles auf einmal zeigen. Ein Bild mit fünfzig Kästchen beantwortet keine Frage, ist nach einer Woche veraltet und wird nie wieder angesehen.",
-  "about.c4Title": "Alles basiert auf dem C4-Modell",
-  "about.c4Body":
-    "C4 (Kontext, Container, Komponenten, Code) schlägt vor, auf die entscheidenden Abstraktionen hineinzuzoomen, statt ein einziges Riesendiagramm zu zeichnen. Dieses Werkzeug setzt das um: Jede Ebene beantwortet genau eine Frage, und jedes Element lässt sich öffnen, um seinen Inhalt zu zeigen.",
+  "about.modelTitle": "Alles basiert auf dem 4+1-Modell",
+  "about.modelBody":
+    "Philippe Kruchten beschreibt die Architektur mit vier gleichzeitigen Sichten — Logisch, Prozess, Entwicklungs- und Physisch — und einer fünften, der +1-Sicht der Szenarien (Anwendungsfälle), die sie illustriert und validiert. Dieses Werkzeug startet bei dieser +1-Sicht: Es modelliert, wer das System nutzt und was es damit tut, und alles andere wird darauf aufgebaut.",
   "about.benefitTitle": "Was das bringt",
   "about.benefit.levels":
-    "Eine Ebene, eine Frage: Wer nutzt das System, wie ist es gebaut, was macht jedes Modul.",
+    "Fünf Sichten, fünf Fragen: Wer nutzt das System, wie läuft es, wie wird es ausgeliefert, wie ist der Code organisiert und welche Szenarien validieren es?",
   "about.benefit.drill":
-    "Doppelklick auf ein System oder einen Container, um eine Ebene tiefer zu gehen – und jederzeit wieder zurück.",
+    "Doppelklick auf ein Element, um es zu fokussieren – oder jederzeit wieder eine Ebene aufsteigen.",
   "about.benefit.relations":
-    "Beziehungen mit Beschriftung, Technologie und der genauen Seite, über die sie ein- und austreten.",
+    "Beziehungen mit Beschriftung und UML-Nomenklatur: Assoziation, «include», «extend» und Generalisierung.",
   "about.benefit.export":
-    "Als PlantUML, Mermaid, Markdown oder JSON exportieren und die Dokumentation im Repository behalten.",
+    "Als JSON, Markdown oder JWT exportieren und die Dokumentation im Repository behalten.",
   "about.benefit.persist":
     "Alles liegt lokal im Browser: kein Konto, kein Server, keine Daten verlassen den Rechner.",
   "about.referencesTitle": "Technische Referenzen",
   "about.referencesBody":
-    "Dieses Werkzeug gäbe es nicht ohne die Arbeit der Menschen hinter diesen Projekten. Insbesondere ist die Methodik hinter jedem Diagramm hier das C4-Modell von Simon Brown.",
+    "Dieses Werkzeug gäbe es nicht ohne die Arbeit der Menschen hinter diesen Projekten. Insbesondere gibt das 4+1-Modell von Philippe Kruchten jedem Diagramm hier seine Form.",
   "about.language": "Sprache",
   "about.builtWith": "Erstellt mit Astro, React Flow und HeroUI.",
   "about.createdBy": "Erstellt von {name}",
@@ -274,7 +271,7 @@ export const de: Dictionary = {
   "examples.nav": "Beispiele",
   "examples.title": "Beispielarchitekturen",
   "examples.subtitle":
-    "50 Fallstudien, die sich direkt im Editor öffnen lassen. Die Namen sind fiktiv, die genannten Firmen sind rein konzeptionelle Referenzen.",
+    "Fallstudien, die sich direkt im Editor öffnen lassen. Die Namen sind fiktiv, die genannten Firmen sind rein konzeptionelle Referenzen.",
   "examples.search": "Beispiele suchen",
   "examples.searchPlaceholder": "Nach Name, Technologie oder Referenz suchen…",
   "examples.all": "Alle",

@@ -13,39 +13,27 @@ export const AUTHOR = {
 } as const;
 
 export const PROJECT = {
-  name: "C4 Modeler",
+  name: "4+1 Modeler",
   /** Metodología de referencia que implementa la herramienta. */
-  methodology: "C4 Model",
-  methodologyUrl: "https://c4model.com/",
+  methodology: "4+1 View Model of Architecture",
+  methodologyUrl: "https://doi.org/10.1109/52.469759",
 } as const;
 
 /** Referencias técnicas que se citan en la página. */
 export const REFERENCES = [
   {
-    id: "c4model",
-    name: "C4 Model",
-    url: "https://c4model.com/",
+    id: "4plus1",
+    name: "4+1 View Model",
+    url: "https://doi.org/10.1109/52.469759",
     description:
-      "The methodology implemented here: zoom into the abstractions that actually matter, from system context down to code.",
+      "The methodology implemented here: four concurrent views (logical, process, development, physical) plus a scenario view that illustrates and validates them.",
   },
   {
-    id: "structurizr",
-    name: "Structurizr for UML",
-    url: "https://docs.structurizr.com/",
+    id: "uml",
+    name: "UML use-case notation",
+    url: "https://www.omg.org/spec/UML/",
     description:
-      "Reference for the hierarchical workspaces and the way one abstraction level drills down into the next.",
-  },
-  {
-    id: "c4plantuml",
-    name: "C4-PlantUML",
-    url: "https://github.com/plantuml-stdlib/C4-PlantUML",
-    description: "Standard macros used by the PlantUML export (Person, System, Container…).",
-  },
-  {
-    id: "mermaid",
-    name: "Mermaid C4 diagrams",
-    url: "https://mermaid.js.org/syntax/c4.html",
-    description: "Target syntax of the Mermaid export (C4Context, C4Container, C4Component).",
+      "Official notation behind the scenario view: actors, use cases, «include», «extend» and generalization.",
   },
   {
     id: "reactflow",

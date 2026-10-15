@@ -16,7 +16,7 @@ const BENEFITS: TranslationKey[] = [
 const BENEFIT_ICONS = ["target", "layers", "link", "download", "shield"] as const;
 
 function ReferenceCard({ reference }: { reference: (typeof REFERENCES)[number] }) {
-  const isMethodology = reference.id === "c4model";
+  const isMethodology = reference.id === "4plus1";
   return (
     <li
       className={[
@@ -144,9 +144,9 @@ function AboutContent() {
         <section className="mt-6 rounded-2xl border border-accent/30 bg-accent-soft/30 p-5">
           <h2 className="flex items-center gap-2 text-lg font-semibold text-foreground">
             <Icon name="target" className="text-accent" />
-            {t("about.c4Title")}
+            {t("about.modelTitle")}
           </h2>
-          <p className="mt-2 text-sm leading-relaxed text-foreground/90">{t("about.c4Body")}</p>
+          <p className="mt-2 text-sm leading-relaxed text-foreground/90">{t("about.modelBody")}</p>
           <a
             href={PROJECT.methodologyUrl}
             target="_blank"

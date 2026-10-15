@@ -3,7 +3,7 @@
  * Every other locale must implement exactly these keys (enforced by TypeScript).
  */
 export const en = {
-  "app.tagline": "Model and document software architecture with the C4 model",
+  "app.tagline": "Model and document software architecture with Philippe Kruchten's 4+1 model",
 
   "common.delete": "Delete",
   "common.confirm": "Confirm",
@@ -101,7 +101,7 @@ export const en = {
   "canvas.emptyBody": "Drag an element from the palette on the left to start modelling.",
 
   "topbar.summary": "{elements} elements · {relationships} relationships",
-  "topbar.level": "C4 level",
+  "topbar.level": "Level",
   "topbar.up": "Up",
   "topbar.scope": "Scope",
   "topbar.scopeEmpty": "No elements at this level",
@@ -214,9 +214,6 @@ export const en = {
   "export.copyError": "Could not copy",
   "export.downloaded": "{ext} file downloaded",
   "export.download": "Download .{ext}",
-  "export.format.c4model": "C4 Model (.c4model)",
-  "export.format.plantuml": "PlantUML (C4)",
-  "export.format.mermaid": "Mermaid (C4)",
   "export.format.markdown": "Markdown",
   "export.format.json": "JSON",
   "export.format.jwt": "JWT (JSON Web Token)",
@@ -246,18 +243,23 @@ export const en = {
   "about.projectTitle": "Why this tool exists",
   "about.projectBody":
     "Most architecture diagrams fail for the same reason: they try to show everything at once. A box-and-lines picture with fifty elements answers no question, gets outdated in a week and is never looked at again.",
-  "about.c4Title": "It is all based on the C4 Model",
-  "about.c4Body":
-    "C4 (Context, Containers, Components, Code) proposes zooming into abstractions instead of drawing one giant diagram. This tool implements that idea: every level answers a single question, and any element can be opened to reveal what is inside it.",
+  "about.modelTitle": "It is all based on the 4+1 model",
+  "about.modelBody":
+    "Philippe Kruchten describes an architecture with four concurrent views — logical, process, development and physical — and a fifth one, the +1 scenario view (use cases), that illustrates and validates them. This tool starts from that +1 view: it models who uses the system and what they do with it, and everything else is documented on top of that.",
   "about.benefitTitle": "What that buys you",
-  "about.benefit.levels": "One level, one question: who uses the system, how it is built, what each module does.",
-  "about.benefit.drill": "Double-click a system or a container to drill down, or go back up whenever you want.",
-  "about.benefit.relations": "Relationships with labels, technology and the exact side they enter and leave from.",
-  "about.benefit.export": "Export to PlantUML, Mermaid, Markdown or JSON and keep the documentation in your repository.",
-  "about.benefit.persist": "Everything is stored locally in your browser: no account, no server, no data leaves the machine.",
+  "about.benefit.levels":
+    "Five views, five questions: who uses the system, how it runs, how it deploys, how the code is organised and which scenarios validate it.",
+  "about.benefit.drill":
+    "Double-click an element to focus on it, or go back up whenever you want.",
+  "about.benefit.relations":
+    "Relationships with labels and UML nomenclature: association, «include», «extend» and generalization.",
+  "about.benefit.export":
+    "Export to JSON, Markdown or JWT and keep the documentation in your repository.",
+  "about.benefit.persist":
+    "Everything is stored locally in your browser: no account, no server, no data leaves the machine.",
   "about.referencesTitle": "Technical references",
   "about.referencesBody":
-    "This tool would not exist without the work of the people behind these projects. In particular, the methodology that shapes every diagram here is the C4 Model by Simon Brown.",
+    "This tool would not exist without the work of the people behind these projects. In particular, the methodology that shapes every diagram here is Philippe Kruchten's 4+1 model.",
   "about.language": "Language",
   "about.builtWith": "Built with Astro, React Flow and HeroUI.",
   "about.createdBy": "Created by {name}",
@@ -267,7 +269,7 @@ export const en = {
   "examples.nav": "Examples",
   "examples.title": "Example architectures",
   "examples.subtitle":
-    "50 study cases ready to open in the editor. Names are fictional and the listed companies are only conceptual references.",
+    "Study cases ready to open in the editor. Names are fictional and the listed companies are only conceptual references.",
   "examples.search": "Search examples",
   "examples.searchPlaceholder": "Search by name, technology or reference…",
   "examples.all": "All",

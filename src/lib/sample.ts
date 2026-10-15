@@ -125,19 +125,8 @@ function useCaseSheet(): Sheet {
   };
 }
 
-/** Proyecto de ejemplo: una hoja de casos de uso ya poblada. */
+/** Proyecto inicial: una hoja de casos de uso completamente en blanco lista para diseñar. */
 export function createSampleProject(): Project {
-  return {
-    id: createId("pr"),
-    name: "Modelador 4+1",
-    description: "Diagrama de casos de uso de ejemplo: tienda online.",
-    sheets: [useCaseSheet()],
-    updatedAt: new Date().toISOString(),
-  };
-}
-
-/** Proyecto vacío con una única hoja de casos de uso en blanco. */
-export function createEmptyProject(): Project {
   return {
     id: createId("pr"),
     name: "Modelador 4+1",
@@ -145,7 +134,7 @@ export function createEmptyProject(): Project {
     sheets: [
       {
         id: createId("sh"),
-        name: "Casos de uso",
+        name: "Vista 1",
         diagram: "usecase",
         elements: [],
         relationships: [],
@@ -154,4 +143,9 @@ export function createEmptyProject(): Project {
     ],
     updatedAt: new Date().toISOString(),
   };
+}
+
+/** Proyecto vacío con una única hoja de casos de uso en blanco. */
+export function createEmptyProject(): Project {
+  return createSampleProject();
 }

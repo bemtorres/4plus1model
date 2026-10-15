@@ -16,6 +16,8 @@ import { ShareDialog } from "./ShareDialog";
 import { notify } from "./Toaster";
 import { IconButton, EditableTitle, Picker, SegmentedControl } from "./ui";
 import { useFullscreen } from "./useFullscreen";
+import { useDevMode } from "@/lib/dev-mode";
+import { DevDiagramsDialog } from "./DevDiagramsDialog";
 
 export function TopBar({
   onOpenMobileLeft,
@@ -54,6 +56,8 @@ export function TopBar({
   const [shareOpen, setShareOpen] = useState(false);
   const [examplesOpen, setExamplesOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const devMode = useDevMode();
+  const [devDialogOpen, setDevDialogOpen] = useState(false);
 
   const openExample = (code: string) => {
     const target = findExampleByCode(code);
@@ -131,6 +135,38 @@ export function TopBar({
                 <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
                 Presentación
               </span>
+            ) : null}
+
+            {devMode.isDevEnabled ? (
+              <div className="hidden sm:inline-flex items-center gap-1.5 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setDevDialogOpen(true)}
+                  className="inline-flex items-center gap-1 rounded-full border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-[10px] font-semibold text-amber-600 dark:text-amber-400 hover:bg-amber-500/20 transition-colors shadow-2xs"
+                  title="Gestionar diagramas de prueba en JSON (Modo DEV activo por .env.local)"
+                >
+                  <span className="size-1.5 rounded-full bg-amber-500 animate-pulse" />
+                  <span>DEV MODE</span>
+                </button>
+
+                {devMode.activeDevFile ? (
+                  <div className="inline-flex items-center gap-1 rounded-lg border border-border bg-surface-secondary/80 px-2 py-0.5 shadow-2xs">
+                    <span className="font-mono text-[10px] text-foreground font-semibold truncate max-w-[130px]" title={devMode.activeDevFile}>
+                      📄 {devMode.activeDevFile}
+                    </span>
+                    <button
+                      type="button"
+                      disabled={devMode.loading}
+                      onClick={() => devMode.saveCurrent(project)}
+                      className="inline-flex items-center gap-0.5 rounded bg-accent px-1.5 py-0.5 text-[9px] font-bold text-accent-foreground hover:opacity-90 transition-opacity ml-0.5 cursor-pointer"
+                      title="Guardar cambios directamente en el archivo JSON en disco (Ctrl+S)"
+                    >
+                      <Icon name="download" className="text-[9px]" />
+                      Guardar
+                    </button>
+                  </div>
+                ) : null}
+              </div>
             ) : null}
           </div>
           <p className="truncate text-[11px] leading-tight text-muted">
@@ -230,6 +266,19 @@ export function TopBar({
           >
             <Icon name="external" />
             {t("share.edit")}
+          </Button>
+        ) : null}
+
+        {devMode.isDevEnabled && !readOnly ? (
+          <Button
+            size="sm"
+            variant="outline"
+            className="border-amber-500/40 bg-amber-500/10 text-amber-600 dark:text-amber-400 hover:bg-amber-500/20 font-medium text-xs shrink-0 shadow-2xs"
+            onPress={() => setDevDialogOpen(true)}
+            title="Abrir gestor de diagramas de prueba JSON en disco"
+          >
+            <Icon name="code" className="text-sm" />
+            <span>Diagramas DEV ({devMode.testDiagrams.length})</span>
           </Button>
         ) : null}
 
@@ -565,6 +614,13 @@ export function TopBar({
         isOpen={examplesOpen}
         onOpenChange={setExamplesOpen}
         openExample={openExample}
+      />
+      <DevDiagramsDialog
+        isOpen={devDialogOpen}
+        onClose={() => setDevDialogOpen(false)}
+        devMode={devMode}
+        currentProject={project}
+        onImportProject={importProject}
       />
     </header>
   );

@@ -1,7 +1,7 @@
 import type { Dictionary } from "./en";
 
 export const zh: Dictionary = {
-  "app.tagline": "使用 C4 模型建模并记录软件架构",
+  "app.tagline": "使用 Philippe Kruchten 的 4+1 模型建模并记录软件架构",
 
   "common.delete": "删除",
   "common.confirm": "确认",
@@ -101,7 +101,7 @@ export const zh: Dictionary = {
   "canvas.emptyBody": "从左侧面板拖入一个元素即可开始建模。",
 
   "topbar.summary": "{elements} 个元素 · {relationships} 个关系",
-  "topbar.level": "C4 层级",
+  "topbar.level": "层级",
   "topbar.up": "返回上层",
   "topbar.scope": "范围",
   "topbar.scopeEmpty": "该层级没有元素",
@@ -209,9 +209,6 @@ export const zh: Dictionary = {
   "export.copyError": "无法复制",
   "export.downloaded": "已下载 {ext} 文件",
   "export.download": "下载 .{ext}",
-  "export.format.c4model": "C4 模型 (.c4model)",
-  "export.format.plantuml": "PlantUML (C4)",
-  "export.format.mermaid": "Mermaid (C4)",
   "export.format.markdown": "Markdown",
   "export.format.json": "JSON",
   "export.format.jwt": "JWT (JSON Web Token)",
@@ -239,18 +236,18 @@ export const zh: Dictionary = {
   "about.projectTitle": "为什么要有这个工具",
   "about.projectBody":
     "大多数架构图失败的原因都一样：它们试图一次性展示全部内容。一张有五十个方框的图回答不了任何问题，一周之内就过时了，之后再也没人看它。",
-  "about.c4Title": "一切都基于 C4 模型",
-  "about.c4Body":
-    "C4（上下文、容器、组件、代码）主张聚焦真正重要的抽象层级，而不是画一张巨大的图。这个工具正是这样做的：每一层只回答一个问题，任何元素都可以展开查看内部。",
+  "about.modelTitle": "一切都基于 4+1 模型",
+  "about.modelBody":
+    "Philippe Kruchten 用四个并发视图——逻辑、进程、开发和物理——以及第五个 +1 场景视图（用例）来描述架构，后者用于说明并验证这四个视图。本工具从这个 +1 视图开始：先建模谁使用系统以及用它做什么，其余内容都在此基础上展开。",
   "about.benefitTitle": "这带来的好处",
-  "about.benefit.levels": "一层一个问题：谁在使用系统、系统如何构建、每个模块负责什么。",
-  "about.benefit.drill": "双击系统或容器即可进入下一层，也可以随时返回上层。",
-  "about.benefit.relations": "关系带有标签、技术栈，以及明确的进出边位置。",
-  "about.benefit.export": "导出为 PlantUML、Mermaid、Markdown 或 JSON，把文档留在你的代码仓库里。",
+  "about.benefit.levels": "五个视图，五个问题：谁在使用系统、它如何运行、如何部署、代码如何组织，以及哪些场景验证它。",
+  "about.benefit.drill": "双击元素即可聚焦，也可以随时返回上层。",
+  "about.benefit.relations": "关系带有标签和 UML 命名规范：关联、«include»、«extend» 与泛化。",
+  "about.benefit.export": "导出为 JSON、Markdown 或 JWT，把文档留在你的代码仓库里。",
   "about.benefit.persist": "所有内容都保存在浏览器本地：无需账号、不经过服务器，数据不会离开这台设备。",
   "about.referencesTitle": "技术参考",
   "about.referencesBody":
-    "没有这些项目背后人们的工作，这个工具也不会存在。尤其是塑造这里每一张图的，正是 Simon Brown 提出的 C4 模型。",
+    "没有这些项目背后人们的工作，这个工具也不会存在。尤其是塑造这里每一张图的，正是 Philippe Kruchten 的 4+1 模型。",
   "about.language": "语言",
   "about.builtWith": "基于 Astro、React Flow 和 HeroUI 构建。",
   "about.createdBy": "由 {name} 创建",
@@ -260,7 +257,7 @@ export const zh: Dictionary = {
   "examples.nav": "示例",
   "examples.title": "示例架构",
   "examples.subtitle":
-    "50 个可直接在编辑器中打开的案例。名称均为虚构，所提及的公司仅作为概念参考。",
+    "可直接在编辑器中打开的案例。名称均为虚构，所提及的公司仅作为概念参考。",
   "examples.search": "搜索示例",
   "examples.searchPlaceholder": "按名称、技术或参考对象搜索…",
   "examples.all": "全部",

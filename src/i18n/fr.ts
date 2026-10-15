@@ -1,7 +1,7 @@
 import type { Dictionary } from "./en";
 
 export const fr: Dictionary = {
-  "app.tagline": "Modélisez et documentez l'architecture logicielle avec le modèle C4",
+  "app.tagline": "Modélisez et documentez l'architecture logicielle avec le modèle 4+1 de Philippe Kruchten",
 
   "common.delete": "Supprimer",
   "common.confirm": "Confirmer",
@@ -102,7 +102,7 @@ export const fr: Dictionary = {
     "Glissez un élément depuis la palette à gauche pour commencer à modéliser.",
 
   "topbar.summary": "{elements} éléments · {relationships} relations",
-  "topbar.level": "Niveau C4",
+  "topbar.level": "Niveau",
   "topbar.up": "Monter",
   "topbar.scope": "Périmètre",
   "topbar.scopeEmpty": "Aucun élément à ce niveau",
@@ -217,9 +217,6 @@ export const fr: Dictionary = {
   "export.copyError": "Copie impossible",
   "export.downloaded": "Fichier {ext} téléchargé",
   "export.download": "Télécharger .{ext}",
-  "export.format.c4model": "Modèle C4 (.c4model)",
-  "export.format.plantuml": "PlantUML (C4)",
-  "export.format.mermaid": "Mermaid (C4)",
   "export.format.markdown": "Markdown",
   "export.format.json": "JSON",
   "export.format.jwt": "JWT (JSON Web Token)",
@@ -250,23 +247,24 @@ export const fr: Dictionary = {
   "about.projectTitle": "Pourquoi cet outil existe",
   "about.projectBody":
     "La plupart des diagrammes d'architecture échouent pour la même raison : ils veulent tout montrer en même temps. Un dessin avec cinquante boîtes ne répond à aucune question, devient obsolète en une semaine et n'est plus jamais regardé.",
-  "about.c4Title": "Tout repose sur le modèle C4",
-  "about.c4Body":
-    "C4 (Contexte, Conteneurs, Composants, Code) propose de zoomer sur les abstractions qui comptent, plutôt que de dessiner un seul diagramme géant. Cet outil applique cette idée : chaque niveau répond à une seule question et n'importe quel élément peut être ouvert pour voir son contenu.",
+  "about.modelTitle": "Tout repose sur le modèle 4+1",
+  "about.modelBody":
+    "Philippe Kruchten décrit l'architecture avec quatre vues concurrentes — Logique, Processus, Développement et Physique — et une cinquième, la vue +1 des Scénarios (cas d'utilisation), qui les illustre et les valide. Cet outil part de cette vue +1 : il modélise qui utilise le système et ce qu'il en fait, et le reste se documente sur cette base.",
   "about.benefitTitle": "Ce que cela apporte",
   "about.benefit.levels":
-    "Un niveau, une question : qui utilise le système, comment il est construit, que fait chaque module.",
+    "Cinq vues, cinq questions : qui utilise le système, comment il s'exécute, comment il se déploie, comment le code est organisé et quels scénarios le valident.",
   "about.benefit.drill":
-    "Double-cliquez sur un système ou un conteneur pour descendre d'un niveau, ou remontez quand vous voulez.",
+    "Double-clic sur un élément pour vous concentrer dessus, ou remontez quand vous voulez.",
   "about.benefit.relations":
-    "Des relations avec libellé, technologie et le côté exact par lequel elles entrent et sortent.",
+    "Des relations avec libellé et nomenclature UML : association, « include », « extend » et généralisation.",
   "about.benefit.export":
-    "Exportez en PlantUML, Mermaid, Markdown ou JSON et gardez la documentation dans votre dépôt.",
+    "Exportez en JSON, Markdown ou JWT et gardez la documentation dans votre dépôt.",
   "about.benefit.persist":
     "Tout est stocké dans votre navigateur : pas de compte, pas de serveur, aucune donnée ne quitte la machine.",
   "about.referencesTitle": "Références techniques",
   "about.referencesBody":
-    "Cet outil n'existerait pas sans le travail des personnes derrière ces projets. En particulier, la méthodologie qui donne sa forme à tous les diagrammes est le modèle C4 de Simon Brown.",  "about.language": "Langue",
+    "Cet outil n'existerait pas sans le travail des personnes derrière ces projets. En particulier, la méthodologie qui donne sa forme à tous les diagrammes est le modèle 4+1 de Philippe Kruchten.",
+  "about.language": "Langue",
   "about.builtWith": "Réalisé avec Astro, React Flow et HeroUI.",
   "about.createdBy": "Créé par {name}",
   "about.viewProfile": "Voir le profil GitHub",
@@ -275,7 +273,7 @@ export const fr: Dictionary = {
   "examples.nav": "Exemples",
   "examples.title": "Architectures d'exemple",
   "examples.subtitle":
-    "50 études de cas prêtes à être ouvertes dans l'éditeur. Les noms sont fictifs et les entreprises citées ne sont que des références conceptuelles.",
+    "Études de cas prêtes à être ouvertes dans l'éditeur. Les noms sont fictifs et les entreprises citées ne sont que des références conceptuelles.",
   "examples.search": "Rechercher des exemples",
   "examples.searchPlaceholder": "Rechercher par nom, technologie ou référence…",
   "examples.all": "Tous",

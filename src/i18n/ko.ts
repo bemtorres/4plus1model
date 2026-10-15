@@ -1,7 +1,7 @@
 import type { Dictionary } from "./en";
 
 export const ko: Dictionary = {
-  "app.tagline": "C4 모델로 소프트웨어 아키텍처를 모델링하고 문서화합니다",
+  "app.tagline": "Philippe Kruchten의 4+1 모델로 소프트웨어 아키텍처를 모델링하고 문서화합니다",
 
   "common.delete": "삭제",
   "common.confirm": "확인",
@@ -101,7 +101,7 @@ export const ko: Dictionary = {
   "canvas.emptyBody": "왼쪽 팔레트에서 요소를 끌어다 놓으면 모델링을 시작할 수 있습니다.",
 
   "topbar.summary": "요소 {elements}개 · 관계 {relationships}개",
-  "topbar.level": "C4 레벨",
+  "topbar.level": "레벨",
   "topbar.up": "상위로",
   "topbar.scope": "범위",
   "topbar.scopeEmpty": "이 레벨에 요소가 없습니다",
@@ -209,9 +209,6 @@ export const ko: Dictionary = {
   "export.copyError": "복사할 수 없습니다",
   "export.downloaded": "{ext} 파일을 다운로드했습니다",
   "export.download": ".{ext} 다운로드",
-  "export.format.c4model": "C4 모델 (.c4model)",
-  "export.format.plantuml": "PlantUML (C4)",
-  "export.format.mermaid": "Mermaid (C4)",
   "export.format.markdown": "Markdown",
   "export.format.json": "JSON",
   "export.format.jwt": "JWT (JSON Web Token)",
@@ -240,18 +237,18 @@ export const ko: Dictionary = {
   "about.projectTitle": "이 도구가 존재하는 이유",
   "about.projectBody":
     "대부분의 아키텍처 다이어그램은 같은 이유로 실패합니다. 한 장에 모든 것을 담으려 하기 때문입니다. 상자 오십 개가 그려진 그림은 어떤 질문에도 답하지 못하고, 일주일 뒤엔 낡아버리며 다시는 아무도 보지 않습니다.",
-  "about.c4Title": "모든 것은 C4 모델을 기반으로 합니다",
-  "about.c4Body":
-    "C4(컨텍스트, 컨테이너, 컴포넌트, 코드)는 거대한 다이어그램 한 장을 그리는 대신 중요한 추상화 수준으로 확대하라고 제안합니다. 이 도구는 바로 그 아이디어를 구현합니다. 각 레벨은 단 하나의 질문에 답하고, 어떤 요소든 열어 내부를 볼 수 있습니다.",
+  "about.modelTitle": "모든 것은 4+1 모델을 기반으로 합니다",
+  "about.modelBody":
+    "Philippe Kruchten는 병렬로 존재하는 네 개의 뷰 — 논리, 프로세스, 개발, 물리 — 와 이를 설명하고 검증하는 다섯 번째 뷰인 +1 시나리오 뷰(유스케이스)로 아키텍처를 기술합니다. 이 도구는 바로 그 +1 뷰에서 시작합니다: 시스템을 누구가 어떻게 사용하는지 모델링하고, 나머지는 그 위에 문서화합니다.",
   "about.benefitTitle": "그래서 얻는 것",
-  "about.benefit.levels": "한 레벨, 한 질문. 누가 시스템을 쓰는지, 어떻게 만들어졌는지, 각 모듈이 무엇을 하는지.",
-  "about.benefit.drill": "시스템이나 컨테이너를 더블 클릭하면 아래 레벨로 들어가고, 언제든 다시 올라올 수 있습니다.",
-  "about.benefit.relations": "레이블과 기술, 그리고 어디로 들어오고 어디로 나가는지가 명확한 관계.",
-  "about.benefit.export": "PlantUML, Mermaid, Markdown, JSON으로 내보내 문서를 저장소에 함께 보관하세요.",
+  "about.benefit.levels": "다섯 개의 뷰, 다섯 개의 질문. 누가 시스템을 쓰는지, 어떻게 실행되는지, 어떻게 배포되는지, 코드가 어떻게 구성되는지, 어떤 시나리오가 검증하는지.",
+  "about.benefit.drill": "요소를 더블 클릭하면 그 요소에 집중하고, 언제든 다시 올라올 수 있습니다.",
+  "about.benefit.relations": "레이블과 UML 명명법을 갖춘 관계. 연관, «include», «extend», 일반화.",
+  "about.benefit.export": "JSON, Markdown, JWT로 내보내 문서를 저장소에 함께 보관하세요.",
   "about.benefit.persist": "모든 내용은 브라우저에 저장됩니다. 계정도, 서버도 없고 데이터가 밖으로 나가지 않습니다.",
   "about.referencesTitle": "기술 참고 자료",
   "about.referencesBody":
-    "이 프로젝트들을 만든 사람들의 노력이 없다면 이 도구도 존재하지 않습니다. 특히 여기 모든 다이어그램의 방법론은 Simon Brown의 C4 모델입니다.",
+    "이 프로젝트들을 만든 사람들의 노력이 없다면 이 도구도 존재하지 않습니다. 특히 여기 모든 다이어그램의 방법론은 Philippe Kruchten의 4+1 모델입니다.",
   "about.language": "언어",
   "about.builtWith": "Astro, React Flow, HeroUI로 만들었습니다.",
   "about.createdBy": "만든 사람: {name}",
@@ -261,7 +258,7 @@ export const ko: Dictionary = {
   "examples.nav": "예제",
   "examples.title": "예제 아키텍처",
   "examples.subtitle":
-    "편집기에서 바로 열 수 있는 50개의 사례 연구입니다. 이름은 가상의 이름이며 언급된 회사는 개념적 참고일 뿐입니다.",
+    "편집기에서 바로 열 수 있는 사례 연구입니다. 이름은 가상의 이름이며 언급된 회사는 개념적 참고일 뿐입니다.",
   "examples.search": "예제 검색",
   "examples.searchPlaceholder": "이름, 기술 또는 참고 서비스로 검색…",
   "examples.all": "전체",

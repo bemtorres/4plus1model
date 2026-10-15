@@ -28,7 +28,7 @@ const LEVELS: LevelMeta[] = [
   },
 ];
 
-const KINDS: Record<ElementKind, KindMeta> = {
+const KINDS: Partial<Record<ElementKind, KindMeta>> = {
   actor: {
     kind: "actor",
     label: "Actor",

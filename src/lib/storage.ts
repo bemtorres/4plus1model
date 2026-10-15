@@ -218,6 +218,9 @@ function normalizeSheet(input: unknown): Sheet {
   const level = str(viewRaw.level, def.levels[0].id);
   const scopeId = typeof viewRaw.scopeId === "string" && ids.has(viewRaw.scopeId) ? viewRaw.scopeId : null;
 
+  const sheetIcon = isElementIcon(raw.icon) ? raw.icon : (raw.icon === null ? null : undefined);
+  const sheetColor = color(raw.color);
+
   return {
     id: str(raw.id) || createId("sh"),
     name: str(raw.name, "Hoja"),
@@ -225,6 +228,8 @@ function normalizeSheet(input: unknown): Sheet {
     elements,
     relationships,
     view: { level: levelIds.has(level) ? level : def.levels[0].id, scopeId },
+    ...(sheetIcon !== undefined ? { icon: sheetIcon } : {}),
+    ...(sheetColor !== null ? { color: sheetColor } : {}),
   };
 }
 
@@ -300,7 +305,19 @@ export function parseProjectFile(text: string): Project {
 
 export function createInitialState(): PersistedState {
   const persisted = loadPersistedState();
-  if (persisted) return persisted;
+  if (persisted) {
+    const isOldSample =
+      persisted.project.description === "Diagrama de casos de uso de ejemplo: tienda online." ||
+      persisted.project.sheets.some((s) =>
+        s.elements.some((el) => el.id === "uc-actor-cliente" || el.id === "uc-system-tienda"),
+      );
+    if (isOldSample) {
+      const blank = createSampleProject();
+      savePersistedState({ project: blank, activeSheetId: blank.sheets[0].id });
+      return { project: blank, activeSheetId: blank.sheets[0].id };
+    }
+    return persisted;
+  }
   const project = createSampleProject();
   return { project, activeSheetId: project.sheets[0].id };
 }

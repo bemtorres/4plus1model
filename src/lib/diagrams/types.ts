@@ -24,6 +24,7 @@ export type NodeShape =
   | "heading"
   | "diamond"
   | "parallelogram"
+  | "process"
   | "hexagon"
   | "triangle"
   | "cylinder"
@@ -89,7 +90,7 @@ export interface DiagramDef {
   /** `true` si el diagrama aún no está disponible (menú «+»). */
   comingSoon?: boolean;
   levels: LevelMeta[];
-  kinds: Record<ElementKind, KindMeta>;
+  kinds: Partial<Record<ElementKind, KindMeta>>;
   styles: RelationshipStyle[];
   flags?: {
     /** En niveles con ámbito, mostrar también el contexto aunque no haya relaciones. */

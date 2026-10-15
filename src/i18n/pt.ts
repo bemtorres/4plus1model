@@ -1,7 +1,7 @@
 import type { Dictionary } from "./en";
 
 export const pt: Dictionary = {
-  "app.tagline": "Modele e documente a arquitetura de software com o modelo C4",
+  "app.tagline": "Modele e documente a arquitetura de software com o modelo 4+1 de Philippe Kruchten",
 
   "common.delete": "Eliminar",
   "common.confirm": "Confirmar",
@@ -102,7 +102,7 @@ export const pt: Dictionary = {
     "Arraste um elemento da paleta à esquerda para começar a modelar.",
 
   "topbar.summary": "{elements} elementos · {relationships} relações",
-  "topbar.level": "Nível C4",
+  "topbar.level": "Nível",
   "topbar.up": "Subir",
   "topbar.scope": "Âmbito",
   "topbar.scopeEmpty": "Sem elementos neste nível",
@@ -215,9 +215,6 @@ export const pt: Dictionary = {
   "export.copyError": "Não foi possível copiar",
   "export.downloaded": "Ficheiro {ext} transferido",
   "export.download": "Transferir .{ext}",
-  "export.format.c4model": "Modelo C4 (.c4model)",
-  "export.format.plantuml": "PlantUML (C4)",
-  "export.format.mermaid": "Mermaid (C4)",
   "export.format.markdown": "Markdown",
   "export.format.json": "JSON",
   "export.format.jwt": "JWT (JSON Web Token)",
@@ -247,23 +244,23 @@ export const pt: Dictionary = {
   "about.projectTitle": "Porque existe esta ferramenta",
   "about.projectBody":
     "Quase todos os diagramas de arquitetura falham pelo mesmo motivo: tentam mostrar tudo ao mesmo tempo. Um desenho com cinquenta caixas não responde a nenhuma pergunta, fica obsoleto numa semana e ninguém volta a olhá-lo.",
-  "about.c4Title": "Tudo assenta no modelo C4",
-  "about.c4Body":
-    "O C4 (Contexto, Contentores, Componentes, Código) propõe aproximar o zoom das abstrações que importam, em vez de desenhar um único diagrama gigante. Esta ferramenta aplica essa ideia: cada nível responde a uma só pergunta e qualquer elemento pode ser aberto para ver o seu interior.",
+  "about.modelTitle": "Tudo assenta no modelo 4+1",
+  "about.modelBody":
+    "Philippe Kruchten descreve a arquitetura com quatro vistas concorrentes — Lógica, Processo, Desenvolvimento e Física — e uma quinta, a vista +1 de Cenários (casos de uso), que as ilustra e valida. Esta ferramenta parte dessa vista +1: modela quem usa o sistema e o que faz com ele, e todo o resto se documenta sobre essa base.",
   "about.benefitTitle": "O que isso traz",
   "about.benefit.levels":
-    "Um nível, uma pergunta: quem usa o sistema, como é construído, o que faz cada módulo.",
+    "Cinco vistas, cinco perguntas: quem usa o sistema, como ele funciona, como é implantado, como o código é organizado e que cenários o validam.",
   "about.benefit.drill":
-    "Faça clique duplo num sistema ou contentor para descer de nível, ou suba quando quiser.",
+    "Clique duplo num elemento para se focar nele, ou suba de nível quando quiser.",
   "about.benefit.relations":
-    "Relações com etiqueta, tecnologia e o lado exato por onde entram e saem.",
+    "Relações com etiqueta e nomenclatura UML: associação, «include», «extend» e generalização.",
   "about.benefit.export":
-    "Exporte para PlantUML, Mermaid, Markdown ou JSON e mantenha a documentação no seu repositório.",
+    "Exporte para JSON, Markdown ou JWT e mantenha a documentação no seu repositório.",
   "about.benefit.persist":
     "Tudo é guardado no seu navegador: sem contas, sem servidor e sem dados a sair da máquina.",
   "about.referencesTitle": "Referências técnicas",
   "about.referencesBody":
-    "Esta ferramenta não existiria sem o trabalho de quem está por trás destes projetos. Em especial, a metodologia que dá forma a todos os diagramas é o modelo C4 de Simon Brown.",
+    "Esta ferramenta não existiria sem o trabalho de quem está por trás destes projetos. Em especial, a metodologia que dá forma a todos os diagramas é o modelo 4+1 de Philippe Kruchten.",
   "about.language": "Idioma",
   "about.builtWith": "Criado com Astro, React Flow e HeroUI.",
   "about.createdBy": "Criado por {name}",
@@ -273,7 +270,7 @@ export const pt: Dictionary = {
   "examples.nav": "Exemplos",
   "examples.title": "Arquiteturas de exemplo",
   "examples.subtitle":
-    "50 casos de estudo prontos a abrir no editor. Os nomes são fictícios e as empresas citadas são apenas referências conceptuais.",
+    "Casos de estudo prontos a abrir no editor. Os nomes são fictícios e as empresas citadas são apenas referências conceptuais.",
   "examples.search": "Procurar exemplos",
   "examples.searchPlaceholder": "Procure por nome, tecnologia ou referência…",
   "examples.all": "Todos",

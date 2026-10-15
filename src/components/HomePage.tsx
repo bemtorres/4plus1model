@@ -354,7 +354,7 @@ function HomeContent() {
               {t("about.nav")}
             </a>
             <a
-              href="https://github.com/bemtorres/c4model"
+              href="https://github.com/bemtorres/4plus1model"
               target="_blank"
               rel="noreferrer noopener"
               className="hover:text-foreground"

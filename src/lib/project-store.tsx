@@ -144,9 +144,10 @@ export interface ProjectApi {
   /** Se incrementa al reorganizar para que el lienzo se ajuste a la vista. */
   layoutSignal: number;
   // hojas
-  addSheet: (diagram: DiagramId, name?: string) => string;
+  addSheet: (diagram?: DiagramId, name?: string) => string;
   removeSheet: (id: string) => void;
   renameSheet: (id: string, name: string) => void;
+  updateSheet: (id: string, patch: Partial<Pick<Sheet, "name" | "color" | "icon" | "diagram">>) => void;
   duplicateSheet: (id: string) => string;
   selectSheet: (id: string) => void;
   renameProject: (name: string, description: string) => void;
@@ -384,13 +385,12 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
   }, [sheet, scopeId, setLevel, mutateActiveSheet]);
 
   const addSheet = useCallback(
-    (diagram: DiagramId, name?: string) => {
+    (diagram: DiagramId = "usecase", name?: string) => {
       if (readOnlyRef.current) return "";
       const def = diagramDef(diagram);
       const id = createId("sh");
-      const label = name ?? def.label;
-      const sameDiagram = project.sheets.filter((item) => item.diagram === diagram).length;
-      const sheetName = sameDiagram === 0 ? label : `${label} ${sameDiagram + 1}`;
+      const sheetIndex = project.sheets.length + 1;
+      const sheetName = name !== undefined ? name : `Vista ${sheetIndex}`;
       const next: Sheet = {
         id,
         name: sheetName,
@@ -423,6 +423,16 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
       commit((current) => ({
         ...current,
         sheets: current.sheets.map((item) => (item.id === id ? { ...item, name } : item)),
+      }));
+    },
+    [commit],
+  );
+
+  const updateSheet = useCallback(
+    (id: string, patch: Partial<Pick<Sheet, "name" | "color" | "icon" | "diagram">>) => {
+      commit((current) => ({
+        ...current,
+        sheets: current.sheets.map((item) => (item.id === id ? { ...item, ...patch } : item)),
       }));
     },
     [commit],
@@ -719,6 +729,7 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
       addSheet,
       removeSheet,
       renameSheet,
+      updateSheet,
       duplicateSheet,
       selectSheet,
       renameProject,
@@ -759,6 +770,7 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
       addSheet,
       removeSheet,
       renameSheet,
+      updateSheet,
       duplicateSheet,
       selectSheet,
       renameProject,

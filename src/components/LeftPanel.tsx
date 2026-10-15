@@ -583,28 +583,28 @@ export function LeftPanel({
                 </p>
               ) : (
                 <ul className="flex flex-col gap-0.5">
-                  {roots.map((element) => (
-                    <li key={element.id}>
-                      <div
-                        role="button"
-                        tabIndex={0}
-                        onClick={() => select({ type: "element", id: element.id })}
-                        onDoubleClick={() => drillInto(element.id)}
-                        className={[
-                          "flex items-center gap-1.5 px-2 py-1 rounded text-xs cursor-pointer transition-colors",
-                          selectedId === element.id
-                            ? "bg-accent-soft text-accent font-semibold"
-                            : "text-foreground hover:bg-surface-secondary",
-                        ].join(" ")}
-                      >
-                        <Icon
-                          name={iconOf(sheet.diagram, element)}
-                          className="text-xs text-muted"
-                        />
-                        <span className="truncate flex-1">{element.name}</span>
-                      </div>
-                    </li>
-                  ))}
+                  {roots.map((element) => {
+                    const icon = iconOf(sheet.diagram, element);
+                    return (
+                      <li key={element.id}>
+                        <div
+                          role="button"
+                          tabIndex={0}
+                          onClick={() => select({ type: "element", id: element.id })}
+                          onDoubleClick={() => drillInto(element.id)}
+                          className={[
+                            "flex items-center gap-1.5 px-2 py-1 rounded text-xs cursor-pointer transition-colors",
+                            selectedId === element.id
+                              ? "bg-accent-soft text-accent font-semibold"
+                              : "text-foreground hover:bg-surface-secondary",
+                          ].join(" ")}
+                        >
+                          {icon ? <Icon name={icon} className="text-xs text-muted" /> : null}
+                          <span className="truncate flex-1">{element.name}</span>
+                        </div>
+                      </li>
+                    );
+                  })}
                 </ul>
               )}
             </div>

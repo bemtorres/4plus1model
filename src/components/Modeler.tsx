@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { ReactFlowProvider } from "@xyflow/react";
 import { LanguageProvider } from "@/i18n";
 import { ProjectProvider, useProject } from "@/lib/project-store";
+import { DevModeProvider, useDevMode } from "@/lib/dev-mode";
 import { Canvas } from "./Canvas";
 import { Inspector } from "./Inspector";
 import { LeftPanel } from "./LeftPanel";
@@ -23,6 +24,7 @@ function isTyping(target: EventTarget | null): boolean {
 
 function Shell() {
   const {
+    project,
     selection,
     removeElement,
     removeRelationship,
@@ -33,6 +35,7 @@ function Shell() {
     readOnly,
     clearAll,
   } = useProject();
+  const devMode = useDevMode();
   useShareParam();
 
   useEffect(() => {
@@ -50,6 +53,15 @@ function Shell() {
     const onKeyDown = (event: KeyboardEvent) => {
       const modifier = event.ctrlKey || event.metaKey;
       const key = event.key.toLowerCase();
+
+      // Ctrl+S / Cmd+S: Guardar directamente en archivo JSON en modo DEV
+      if (modifier && key === "s") {
+        if (devMode.isDevEnabled && devMode.activeDevFile) {
+          event.preventDefault();
+          devMode.saveCurrent(project);
+          return;
+        }
+      }
 
       if (modifier && key === "z") {
         event.preventDefault();
@@ -87,7 +99,7 @@ function Shell() {
 
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [selection, removeElement, removeRelationship, duplicateElement, undo, redo, autoLayout, readOnly]);
+  }, [selection, removeElement, removeRelationship, duplicateElement, undo, redo, autoLayout, readOnly, devMode, project]);
 
   const [mobileDrawer, setMobileDrawer] = useState<"left" | "right" | null>(null);
 
@@ -132,9 +144,11 @@ export function Modeler() {
   return (
     <LanguageProvider>
       <ProjectProvider>
-        <ReactFlowProvider>
-          <Shell />
-        </ReactFlowProvider>
+        <DevModeProvider>
+          <ReactFlowProvider>
+            <Shell />
+          </ReactFlowProvider>
+        </DevModeProvider>
       </ProjectProvider>
     </LanguageProvider>
   );

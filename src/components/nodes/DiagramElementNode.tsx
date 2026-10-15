@@ -72,7 +72,7 @@ function Content({ name, description, stereotype, tags, icon, size, textColor }:
   return (
     <>
       <div className="c4-node__title" style={{ ...titleStyle, ...colorStyle }}>
-        <Icon name={icon} className="c4-node__icon" />
+        {icon ? <Icon name={icon} className="c4-node__icon" /> : null}
         <span>{name}</span>
       </div>
       {description ? (
@@ -115,13 +115,14 @@ export function DiagramElementNode({ data, selected }: NodeProps<ElementFlowNode
   const meta = kindMeta(sheet.diagram, element.kind);
   const description = element.description.trim();
   const stereotype = `«${meta.stereotype}»`;
+  const effectiveIcon = iconOf(sheet.diagram, element);
 
   const content: ContentProps = {
     name: element.name || "Sin nombre",
     description,
     stereotype,
     tags: element.tags,
-    icon: iconOf(sheet.diagram, element),
+    icon: effectiveIcon,
     size: element.size,
     textColor: element.textColor,
   };
@@ -218,7 +219,8 @@ export function DiagramElementNode({ data, selected }: NodeProps<ElementFlowNode
               ...(element.textColor ? { color: element.textColor } : {}),
             }}
           >
-            {element.name || "Caso de uso"}
+            {effectiveIcon ? <Icon name={effectiveIcon} className="mr-1.5 inline-block shrink-0 align-middle text-xs" /> : null}
+            <span>{element.name || "Caso de uso"}</span>
           </div>
           {description ? (
             <div className="uc-usecase__desc">{description}</div>
@@ -238,7 +240,8 @@ export function DiagramElementNode({ data, selected }: NodeProps<ElementFlowNode
         <SideHandles sides={["top", "right", "bottom", "left"]} show={showHandles} />
         <div className="drawio-cylinder__top" />
         <div className="drawio-shape__title mt-3" style={element.textColor ? { color: element.textColor } : undefined}>
-          {element.name || "Base de datos"}
+          {effectiveIcon ? <Icon name={effectiveIcon} className="mr-1.5 inline-block shrink-0 align-middle text-xs" /> : null}
+          <span>{element.name || "Base de datos"}</span>
         </div>
         {description ? (
           <div className="drawio-shape__desc">{description}</div>
@@ -256,7 +259,8 @@ export function DiagramElementNode({ data, selected }: NodeProps<ElementFlowNode
       >
         <SideHandles sides={["top", "right", "bottom", "left"]} show={showHandles} />
         <div className="drawio-shape__title" style={element.textColor ? { color: element.textColor } : undefined}>
-          {element.name || "Nube"}
+          {effectiveIcon ? <Icon name={effectiveIcon} className="mr-1.5 inline-block shrink-0 align-middle text-xs" /> : null}
+          <span>{element.name || "Nube"}</span>
         </div>
         {description ? <div className="drawio-shape__desc">{description}</div> : null}
       </div>
@@ -272,7 +276,8 @@ export function DiagramElementNode({ data, selected }: NodeProps<ElementFlowNode
       >
         <SideHandles sides={["top", "right", "bottom", "left"]} show={showHandles} />
         <div className="drawio-shape__title" style={element.textColor ? { color: element.textColor } : undefined}>
-          {element.name || "Decisión"}
+          {effectiveIcon ? <Icon name={effectiveIcon} className="mr-1.5 inline-block shrink-0 align-middle text-xs" /> : null}
+          <span>{element.name || "Decisión"}</span>
         </div>
         {description ? <div className="drawio-shape__desc">{description}</div> : null}
       </div>
@@ -288,7 +293,8 @@ export function DiagramElementNode({ data, selected }: NodeProps<ElementFlowNode
       >
         <SideHandles sides={["top", "right", "bottom", "left"]} show={showHandles} />
         <div className="drawio-shape__title" style={element.textColor ? { color: element.textColor } : undefined}>
-          {element.name || "Servidor"}
+          {effectiveIcon ? <Icon name={effectiveIcon} className="mr-1.5 inline-block shrink-0 align-middle text-xs" /> : null}
+          <span>{element.name || "Servidor"}</span>
         </div>
         <div className="text-[10px] opacity-60 mt-0.5">«{meta.stereotype}»</div>
         {description ? <div className="drawio-shape__desc">{description}</div> : null}
@@ -306,7 +312,10 @@ export function DiagramElementNode({ data, selected }: NodeProps<ElementFlowNode
         <SideHandles sides={["top", "right", "bottom", "left"]} show={showHandles} />
         <div className="drawio-classbox__header">
           <div className="drawio-classbox__stereo">«{meta.stereotype}»</div>
-          <div className="drawio-classbox__name">{element.name || "Clase"}</div>
+          <div className="drawio-classbox__name">
+            {effectiveIcon ? <Icon name={effectiveIcon} className="mr-1.5 inline-block shrink-0 align-middle text-xs" /> : null}
+            <span>{element.name || "Clase"}</span>
+          </div>
         </div>
         <div className="drawio-classbox__section">
           <div>+ id: UUID</div>
@@ -328,7 +337,8 @@ export function DiagramElementNode({ data, selected }: NodeProps<ElementFlowNode
       >
         <SideHandles sides={["top", "right", "bottom", "left"]} show={showHandles} />
         <div className="drawio-shape__title" style={element.textColor ? { color: element.textColor } : undefined}>
-          {element.name || "Componente"}
+          {effectiveIcon ? <Icon name={effectiveIcon} className="mr-1.5 inline-block shrink-0 align-middle text-xs" /> : null}
+          <span>{element.name || "Componente"}</span>
         </div>
         <div className="text-[10px] opacity-60 mt-0.5">«{meta.stereotype}»</div>
         {description ? <div className="drawio-shape__desc">{description}</div> : null}
@@ -353,7 +363,10 @@ export function DiagramElementNode({ data, selected }: NodeProps<ElementFlowNode
           </span>
         </div>
         <div className="drawio-window__body">
-          <div className="drawio-shape__title">{element.name || "Ventana"}</div>
+          <div className="drawio-shape__title">
+            {effectiveIcon ? <Icon name={effectiveIcon} className="mr-1.5 inline-block shrink-0 align-middle text-xs" /> : null}
+            <span>{element.name || "Ventana"}</span>
+          </div>
           {description ? <div className="drawio-shape__desc">{description}</div> : null}
         </div>
       </div>

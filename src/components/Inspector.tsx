@@ -143,31 +143,98 @@ function IconPicker({
   defaultIcon,
   kindLabel,
   onChange,
+  readOnly,
 }: {
   value: DiagramElement["icon"];
-  defaultIcon: DiagramElement["icon"];
+  defaultIcon?: DiagramElement["icon"];
   kindLabel: string;
   onChange: (icon: DiagramElement["icon"]) => void;
+  readOnly?: boolean;
 }) {
   const t = useT();
+  const isRemoved = value === null;
+  const effectiveIcon = isRemoved ? null : (value ?? defaultIcon ?? null);
+  const hasIcon = Boolean(effectiveIcon);
   const isCustom = value !== undefined && value !== defaultIcon;
+
   return (
-    <div className="flex flex-col gap-1.5">
+    <div className="flex flex-col gap-2.5">
       <div className="flex items-center justify-between">
-        <FieldLabel>{t("inspector.icon")}</FieldLabel>
-        {isCustom ? (
-          <button
-            type="button"
-            onClick={() => onChange(undefined)}
-            className="text-[11px] text-accent hover:underline"
-          >
-            {t("inspector.iconReset")}
-          </button>
-        ) : null}
+        <div className="flex items-center gap-2">
+          <FieldLabel>{t("inspector.icon")}</FieldLabel>
+          {effectiveIcon ? (
+            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-medium bg-accent-soft text-accent">
+              <Icon name={effectiveIcon} className="text-xs" />
+              <span>{effectiveIcon}</span>
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-medium bg-surface-secondary text-muted">
+              Sin icono
+            </span>
+          )}
+        </div>
+
+        <div className="flex items-center gap-2">
+          {isCustom && !readOnly ? (
+            <button
+              type="button"
+              onClick={() => onChange(undefined)}
+              className="text-[11px] text-accent hover:underline"
+              title="Restablecer al icono por defecto"
+            >
+              {t("inspector.iconReset")}
+            </button>
+          ) : null}
+
+          {!readOnly ? (
+            hasIcon ? (
+              <button
+                type="button"
+                onClick={() => onChange(null)}
+                className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium text-red-600 dark:text-red-400 bg-red-500/10 hover:bg-red-500/20 transition-colors"
+                title="Quitar icono de este elemento"
+              >
+                <Icon name="x" className="text-xs" />
+                <span>Quitar icono</span>
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => onChange(defaultIcon ?? "box")}
+                className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium text-accent bg-accent-soft hover:bg-accent/25 transition-colors"
+                title="Añadir icono a este elemento"
+              >
+                <Icon name="plus" className="text-xs" />
+                <span>Añadir icono</span>
+              </button>
+            )
+          ) : null}
+        </div>
       </div>
-      <div className="grid grid-cols-9 gap-1">
+
+      {/* Grid de selección de iconos */}
+      <div className="grid grid-cols-8 gap-1 p-1 rounded-lg border border-border/70 bg-surface-secondary/40 max-h-48 overflow-y-auto">
+        {/* Opción 1: Sin icono */}
+        <button
+          type="button"
+          title="Sin icono (Quitar)"
+          aria-label="Sin icono"
+          aria-pressed={!hasIcon}
+          disabled={readOnly}
+          onClick={() => onChange(null)}
+          className={[
+            "grid h-7 place-items-center rounded-md border text-[12px] transition-all",
+            !hasIcon
+              ? "border-red-400 bg-red-500/20 text-red-600 dark:text-red-400 font-bold shadow-xs scale-105"
+              : "border-dashed border-border/80 text-muted hover:border-red-400 hover:text-red-500 hover:bg-red-500/10",
+          ].join(" ")}
+        >
+          <Icon name="x" />
+        </button>
+
+        {/* Lista de iconos disponibles */}
         {ELEMENT_ICONS.map((name) => {
-          const active = (value ?? defaultIcon) === name;
+          const active = hasIcon && effectiveIcon === name;
           return (
             <button
               key={name}
@@ -175,12 +242,13 @@ function IconPicker({
               title={name}
               aria-label={t("inspector.iconName", { name })}
               aria-pressed={active}
+              disabled={readOnly}
               onClick={() => onChange(name)}
               className={[
-                "grid h-7 place-items-center rounded-md border text-[13px] transition-colors",
+                "grid h-7 place-items-center rounded-md border text-[13px] transition-all",
                 active
-                  ? "border-accent bg-accent-soft text-accent-soft-foreground"
-                  : "border-border text-muted hover:bg-surface-secondary hover:text-foreground",
+                  ? "border-accent bg-accent-soft text-accent shadow-xs scale-105 ring-1 ring-accent/30"
+                  : "border-transparent text-muted hover:border-border hover:bg-surface-secondary hover:text-foreground",
               ].join(" ")}
             >
               <Icon name={name} />
@@ -188,10 +256,13 @@ function IconPicker({
           );
         })}
       </div>
+
       <p className="text-[11px] text-muted">
-        {isCustom
-          ? t("inspector.iconCustom")
-          : t("inspector.iconDefaultOf", { kind: kindLabel })}
+        {!hasIcon
+          ? "Sin icono visual asignado."
+          : isCustom
+            ? t("inspector.iconCustom")
+            : t("inspector.iconDefaultOf", { kind: kindLabel })}
       </p>
     </div>
   );
@@ -289,11 +360,11 @@ const STYLE_PRESETS = [
   { id: "soft-yellow", label: "Amarillo suave", bg: "#fef9c3", border: "#eab308", text: "#713f12" },
   { id: "soft-red", label: "Rojo suave", bg: "#fee2e2", border: "#ef4444", text: "#7f1d1d" },
   { id: "soft-purple", label: "Púrpura suave", bg: "#f3e8ff", border: "#a855f7", text: "#581c87" },
-  // Fila 3 (C4 Clásicos)
-  { id: "c4-blue", label: "C4 Azul", bg: "#1168bd", border: "#0b4884", text: "#ffffff" },
-  { id: "c4-navy", label: "C4 Marino", bg: "#08427b", border: "#052e56", text: "#ffffff" },
-  { id: "c4-steel", label: "C4 Acero", bg: "#438dd5", border: "#2e6295", text: "#ffffff" },
-  { id: "c4-gray", label: "C4 Gris", bg: "#6b7280", border: "#4b5563", text: "#ffffff" },
+  // Fila 3 (Tonos profundos)
+  { id: "c4-blue", label: "Azul profundo", bg: "#1168bd", border: "#0b4884", text: "#ffffff" },
+  { id: "c4-navy", label: "Azul marino", bg: "#08427b", border: "#052e56", text: "#ffffff" },
+  { id: "c4-steel", label: "Azul acero", bg: "#438dd5", border: "#2e6295", text: "#ffffff" },
+  { id: "c4-gray", label: "Gris medio", bg: "#6b7280", border: "#4b5563", text: "#ffffff" },
 ];
 
 const GOAL_LEVELS = ["summary", "user", "subfunction"] as const;
@@ -757,18 +828,17 @@ function ElementStyleTab({
         </div>
       </div>
 
-      {element.kind !== "note" ? <Separator /> : null}
-
-      {/* Icono (si no es nota) */}
       {element.kind !== "note" ? (
-        <Details label={t("inspector.icon")} open={false}>
+        <>
+          <Separator />
           <IconPicker
             value={element.icon}
             defaultIcon={meta.icon}
             kindLabel={kindLabel(element.kind)}
+            readOnly={readOnly}
             onChange={(icon) => updateElement(element.id, { icon })}
           />
-        </Details>
+        </>
       ) : null}
 
       {/* Botón para restablecer al estilo por defecto */}
@@ -922,6 +992,7 @@ function ElementInspector({ element }: { element: DiagramElement }) {
     (relationship) => relationship.source === element.id || relationship.target === element.id,
   );
   const parentName = element.parentId ? (byId.get(element.parentId)?.name ?? "—") : null;
+  const elementIcon = iconOf(diagram, element);
 
   return (
     <div className="flex flex-col gap-3 px-3 pb-6">
@@ -933,7 +1004,7 @@ function ElementInspector({ element }: { element: DiagramElement }) {
               element.color && element.color !== "transparent" ? element.color : meta.bg,
           }}
         >
-          <Icon name={iconOf(diagram, element)} />
+          {elementIcon ? <Icon name={elementIcon} /> : null}
         </span>
         <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-semibold text-foreground">{element.name}</p>
@@ -1020,6 +1091,8 @@ function RelationshipInspector({ relationship }: { relationship: DiagramRelation
   const byId = indexElements(sheet);
   const source = byId.get(relationship.source);
   const target = byId.get(relationship.target);
+  const sourceIcon = source ? iconOf(sheet.diagram, source) : null;
+  const targetIcon = target ? iconOf(sheet.diagram, target) : null;
 
   const label = useDraftField(relationship.label, (value) =>
     updateRelationship(relationship.id, { label: value }),
@@ -1051,8 +1124,8 @@ function RelationshipInspector({ relationship }: { relationship: DiagramRelation
           onClick={() => select({ type: "element", id: relationship.source })}
           className="flex items-center gap-2 rounded-lg border border-border px-2.5 py-1.5 text-left text-sm transition-colors hover:bg-surface-secondary"
         >
-          {source ? (
-            <Icon name={iconOf(sheet.diagram, source)} style={{ color: kindMeta(sheet.diagram, source.kind).bg }} />
+          {source && sourceIcon ? (
+            <Icon name={sourceIcon} style={{ color: kindMeta(sheet.diagram, source.kind).bg }} />
           ) : null}
           <span className="truncate">{source?.name ?? "?"}</span>
         </button>
@@ -1064,8 +1137,8 @@ function RelationshipInspector({ relationship }: { relationship: DiagramRelation
           onClick={() => select({ type: "element", id: relationship.target })}
           className="flex items-center gap-2 rounded-lg border border-border px-2.5 py-1.5 text-left text-sm transition-colors hover:bg-surface-secondary"
         >
-          {target ? (
-            <Icon name={iconOf(sheet.diagram, target)} style={{ color: kindMeta(sheet.diagram, target.kind).bg }} />
+          {target && targetIcon ? (
+            <Icon name={targetIcon} style={{ color: kindMeta(sheet.diagram, target.kind).bg }} />
           ) : null}
           <span className="truncate">{target?.name ?? "?"}</span>
         </button>

@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from "react";
-import { useT, type TranslationKey } from "@/i18n";
-import { DIAGRAM_LIST, diagramDef } from "@/lib/diagrams";
+import { useT } from "@/i18n";
+import { diagramDef } from "@/lib/diagrams";
 import { useProject } from "@/lib/project-store";
-import type { DiagramId } from "@/lib/types";
+import type { Sheet } from "@/lib/types";
 import { Icon } from "./icons";
+import { SheetSettingsDialog } from "./SheetSettingsDialog";
 
 interface MenuState {
   sheetId: string;
@@ -11,14 +12,10 @@ interface MenuState {
   y: number;
 }
 
-interface NewMenuState {
-  x: number;
-  y: number;
-}
-
 /**
- * Barra inferior de pestañas estilo draw.io: cada pestaña es una hoja del
- * proyecto. Doble clic para renombrar; menú «⋯» para renombrar/duplicar/eliminar.
+ * Barra inferior de pestañas estilo Draw.io: cada pestaña es una vista del proyecto.
+ * El botón «+» crea directamente una nueva vista limpia. Doble clic para renombrar.
+ * Permite cambiar color e icono desde el menú contextual en un diálogo modal.
  */
 export function SheetTabs() {
   const t = useT();
@@ -28,32 +25,30 @@ export function SheetTabs() {
     readOnly,
     selectSheet,
     renameSheet,
+    updateSheet,
     duplicateSheet,
     removeSheet,
     addSheet,
   } = useProject();
+
   const [menu, setMenu] = useState<MenuState | null>(null);
-  const [newMenu, setNewMenu] = useState<NewMenuState | null>(null);
   const [renamingId, setRenamingId] = useState<string | null>(null);
+  const [settingsSheet, setSettingsSheet] = useState<Sheet | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
-  const newMenuRef = useRef<HTMLDivElement>(null);
 
   const sheets = project.sheets;
   const hidden = readOnly && sheets.length <= 1;
 
   useEffect(() => {
-    if (!menu && !newMenu) return;
+    if (!menu) return;
     const onDown = (event: MouseEvent) => {
       if (menuRef.current?.contains(event.target as Node)) return;
-      if (newMenuRef.current?.contains(event.target as Node)) return;
       setMenu(null);
-      setNewMenu(null);
     };
     const onKey = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
         setMenu(null);
-        setNewMenu(null);
       }
     };
     window.addEventListener("mousedown", onDown);
@@ -62,187 +57,214 @@ export function SheetTabs() {
       window.removeEventListener("mousedown", onDown);
       window.removeEventListener("keydown", onKey);
     };
-  }, [menu, newMenu]);
+  }, [menu]);
 
   if (hidden) return null;
 
   const closeMenus = () => {
     setMenu(null);
-    setNewMenu(null);
   };
 
-  const openSheetMenu = (sheetId: string, rect: DOMRect) => {
-    setNewMenu(null);
+  const openSheetMenuAt = (sheetId: string, x: number, y: number) => {
     setMenu({
       sheetId,
-      x: Math.min(rect.left, window.innerWidth - 180),
-      y: Math.max(8, rect.top - 132),
+      x: Math.min(x, window.innerWidth - 190),
+      y: Math.max(8, y - 165),
     });
   };
 
   const commitRename = (sheetId: string, name: string) => {
-    const next = name.trim();
-    if (next) renameSheet(sheetId, next);
+    renameSheet(sheetId, name.trim());
     setRenamingId(null);
   };
 
   return (
-    <div className="sheet-tabs scroll-thin" ref={containerRef}>
-      {sheets.map((sheet) => {
-        const def = diagramDef(sheet.diagram);
-        const active = sheet.id === activeSheetId;
-        const isRenaming = renamingId === sheet.id;
-        return (
-          <div
-            key={sheet.id}
-            className={`sheet-tab ${active ? "sheet-tab--active" : ""}`}
-            role="tab"
-            aria-selected={active}
-            tabIndex={0}
-            onClick={() => {
-              if (isRenaming) return;
-              selectSheet(sheet.id);
-            }}
-            onDoubleClick={() => {
-              if (readOnly) return;
-              setRenamingId(sheet.id);
-              setMenu(null);
-              setNewMenu(null);
-            }}
-            onKeyDown={(event) => {
-              if (event.key === "Enter" && !isRenaming) selectSheet(sheet.id);
-            }}
-          >
-            <Icon name={def.icon} className="sheet-tab__icon" />
-            {isRenaming ? (
-              <input
-                className="sheet-tab__input"
-                type="text"
-                autoFocus
-                defaultValue={sheet.name}
-                aria-label={t("sheet.rename")}
-                onClick={(event) => event.stopPropagation()}
-                onBlur={(event) => commitRename(sheet.id, event.currentTarget.value)}
-                onKeyDown={(event) => {
-                  event.stopPropagation();
-                  if (event.key === "Enter") {
-                    event.currentTarget.blur();
-                  } else if (event.key === "Escape") {
-                    setRenamingId(null);
-                    event.currentTarget.blur();
+    <>
+      <div className="sheet-tabs scroll-thin" ref={containerRef}>
+        {sheets.map((sheet, index) => {
+          const def = diagramDef(sheet.diagram);
+          const active = sheet.id === activeSheetId;
+          const isRenaming = renamingId === sheet.id;
+          const displayName = sheet.name || `Vista ${index + 1}`;
+          const effectiveIcon = sheet.icon === null ? null : (sheet.icon ?? def.icon);
+          const customColor = sheet.color || null;
+
+          const tabStyle: React.CSSProperties = {
+            ...(customColor && active
+              ? {
+                  borderTopColor: customColor,
+                  borderTopWidth: "3px",
+                  boxShadow: `inset 0 2px 0 0 ${customColor}`,
+                }
+              : customColor && !active
+                ? {
+                    borderTopColor: `${customColor}80`,
+                    borderTopWidth: "2px",
                   }
-                }}
-              />
-            ) : (
-              <span className="sheet-tab__name">{sheet.name}</span>
-            )}
-            {!readOnly ? (
-              <button
-                type="button"
-                className="sheet-tab__menu"
-                aria-label={t("sheet.rename")}
-                onClick={(event) => {
-                  event.stopPropagation();
-                  openSheetMenu(sheet.id, event.currentTarget.getBoundingClientRect());
-                }}
-              >
-                ⋯
-              </button>
-            ) : null}
-          </div>
-        );
-      })}
+                : {}),
+          };
 
-      {!readOnly ? (
-        <button
-          type="button"
-          className="sheet-tab sheet-tab--new"
-          aria-label={t("sheet.new")}
-          onClick={(event) => {
-            const rect = event.currentTarget.getBoundingClientRect();
-            setMenu(null);
-            setNewMenu({
-              x: Math.min(rect.left, window.innerWidth - 220),
-              y: Math.max(8, rect.top - 40 - DIAGRAM_LIST.length * 34),
-            });
-          }}
-        >
-          <Icon name="plus" />
-        </button>
-      ) : null}
+          return (
+            <div
+              key={sheet.id}
+              className={`sheet-tab ${active ? "sheet-tab--active" : ""}`}
+              role="tab"
+              aria-selected={active}
+              tabIndex={0}
+              style={tabStyle}
+              onClick={() => {
+                if (isRenaming) return;
+                selectSheet(sheet.id);
+              }}
+              onDoubleClick={() => {
+                if (readOnly) return;
+                setRenamingId(sheet.id);
+                setMenu(null);
+              }}
+              onContextMenu={(event) => {
+                if (readOnly) return;
+                event.preventDefault();
+                event.stopPropagation();
+                openSheetMenuAt(sheet.id, event.clientX, event.clientY);
+              }}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" && !isRenaming) selectSheet(sheet.id);
+              }}
+            >
+              {effectiveIcon ? (
+                <Icon
+                  name={effectiveIcon}
+                  className="sheet-tab__icon"
+                  style={customColor ? { color: customColor } : undefined}
+                />
+              ) : null}
+              {isRenaming ? (
+                <input
+                  className="sheet-tab__input"
+                  type="text"
+                  autoFocus
+                  defaultValue={sheet.name}
+                  placeholder={`Vista ${index + 1}`}
+                  aria-label={t("sheet.rename")}
+                  onClick={(event) => event.stopPropagation()}
+                  onBlur={(event) => commitRename(sheet.id, event.currentTarget.value)}
+                  onKeyDown={(event) => {
+                    event.stopPropagation();
+                    if (event.key === "Enter") {
+                      event.currentTarget.blur();
+                    } else if (event.key === "Escape") {
+                      setRenamingId(null);
+                      event.currentTarget.blur();
+                    }
+                  }}
+                />
+              ) : (
+                <span className="sheet-tab__name">{displayName}</span>
+              )}
+              {!readOnly ? (
+                <button
+                  type="button"
+                  className="sheet-tab__menu"
+                  aria-label="Opciones de vista"
+                  title="Opciones de vista"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    const rect = event.currentTarget.getBoundingClientRect();
+                    openSheetMenuAt(sheet.id, rect.left, rect.top);
+                  }}
+                >
+                  ⋯
+                </button>
+              ) : null}
+            </div>
+          );
+        })}
 
-      {menu ? (
-        <div
-          ref={menuRef}
-          role="menu"
-          className="sheet-menu"
-          style={{ left: menu.x, top: menu.y }}
-          onClick={(event) => event.stopPropagation()}
-        >
+        {!readOnly ? (
           <button
             type="button"
-            role="menuitem"
+            className="sheet-tab sheet-tab--new"
+            aria-label="Nueva vista"
+            title="Crear nueva vista"
             onClick={() => {
-              setRenamingId(menu.sheetId);
               closeMenus();
+              const newId = addSheet("usecase");
+              if (newId) {
+                setRenamingId(newId);
+              }
             }}
           >
-            {t("sheet.rename")}
+            <Icon name="plus" />
           </button>
-          <button
-            type="button"
-            role="menuitem"
-            onClick={() => {
-              duplicateSheet(menu.sheetId);
-              closeMenus();
-            }}
-          >
-            {t("sheet.duplicate")}
-          </button>
-          <button
-            type="button"
-            role="menuitem"
-            className="sheet-menu__danger"
-            disabled={sheets.length <= 1}
-            title={sheets.length <= 1 ? t("sheet.lastOne") : undefined}
-            onClick={() => {
-              removeSheet(menu.sheetId);
-              closeMenus();
-            }}
-          >
-            {t("sheet.delete")}
-          </button>
-        </div>
-      ) : null}
+        ) : null}
 
-      {newMenu ? (
-        <div
-          ref={newMenuRef}
-          role="menu"
-          className="sheet-menu"
-          style={{ left: newMenu.x, top: newMenu.y }}
-          onClick={(event) => event.stopPropagation()}
-        >
-          {DIAGRAM_LIST.map((def) => (
+        {menu ? (
+          <div
+            ref={menuRef}
+            role="menu"
+            className="sheet-menu"
+            style={{ left: menu.x, top: menu.y }}
+            onClick={(event) => event.stopPropagation()}
+          >
             <button
-              key={def.id}
               type="button"
               role="menuitem"
-              className={def.comingSoon ? "sheet-menu__soon" : undefined}
-              disabled={def.comingSoon}
-              title={def.comingSoon ? t("sheet.comingSoon") : undefined}
               onClick={() => {
-                addSheet(def.id as DiagramId);
+                const target = sheets.find((s) => s.id === menu.sheetId);
+                if (target) setSettingsSheet(target);
                 closeMenus();
               }}
             >
-              <Icon name={def.icon} />
-              <span>{t(`diagram.${def.id}` as TranslationKey)}</span>
-              {def.comingSoon ? <em>{t("sheet.comingSoon")}</em> : null}
+              <Icon name="palette" className="text-xs" />
+              <span>Color e icono…</span>
             </button>
-          ))}
-        </div>
-      ) : null}
-    </div>
+            <button
+              type="button"
+              role="menuitem"
+              onClick={() => {
+                setRenamingId(menu.sheetId);
+                closeMenus();
+              }}
+            >
+              <Icon name="keyboard" className="text-xs" />
+              <span>{t("sheet.rename")}</span>
+            </button>
+            <button
+              type="button"
+              role="menuitem"
+              onClick={() => {
+                duplicateSheet(menu.sheetId);
+                closeMenus();
+              }}
+            >
+              <Icon name="copy" className="text-xs" />
+              <span>{t("sheet.duplicate")}</span>
+            </button>
+            <button
+              type="button"
+              role="menuitem"
+              className="sheet-menu__danger"
+              disabled={sheets.length <= 1}
+              title={sheets.length <= 1 ? t("sheet.lastOne") : undefined}
+              onClick={() => {
+                removeSheet(menu.sheetId);
+                closeMenus();
+              }}
+            >
+              <Icon name="trash" className="text-xs" />
+              <span>{t("sheet.delete")}</span>
+            </button>
+          </div>
+        ) : null}
+      </div>
+
+      {/* Modal para configurar color, icono y nombre de la vista */}
+      <SheetSettingsDialog
+        sheet={settingsSheet}
+        isOpen={Boolean(settingsSheet)}
+        onClose={() => setSettingsSheet(null)}
+        onSave={updateSheet}
+      />
+    </>
   );
 }

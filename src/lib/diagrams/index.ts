@@ -191,18 +191,21 @@ export const ELEMENT_ICONS: IconName[] = [
   "folder",
   "external",
   "target",
+  "palette",
 ];
 
 export function isElementIcon(value: unknown): value is IconName {
   return typeof value === "string" && (ELEMENT_ICONS as string[]).includes(value);
 }
 
-/** Icono efectivo de un elemento: el personalizado o el de su tipo. */
+/** Icono efectivo de un elemento: null si se quitó explícitamente, el personalizado si existe, o el de su tipo. */
 export function iconOf(
   id: DiagramId,
-  element: { kind: ElementKind; icon?: IconName },
-): IconName {
-  return isElementIcon(element.icon) ? element.icon : kindMeta(id, element.kind).icon;
+  element: { kind: ElementKind; icon?: IconName | null },
+): IconName | null {
+  if (element.icon === null) return null;
+  if (isElementIcon(element.icon)) return element.icon;
+  return kindMeta(id, element.kind)?.icon ?? null;
 }
 
 function withAlpha(hex: string, percent: number): string {
