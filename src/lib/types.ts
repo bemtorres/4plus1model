@@ -143,6 +143,8 @@ export interface DiagramElement {
   borderColor?: string | null;
   /** Color del texto. `null` = color por defecto. */
   textColor?: string | null;
+  /** Familia tipográfica (`null` = por defecto del sistema/inter). */
+  fontFamily?: string | null;
   /** Tamaño de letra en píxeles. */
   size?: number | null;
   /** Mostrar borde (`false` = sin borde). */

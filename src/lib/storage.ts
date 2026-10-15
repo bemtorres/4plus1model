@@ -88,6 +88,9 @@ function appearance(element: Record<string, unknown>): Partial<DiagramElement> {
   if (fill !== null) result.color = fill;
   if (lineColor !== null) result.borderColor = lineColor;
   if (textColor !== null) result.textColor = textColor;
+  if (typeof element.fontFamily === "string" && element.fontFamily.trim()) {
+    result.fontFamily = element.fontFamily.trim();
+  }
   if (typeof element.size === "number") result.size = num(element.size, 13);
   if (typeof element.border === "boolean") result.border = element.border;
   if (typeof element.fill === "boolean") result.fill = element.fill;

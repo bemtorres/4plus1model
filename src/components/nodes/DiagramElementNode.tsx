@@ -31,25 +31,56 @@ function SideHandles({ sides, show }: { sides: HandleSide[]; show?: boolean }) {
   );
 }
 
-/** Figura de palito UML: cabeza, torso, brazos y piernas. */
-function StickFigure({ color, size }: { color: string; size?: number | null }) {
+/** Figura de palito UML: cabeza, torso, brazos, piernas, relleno opcional y badge de icono. */
+function StickFigure({
+  color,
+  fillColor,
+  size,
+  icon,
+}: {
+  color: string;
+  fillColor?: string;
+  size?: number | null;
+  icon?: string | null;
+}) {
   const stroke = size ? Math.max(1.5, size / 8) : 2.25;
+  const hasFill = fillColor && fillColor !== "transparent";
+
   return (
-    <svg
-      className="uc-actor__svg"
-      viewBox="0 0 64 96"
-      fill="none"
-      stroke={color}
-      strokeWidth={stroke}
-      strokeLinecap="round"
-      aria-hidden="true"
-    >
-      <circle cx="32" cy="12" r="10" />
-      <line x1="32" y1="22" x2="32" y2="58" />
-      <line x1="10" y1="36" x2="54" y2="36" />
-      <line x1="32" y1="58" x2="14" y2="90" />
-      <line x1="32" y1="58" x2="50" y2="90" />
-    </svg>
+    <div className="relative inline-flex items-center justify-center">
+      <svg
+        className="uc-actor__svg"
+        viewBox="0 0 64 96"
+        fill="none"
+        stroke={color}
+        strokeWidth={stroke}
+        strokeLinecap="round"
+        aria-hidden="true"
+      >
+        {/* Cabeza con relleno opcional */}
+        <circle cx="32" cy="12" r="10" fill={hasFill ? fillColor : "none"} />
+        {/* Torso */}
+        <line x1="32" y1="22" x2="32" y2="58" />
+        {/* Brazos */}
+        <line x1="10" y1="36" x2="54" y2="36" />
+        {/* Piernas */}
+        <line x1="32" y1="58" x2="14" y2="90" />
+        <line x1="32" y1="58" x2="50" y2="90" />
+      </svg>
+      {/* Icono complementario si el usuario lo añade al actor */}
+      {icon ? (
+        <span
+          className="absolute -top-1 -right-1 grid size-5 place-items-center rounded-full shadow-xs text-[11px] border border-border"
+          style={{
+            backgroundColor: hasFill ? fillColor : "var(--surface)",
+            color,
+          }}
+          title={`Icono: ${icon}`}
+        >
+          <Icon name={icon as any} />
+        </span>
+      ) : null}
+    </div>
   );
 }
 
@@ -136,6 +167,7 @@ export function DiagramElementNode({ data, selected }: NodeProps<ElementFlowNode
     color: element.color,
     borderColor: element.borderColor,
     textColor: element.textColor,
+    fontFamily: element.fontFamily,
     size: element.size,
     border: element.border,
     fill: element.fill,
@@ -171,7 +203,13 @@ export function DiagramElementNode({ data, selected }: NodeProps<ElementFlowNode
           style={{ ...computedStyle, ...boxStyle }}
         >
           <SideHandles sides={["top", "right", "bottom", "left"]} show={showHandles} />
-          <div className="uc-system__title" style={element.textColor ? { color: element.textColor } : undefined}>
+          <div
+            className="uc-system__title"
+            style={{
+              ...(element.textColor ? { color: element.textColor } : {}),
+              ...(element.fontFamily ? { fontFamily: element.fontFamily } : {}),
+            }}
+          >
             {element.name || "Sistema"}
           </div>
         </div>
@@ -181,19 +219,50 @@ export function DiagramElementNode({ data, selected }: NodeProps<ElementFlowNode
 
   // El actor es la figura de palito clásica, con el nombre debajo.
   if (meta.shape === "person") {
-    const strokeColor = element.borderColor ?? element.textColor ?? meta.border;
+    const actorColor = element.borderColor ?? element.color;
+    const strokeColor = actorColor ?? "currentColor";
+    const nameColor = element.textColor ?? (actorColor ?? undefined);
+    const showActorFill = element.fill !== false && element.color && element.color !== "transparent";
+    const fillColor = showActorFill ? element.color! : undefined;
+
     const personClasses = ["uc-actor"];
     if (selected || isDirectlySelected) personClasses.push("uc-actor--selected");
     if (showHandles) personClasses.push("uc-actor--show-handles");
 
+    const containerStyle: React.CSSProperties = {
+      width: box.width,
+      ...(element.fontFamily ? { fontFamily: element.fontFamily } : {}),
+      ...(element.color && element.fill !== false && element.color !== "transparent"
+        ? {
+            backgroundColor: element.bgOpacity && element.bgOpacity < 100 && element.color.startsWith("#")
+              ? `${element.color}${Math.round((element.bgOpacity / 100) * 255).toString(16).padStart(2, "0")}`
+              : element.color,
+            borderRadius: element.radius ? `${element.radius}px` : "12px",
+          }
+        : {}),
+      ...(element.border && element.borderColor
+        ? {
+            border: `1.5px solid ${element.borderColor}`,
+            borderRadius: element.radius ? `${element.radius}px` : "12px",
+          }
+        : {}),
+    };
+
     return (
-      <div className={personClasses.join(" ")} style={{ width: box.width }}>
-        <StickFigure color={strokeColor} size={element.size} />
+      <div className={personClasses.join(" ")} style={containerStyle}>
+        <StickFigure
+          color={strokeColor}
+          fillColor={fillColor}
+          size={element.size}
+          icon={element.icon}
+        />
         <div
           className="uc-actor__name"
           style={{
             ...(element.size ? { fontSize: `${element.size}px` } : {}),
-            ...(element.textColor ? { color: element.textColor } : {}),
+            ...(nameColor ? { color: nameColor } : {}),
+            ...(element.textColor ? ({ "--actor-custom-text": element.textColor } as React.CSSProperties) : {}),
+            ...(element.fontFamily ? { fontFamily: element.fontFamily } : {}),
           }}
         >
           {element.name || "Actor"}
@@ -217,6 +286,7 @@ export function DiagramElementNode({ data, selected }: NodeProps<ElementFlowNode
             style={{
               ...(element.size ? { fontSize: `${element.size}px` } : {}),
               ...(element.textColor ? { color: element.textColor } : {}),
+              ...(element.fontFamily ? { fontFamily: element.fontFamily } : {}),
             }}
           >
             {effectiveIcon ? <Icon name={effectiveIcon} className="mr-1.5 inline-block shrink-0 align-middle text-xs" /> : null}

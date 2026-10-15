@@ -228,14 +228,22 @@ details[open] .details__chevron {
   flex-direction: column;
   align-items: center;
   gap: 6px;
-  padding: 4px;
-  color: var(--c4-fg, #0f172a);
+  padding: 8px 6px;
+  box-sizing: border-box;
+  color: var(--foreground, #0f172a);
+  transition: background-color 150ms ease, border-color 150ms ease, box-shadow 150ms ease;
+}
+
+:root[data-theme="dark"] .uc-actor,
+.dark .uc-actor {
+  color: #ffffff;
 }
 
 .uc-actor__svg {
   width: 56px;
   height: 84px;
   overflow: visible;
+  color: currentColor;
 }
 
 .uc-actor__name {
@@ -245,14 +253,15 @@ details[open] .details__chevron {
   line-height: 1.25;
   text-align: center;
   overflow-wrap: anywhere;
+  color: currentColor;
 }
 
 .uc-actor--selected .uc-actor__svg {
-  filter: drop-shadow(0 0 3px color-mix(in oklab, var(--accent) 60%, transparent));
+  filter: drop-shadow(0 0 4px color-mix(in oklab, var(--accent) 70%, transparent));
 }
 
 .uc-actor--selected .uc-actor__name {
-  color: var(--accent);
+  color: var(--actor-custom-text, var(--accent));
 }
 
 /* Sistema: rectángulo del escenario, nombre arriba al centro */
@@ -595,14 +604,75 @@ details[open] .details__chevron {
 
 /* ---------- Sheet tabs (barra inferior de pestañas) ---------- */
 
+.sheet-tabs-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--surface);
+  border-top: 1px solid var(--separator);
+  padding: 0 10px;
+  min-height: 34px;
+  position: relative;
+  gap: 12px;
+}
+
+.sheet-tabs-bar__left {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.sheet-tabs-bar__center {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  flex: 1;
+  min-width: 0;
+}
+
+.sheet-tabs-bar__right {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-shrink: 0;
+}
+
+.sheet-tabs-author {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--muted);
+  text-decoration: none;
+  white-space: nowrap;
+  user-select: none;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: all 120ms ease;
+  border: 1px solid transparent;
+}
+
+.sheet-tabs-author:hover {
+  color: var(--foreground);
+  background: color-mix(in oklab, var(--accent) 12%, var(--surface));
+  border-color: color-mix(in oklab, var(--accent) 25%, transparent);
+}
+
+.sheet-tabs-author strong {
+  color: var(--foreground);
+  font-weight: 600;
+}
+
+.sheet-tabs-author:hover strong {
+  color: var(--accent);
+}
+
 .sheet-tabs {
   display: flex;
   align-items: flex-end;
   justify-content: center;
   gap: 2px;
-  padding: 4px 8px 0;
-  background: var(--surface);
-  border-top: 1px solid var(--separator);
+  padding: 3px 4px 0;
   overflow-x: auto;
   min-height: 32px;
 }
@@ -680,6 +750,48 @@ details[open] .details__chevron {
 .sheet-tab--new {
   padding: 5px 8px;
   border-radius: 8px 8px 0 0;
+}
+
+.sheet-tab--selector {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  font-weight: 500;
+  border-radius: 8px 8px 0 0;
+  background: color-mix(in oklab, var(--accent) 8%, var(--surface));
+  border: 1px solid var(--separator);
+  border-bottom: none;
+}
+
+.sheet-tab--selector:hover {
+  background: color-mix(in oklab, var(--accent) 16%, var(--surface));
+  color: var(--foreground);
+}
+
+.sheet-nav-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  color: var(--muted);
+  background: var(--surface);
+  border: 1px solid var(--separator);
+  cursor: pointer;
+  transition: all 120ms ease;
+}
+
+.sheet-nav-btn:hover:not(:disabled) {
+  color: var(--foreground);
+  background: color-mix(in oklab, var(--accent) 15%, var(--surface));
+  border-color: var(--accent);
+}
+
+.sheet-nav-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
 }
 
 .sheet-menu {

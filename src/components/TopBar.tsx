@@ -18,6 +18,7 @@ import { IconButton, EditableTitle, Picker, SegmentedControl } from "./ui";
 import { useFullscreen } from "./useFullscreen";
 import { useDevMode } from "@/lib/dev-mode";
 import { DevDiagramsDialog } from "./DevDiagramsDialog";
+import { ModelWikiDialog } from "./ModelWikiDialog";
 
 export function TopBar({
   onOpenMobileLeft,
@@ -58,6 +59,7 @@ export function TopBar({
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const devMode = useDevMode();
   const [devDialogOpen, setDevDialogOpen] = useState(false);
+  const [wikiOpen, setWikiOpen] = useState(false);
 
   const openExample = (code: string) => {
     const target = findExampleByCode(code);
@@ -288,6 +290,17 @@ export function TopBar({
             {t("topbar.export")}
           </Button>
         ) : null}
+        <Button
+          size="sm"
+          variant="outline"
+          className="font-medium text-xs shrink-0 border-accent/40 bg-accent-soft/30 text-accent hover:bg-accent-soft/60"
+          onPress={() => setWikiOpen(true)}
+          title="Ver Guía, definiciones y nomenclatura UML del Modelo 4+1"
+        >
+          <Icon name="book" className="text-sm" />
+          <span>Guía 4+1</span>
+        </Button>
+
         <IconButton
           icon={resolvedTheme === "dark" ? "sun" : "moon"}
           label={resolvedTheme === "dark" ? t("topbar.themeLight") : t("topbar.themeDark")}
@@ -621,6 +634,11 @@ export function TopBar({
         devMode={devMode}
         currentProject={project}
         onImportProject={importProject}
+      />
+      <ModelWikiDialog
+        isOpen={wikiOpen}
+        onClose={() => setWikiOpen(false)}
+        initialView={sheet.diagram}
       />
     </header>
   );

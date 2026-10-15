@@ -223,6 +223,7 @@ export function nodeStyle(
     color?: string | null;
     borderColor?: string | null;
     textColor?: string | null;
+    fontFamily?: string | null;
     size?: number | null;
     border?: boolean | null;
     fill?: boolean | null;
@@ -278,6 +279,9 @@ export function nodeStyle(
   }
   if (overrides?.size) {
     style.fontSize = `${overrides.size}px`;
+  }
+  if (overrides?.fontFamily) {
+    style.fontFamily = overrides.fontFamily;
   }
   return style;
 }

@@ -12,6 +12,12 @@ export const AUTHOR = {
   },
 } as const;
 
+export const APP_INFO = {
+  author: "Benjamin Mora Torres",
+  date: "Octubre 2026",
+  version: "v0.1.0",
+} as const;
+
 export const PROJECT = {
   name: "4+1 Modeler",
   /** Metodología de referencia que implementa la herramienta. */

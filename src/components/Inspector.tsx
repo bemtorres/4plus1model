@@ -678,137 +678,184 @@ function ElementStyleTab({
   const showFill = element.fill !== false && element.color !== "transparent";
   const showBorder = element.border !== false;
 
+  const isActor = element.kind === "actor";
+
+  const FONT_OPTIONS = [
+    { value: "", label: "Por defecto (Inter / Sistema)" },
+    { value: "'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif", label: "Segoe UI / Sans" },
+    { value: "'Arial', 'Helvetica Neue', sans-serif", label: "Arial" },
+    { value: "'Times New Roman', Times, serif", label: "Times New Roman (Serif)" },
+    { value: "'Georgia', serif", label: "Georgia" },
+    { value: "'Courier New', Courier, monospace", label: "Courier New (Monospace)" },
+    { value: "'Trebuchet MS', sans-serif", label: "Trebuchet MS" },
+    { value: "'Verdana', sans-serif", label: "Verdana" },
+  ];
+
   return (
     <div className="flex flex-col gap-3">
-      {/* Estilos rápidos / Swatches de muestra */}
-      <div className="flex flex-col gap-1.5">
-        <FieldLabel>{t("inspector.presets")}</FieldLabel>
-        <div className="grid grid-cols-4 gap-1.5">
-          {STYLE_PRESETS.map((preset) => (
-            <button
-              key={preset.id}
-              type="button"
-              title={preset.label}
-              disabled={readOnly}
-              onClick={() =>
-                updateElement(element.id, {
-                  color: preset.bg,
-                  borderColor: preset.border,
-                  textColor: preset.text,
-                  fill: true,
-                  border: true,
-                  bgOpacity: 100,
-                })
-              }
-              className="group relative flex h-7 items-center justify-center rounded-md border transition-all hover:scale-[1.03] hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-accent"
-              style={{
-                backgroundColor: preset.bg,
-                borderColor: preset.border,
-                borderWidth: "2px",
-              }}
-            >
-              <span
-                className="h-1 w-3 rounded-full opacity-60 group-hover:opacity-100"
-                style={{ backgroundColor: preset.text }}
-              />
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <Separator />
-
-      {/* Relleno (Color de fondo y opacidad, con opción de check para activar/desactivar) */}
-      <div className="flex flex-col gap-2.5">
-        <label className="flex items-center gap-2 cursor-pointer select-none">
-          <input
-            type="checkbox"
-            checked={showFill}
-            disabled={readOnly}
-            onChange={(e) => {
-              const fill = e.target.checked;
-              updateElement(element.id, {
-                fill,
-                ...(fill && element.color === "transparent" ? { color: null } : {}),
-              });
-            }}
-            className="h-4 w-4 rounded border-border text-accent focus:ring-accent accent-accent cursor-pointer disabled:cursor-not-allowed"
-          />
-          <span className="text-xs font-semibold text-foreground">{t("inspector.fill")}</span>
-        </label>
-        {showFill ? (
-          <div className="grid grid-cols-2 gap-2.5 items-start">
-            <ColorField
-              label={t("inspector.color")}
-              value={element.color}
-              fallback={meta.bg}
-              readOnly={readOnly}
-              onChange={(color) => updateElement(element.id, { color })}
-            />
-            <SimpleNumberInput
-              label={t("inspector.bgOpacity")}
-              value={element.bgOpacity ?? 100}
-              min={0}
-              max={100}
-              step={5}
-              suffix="%"
-              readOnly={readOnly}
-              onChange={(bgOpacity) => updateElement(element.id, { bgOpacity })}
-            />
-          </div>
-        ) : (
-          <p className="text-[11px] text-muted italic">
-            Fondo transparente (sin relleno)
-          </p>
-        )}
-      </div>
-
-      <Separator />
-
-      {/* Borde / Línea (Color, check para activar/desactivar y esquinas redondeadas) */}
-      <div className="flex flex-col gap-2.5">
-        <label className="flex items-center gap-2 cursor-pointer select-none">
-          <input
-            type="checkbox"
-            checked={showBorder}
-            disabled={readOnly}
-            onChange={(e) => updateElement(element.id, { border: e.target.checked })}
-            className="h-4 w-4 rounded border-border text-accent focus:ring-accent accent-accent cursor-pointer disabled:cursor-not-allowed"
-          />
-          <span className="text-xs font-semibold text-foreground">{t("inspector.showBorder")}</span>
-        </label>
-        <div className="grid grid-cols-2 gap-2.5 items-start">
-          {showBorder ? (
-            <ColorField
-              label={t("inspector.borderColor")}
-              value={element.borderColor}
-              fallback={meta.border}
-              readOnly={readOnly}
-              onChange={(borderColor) => updateElement(element.id, { borderColor })}
-            />
-          ) : (
-            <div className="flex flex-col gap-1.5 pt-5">
-              <span className="text-[11px] text-muted italic">Sin borde</span>
+      {/* Estilos rápidos (swatches): desactivados para Actor según solicitud */}
+      {!isActor ? (
+        <>
+          <div className="flex flex-col gap-1.5">
+            <FieldLabel>{t("inspector.presets")}</FieldLabel>
+            <div className="grid grid-cols-4 gap-1.5">
+              {STYLE_PRESETS.map((preset) => (
+                <button
+                  key={preset.id}
+                  type="button"
+                  title={preset.label}
+                  disabled={readOnly}
+                  onClick={() =>
+                    updateElement(element.id, {
+                      color: preset.bg,
+                      borderColor: preset.border,
+                      textColor: preset.text,
+                      fill: true,
+                      border: true,
+                      bgOpacity: 100,
+                    })
+                  }
+                  className="group relative flex h-7 items-center justify-center rounded-md border transition-all hover:scale-[1.03] hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-accent"
+                  style={{
+                    backgroundColor: preset.bg,
+                    borderColor: preset.border,
+                    borderWidth: "2px",
+                  }}
+                >
+                  <span
+                    className="h-1 w-3 rounded-full opacity-60 group-hover:opacity-100"
+                    style={{ backgroundColor: preset.text }}
+                  />
+                </button>
+              ))}
             </div>
-          )}
-          <SimpleNumberInput
-            label={t("inspector.radius")}
-            value={element.radius ?? (meta.shape === "person" ? 16 : 6)}
-            min={0}
-            max={60}
-            suffix="px"
-            readOnly={readOnly}
-            onChange={(radius) => updateElement(element.id, { radius })}
-          />
-        </div>
-      </div>
+          </div>
+          <Separator />
+        </>
+      ) : null}
 
-      <Separator />
+      {/* Relleno (fondo y opacidad): desactivado para Actor */}
+      {!isActor ? (
+        <>
+          <div className="flex flex-col gap-2.5">
+            <label className="flex items-center gap-2 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={showFill}
+                disabled={readOnly}
+                onChange={(e) => {
+                  const fill = e.target.checked;
+                  updateElement(element.id, {
+                    fill,
+                    ...(fill && element.color === "transparent" ? { color: null } : {}),
+                  });
+                }}
+                className="h-4 w-4 rounded border-border text-accent focus:ring-accent accent-accent cursor-pointer disabled:cursor-not-allowed"
+              />
+              <span className="text-xs font-semibold text-foreground">
+                {t("inspector.fill")}
+              </span>
+            </label>
+            {showFill ? (
+              <div className="grid grid-cols-2 gap-2.5 items-start">
+                <ColorField
+                  label={t("inspector.color")}
+                  value={element.color}
+                  fallback={meta.bg}
+                  readOnly={readOnly}
+                  onChange={(color) => updateElement(element.id, { color })}
+                />
+                <SimpleNumberInput
+                  label={t("inspector.bgOpacity")}
+                  value={element.bgOpacity ?? 100}
+                  min={0}
+                  max={100}
+                  step={5}
+                  suffix="%"
+                  readOnly={readOnly}
+                  onChange={(bgOpacity) => updateElement(element.id, { bgOpacity })}
+                />
+              </div>
+            ) : (
+              <p className="text-[11px] text-muted italic">
+                Fondo transparente (sin relleno)
+              </p>
+            )}
+          </div>
+          <Separator />
+        </>
+      ) : null}
 
-      {/* Tipografía (Tamaño de letra y color del texto de lado a lado) */}
+      {/* Borde / Trazo: desactivado para Actor */}
+      {!isActor ? (
+        <>
+          <div className="flex flex-col gap-2.5">
+            <label className="flex items-center gap-2 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={showBorder}
+                disabled={readOnly}
+                onChange={(e) => updateElement(element.id, { border: e.target.checked })}
+                className="h-4 w-4 rounded border-border text-accent focus:ring-accent accent-accent cursor-pointer disabled:cursor-not-allowed"
+              />
+              <span className="text-xs font-semibold text-foreground">
+                {t("inspector.showBorder")}
+              </span>
+            </label>
+            <div className="grid grid-cols-2 gap-2.5 items-start">
+              {showBorder ? (
+                <ColorField
+                  label={t("inspector.borderColor")}
+                  value={element.borderColor}
+                  fallback={meta.border}
+                  readOnly={readOnly}
+                  onChange={(borderColor) => updateElement(element.id, { borderColor })}
+                />
+              ) : (
+                <div className="flex flex-col gap-1.5 pt-5">
+                  <span className="text-[11px] text-muted italic">Sin trazo específico</span>
+                </div>
+              )}
+              <SimpleNumberInput
+                label={t("inspector.radius")}
+                value={element.radius ?? 6}
+                min={0}
+                max={60}
+                suffix="px"
+                readOnly={readOnly}
+                onChange={(radius) => updateElement(element.id, { radius })}
+              />
+            </div>
+          </div>
+          <Separator />
+        </>
+      ) : null}
+
+      {/* Tipografía: Familia de fuente, color de texto y tamaño de letra */}
       <div className="flex flex-col gap-2.5">
         <p className="text-xs font-semibold text-foreground">{t("inspector.typography")}</p>
+
+        {/* Selector de fuente tipográfica */}
+        <div className="flex flex-col gap-1.5">
+          <FieldLabel>Tipografía (Fuente)</FieldLabel>
+          <Picker
+            label="Tipografía"
+            disabled={readOnly}
+            value={element.fontFamily ?? ""}
+            onChange={(val) => updateElement(element.id, { fontFamily: val ? val : null })}
+            options={FONT_OPTIONS}
+          />
+        </div>
+
+        {/* Color de texto y Tamaño de letra */}
         <div className="grid grid-cols-2 gap-2.5 items-start">
+          <ColorField
+            label="Color de letra"
+            value={element.textColor}
+            fallback={isActor ? "#0f172a" : meta.fg}
+            readOnly={readOnly}
+            onChange={(textColor) => updateElement(element.id, { textColor })}
+          />
           <SimpleNumberInput
             label={t("inspector.noteSize")}
             value={element.size ?? 13}
@@ -818,16 +865,10 @@ function ElementStyleTab({
             readOnly={readOnly}
             onChange={(size) => updateElement(element.id, { size })}
           />
-          <ColorField
-            label={t("inspector.textColor")}
-            value={element.textColor}
-            fallback={meta.fg}
-            readOnly={readOnly}
-            onChange={(textColor) => updateElement(element.id, { textColor })}
-          />
         </div>
       </div>
 
+      {/* Selector de iconos (no disponible para notas) */}
       {element.kind !== "note" ? (
         <>
           <Separator />
@@ -852,6 +893,7 @@ function ElementStyleTab({
               color: null,
               borderColor: null,
               textColor: null,
+              fontFamily: null,
               size: null,
               border: null,
               fill: null,
@@ -1324,33 +1366,6 @@ function ProjectInspector() {
           {Object.keys(counts).length === 0 ? (
             <li className="text-xs text-muted">{t("inspector.noElementsYet")}</li>
           ) : null}
-        </ul>
-      </div>
-
-      <Separator />
-
-      <div>
-        <p className="text-[11px] font-semibold tracking-wide text-muted uppercase">
-          {t("inspector.nomenclature")}
-        </p>
-        <p className="mt-1 text-[11px] leading-relaxed text-muted">
-          {t("inspector.nomenclatureHint")}
-        </p>
-        <ul className="mt-2 flex flex-col gap-2">
-          {stylesOf(sheet.diagram).map((style) => (
-            <li
-              key={style}
-              className="flex items-center gap-3 rounded-lg border border-border bg-surface-secondary/50 px-2.5 py-2"
-            >
-              <UmlRelationPreview style={style} />
-              <div className="min-w-0">
-                <p className="text-xs font-semibold text-foreground">{styleLabel(style)}</p>
-                <p className="text-[11px] leading-snug text-muted">
-                  {t(`inspector.nomenclature.${style}` as TranslationKey)}
-                </p>
-              </div>
-            </li>
-          ))}
         </ul>
       </div>
     </div>
