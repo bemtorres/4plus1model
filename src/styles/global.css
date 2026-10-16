@@ -67,29 +67,43 @@ body {
 }
 
 .c4-handle {
-  width: 10px;
-  height: 10px;
+  width: 12px;
+  height: 12px;
   border-radius: 9999px;
   border: 2px solid var(--accent);
   background: var(--surface);
   opacity: 0;
   pointer-events: none;
+  z-index: 10;
   transition:
-    opacity 120ms ease,
-    width 120ms ease,
-    height 120ms ease,
-    background-color 120ms ease;
+    opacity 150ms ease,
+    transform 150ms ease,
+    background-color 150ms ease,
+    box-shadow 150ms ease;
 }
 
-/* Solo visibles cuando el nodo o una flecha conectada está seleccionada */
-.c4-handle--visible {
-  opacity: 1 !important;
-  pointer-events: auto !important;
+/* Área táctil ampliada para enganchar fácilmente con el cursor */
+.c4-handle::after {
+  content: "";
+  position: absolute;
+  top: -8px;
+  left: -8px;
+  right: -8px;
+  bottom: -8px;
+  border-radius: 9999px;
+  cursor: crosshair;
 }
 
-/* Visibles al arrastrar una conexión */
+/* Visibles al pasar el cursor sobre el nodo, al seleccionarlo, o al conectar */
+.c4-node:hover .c4-handle,
+.uc-actor:hover .c4-handle,
+.uc-usecase:hover .c4-handle,
+.drawio-shape:hover .c4-handle,
+.c4-node--show-handles .c4-handle,
+.uc-actor--show-handles .c4-handle,
+.c4-handle--visible,
 .react-flow--connecting .c4-handle {
-  opacity: 1 !important;
+  opacity: 0.9 !important;
   pointer-events: auto !important;
 }
 
@@ -97,22 +111,61 @@ body {
   width: 14px;
   height: 14px;
   background: var(--accent);
-  opacity: 1;
+  opacity: 1 !important;
+  transform: scale(1.35);
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--accent) 35%, transparent);
 }
 
-/* En la figura de palito los lados se sitúan sobre el cuerpo. */
-.uc-actor .c4-handle--left,
+/* En la figura de palito los lados se sitúan ergonómicamente alrededor del cuerpo */
+.uc-actor .c4-handle--left {
+  left: calc(50% - 20px);
+  top: 40px;
+}
+
 .uc-actor .c4-handle--right {
-  top: 55%;
+  right: calc(50% - 20px);
+  top: 40px;
+}
+
+.uc-actor .c4-handle--top {
+  top: 2px;
 }
 
 .uc-actor .c4-handle--bottom {
-  bottom: 22%;
+  bottom: 4px;
+}
+
+/* ---------- Controles de redimensionado interactivo (NodeResizer) ---------- */
+.react-flow__resize-control {
+  z-index: 35 !important;
+}
+
+.react-flow__resize-control.handle {
+  width: 10px !important;
+  height: 10px !important;
+  border-radius: 2px !important;
+  border: 1.5px solid var(--accent, #3b82f6) !important;
+  background-color: var(--surface, #ffffff) !important;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25) !important;
+  transition: transform 120ms ease, background-color 120ms ease !important;
+  pointer-events: all !important;
+}
+
+.react-flow__resize-control.handle:hover {
+  transform: scale(1.35) !important;
+  background-color: var(--accent, #3b82f6) !important;
+}
+
+.react-flow__resize-control.line {
+  border-color: var(--accent, #3b82f6) !important;
+  pointer-events: all !important;
 }
 
 /* ---------- C4 node / edge visuals ---------- */
 
 .c4-node {
+  display: flex;
+  flex-direction: column;
   width: var(--c4-node-width);
   border-radius: 6px;
   border: 1.5px solid var(--c4-border);
@@ -264,26 +317,47 @@ details[open] .details__chevron {
   color: var(--actor-custom-text, var(--accent));
 }
 
-/* Sistema: rectángulo del escenario, nombre arriba al centro */
+/* Sistema / Frontera: rectángulo del escenario, texto y enunciado arriba */
 .uc-system {
   position: relative;
-  display: flex;
-  align-items: flex-start;
-  justify-content: center;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: flex-start !important;
+  align-items: stretch !important;
   overflow: hidden;
   box-shadow: none;
+  z-index: -1;
+}
+
+.uc-system__header {
+  width: 100%;
+  padding: 10px 16px;
+  text-align: center;
+  border-bottom: 1.5px solid color-mix(in oklab, var(--c4-border) 35%, transparent);
+  background: color-mix(in oklab, var(--c4-bg) 88%, var(--c4-border));
+  box-sizing: border-box;
+  flex-shrink: 0;
 }
 
 .uc-system__title {
-  width: 100%;
-  padding: 10px 14px 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
   font-size: 14px;
   font-weight: 700;
   line-height: 1.3;
-  text-align: center;
   overflow-wrap: anywhere;
-  border-bottom: 1px solid color-mix(in oklab, var(--c4-border) 35%, transparent);
-  background: color-mix(in oklab, var(--c4-bg) 88%, var(--c4-border));
+}
+
+.uc-system__desc {
+  font-size: 11px;
+  font-weight: 400;
+  line-height: 1.35;
+  margin-top: 4px;
+  opacity: 0.85;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
 }
 
 /* Caso de uso: rectángulo redondeado con el nombre centrado */

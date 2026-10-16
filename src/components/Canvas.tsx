@@ -39,6 +39,7 @@ const edgeTypes = {
 };
 
 const DRAG_KIND = "application/x-kind";
+const DRAG_EXTRA = "application/x-extra";
 const FIT_VIEW_EVENT = "modeler:fit-view";
 
 /** Marcador de triángulo hueco para generalizaciones UML (véase view.ts). */
@@ -234,11 +235,25 @@ function CanvasInner() {
       if (readOnly) return;
       const kind = event.dataTransfer.getData(DRAG_KIND) as ElementKind | "";
       if (!kind) return;
+      const extraStr = event.dataTransfer.getData(DRAG_EXTRA);
+      let extra: Partial<DiagramElement> | undefined;
+      if (extraStr) {
+        try {
+          extra = JSON.parse(extraStr);
+        } catch {
+          // Ignorar JSON malformado
+        }
+      }
       const point = screenToFlowPosition({ x: event.clientX, y: event.clientY });
-      addElement(kind, {
-        x: point.x - NODE_WIDTH / 2,
-        y: point.y - NODE_HEIGHT / 2,
-      });
+      addElement(
+        kind,
+        {
+          x: point.x - NODE_WIDTH / 2,
+          y: point.y - NODE_HEIGHT / 2,
+        },
+        undefined,
+        extra,
+      );
     },
     [addElement, screenToFlowPosition, readOnly],
   );
@@ -345,4 +360,4 @@ export function Canvas() {
   return <CanvasInner />;
 }
 
-export { DRAG_KIND, FIT_VIEW_EVENT };
+export { DRAG_KIND, DRAG_EXTRA, FIT_VIEW_EVENT };

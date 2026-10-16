@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useReactFlow } from "@xyflow/react";
 import { useProject } from "@/lib/project-store";
 import { useT } from "@/i18n";
-import { DRAG_KIND } from "./Canvas";
+import { DRAG_KIND, DRAG_EXTRA } from "./Canvas";
 import { Icon } from "./icons";
 import {
   GENERAL_SHAPES,
@@ -453,15 +453,18 @@ export function LeftPanel({
               <div className="grid grid-cols-5 gap-1">
                 {filteredGeneral.map((shape) => (
                   <button
-                    key={shape.kind + shape.name}
+                    key={shape.name + shape.kind}
                     type="button"
                     draggable={!readOnly}
                     disabled={readOnly}
                     onDragStart={(e) => {
                       e.dataTransfer.setData(DRAG_KIND, shape.kind);
+                      if (shape.extra) {
+                        e.dataTransfer.setData(DRAG_EXTRA, JSON.stringify(shape.extra));
+                      }
                       e.dataTransfer.effectAllowed = "copy";
                     }}
-                    onClick={() => addElement(shape.kind)}
+                    onClick={() => addElement(shape.kind, undefined, undefined, shape.extra)}
                     title={shape.tooltip}
                     className="group relative flex items-center justify-center size-9 rounded border border-border/70 bg-surface hover:border-accent hover:bg-accent-soft/20 text-foreground transition-all duration-100 cursor-grab active:cursor-grabbing hover:scale-105 shadow-2xs"
                   >
@@ -531,15 +534,18 @@ export function LeftPanel({
                   <div className="grid grid-cols-4 gap-1.5">
                     {group.shapes.map((shape) => (
                       <button
-                        key={shape.kind}
+                        key={shape.name + shape.kind}
                         type="button"
                         draggable={!readOnly}
                         disabled={readOnly}
                         onDragStart={(e) => {
                           e.dataTransfer.setData(DRAG_KIND, shape.kind);
+                          if (shape.extra) {
+                            e.dataTransfer.setData(DRAG_EXTRA, JSON.stringify(shape.extra));
+                          }
                           e.dataTransfer.effectAllowed = "copy";
                         }}
-                        onClick={() => addElement(shape.kind)}
+                        onClick={() => addElement(shape.kind, undefined, undefined, shape.extra)}
                         title={`${shape.name} — ${shape.tooltip}`}
                         className="group flex flex-col items-center justify-center p-1 rounded border border-border bg-surface hover:border-accent hover:bg-accent-soft/20 text-foreground transition-all cursor-grab active:cursor-grabbing"
                       >

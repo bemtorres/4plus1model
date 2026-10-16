@@ -168,6 +168,7 @@ export interface ProjectApi {
     kind: ElementKind,
     position?: { x: number; y: number },
     parentId?: string | null,
+    extra?: Partial<DiagramElement>,
   ) => string;
   updateElement: (id: string, patch: Partial<DiagramElement>) => void;
   moveElement: (id: string, x: number, y: number) => void;
@@ -176,6 +177,7 @@ export interface ProjectApi {
   reorderStep: (useCaseId: string, orderedStepIds: string[]) => void;
   addRelationship: (relationship: Omit<DiagramRelationship, "id">) => void;
   updateRelationship: (id: string, patch: Partial<DiagramRelationship>) => void;
+  invertRelationship: (id: string) => void;
   removeRelationship: (id: string) => void;
   // acciones
   autoLayout: () => void;
@@ -471,7 +473,12 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
   );
 
   const addElement = useCallback(
-    (kind: ElementKind, position?: { x: number; y: number }, parentIdOverride?: string | null) => {
+    (
+      kind: ElementKind,
+      position?: { x: number; y: number },
+      parentIdOverride?: string | null,
+      extra?: Partial<DiagramElement>,
+    ) => {
       const id = createId("el");
       const meta = kindMeta(sheet.diagram, kind);
       // Las notas son anotaciones sueltas: nunca cuelgan de un contenedor.
@@ -482,10 +489,11 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
             ? null
             : (scopeId ?? null);
       const spot = position ?? fallbackPosition(sheet, kind);
+      const baseName = extra?.name ?? nextName(sheet, kind);
       const next: DiagramElement = {
         id,
         kind,
-        name: nextName(sheet, kind),
+        name: baseName,
         description: "",
         tags: [],
         parentId,
@@ -493,6 +501,7 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
         ...(kind === "step" ? { order: maxStepOrder(sheet, parentId) } : {}),
         x: Math.round(spot.x),
         y: Math.round(spot.y),
+        ...extra,
       };
       mutateActiveSheet((current) => ({ ...current, elements: [...current.elements, next] }));
       setSelection({ type: "element", id });
@@ -633,6 +642,26 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
     [mutateActiveSheet],
   );
 
+  const invertRelationship = useCallback(
+    (id: string) => {
+      mutateActiveSheet((current) => ({
+        ...current,
+        relationships: current.relationships.map((rel) =>
+          rel.id === id
+            ? {
+                ...rel,
+                source: rel.target,
+                target: rel.source,
+                sourceHandle: rel.targetHandle,
+                targetHandle: rel.sourceHandle,
+              }
+            : rel,
+        ),
+      }));
+    },
+    [mutateActiveSheet],
+  );
+
   const removeRelationship = useCallback(
     (id: string) => {
       mutateActiveSheet((current) => ({
@@ -749,6 +778,7 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
       reorderStep,
       addRelationship,
       updateRelationship,
+      invertRelationship,
       removeRelationship,
       autoLayout,
       importProject,
@@ -788,6 +818,7 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
       reorderStep,
       addRelationship,
       updateRelationship,
+      invertRelationship,
       removeRelationship,
       autoLayout,
       importProject,

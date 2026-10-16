@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import type { ElementKind } from "@/lib/types";
+import type { DiagramElement, ElementKind } from "@/lib/types";
 
 export interface ShapeDefinition {
   kind: ElementKind;
@@ -7,6 +7,7 @@ export interface ShapeDefinition {
   category: "general" | "4plus1" | "connector" | "misc";
   tooltip: string;
   icon: ReactNode;
+  extra?: Partial<DiagramElement>;
 }
 
 /** Iconos vectoriales SVG para la rejilla de formas estilo Draw.io (trazo limpio negro/gris). */
@@ -347,14 +348,30 @@ export const FOUR_PLUS_ONE_SHAPES: {
       },
       {
         kind: "useCase",
-        name: "Caso de Uso",
+        name: "Caso de Uso (Óvalo)",
         category: "4plus1",
-        tooltip: "Unidad de funcionalidad del sistema",
+        tooltip: "Actividad o caso de uso en forma de óvalo UML",
+        extra: { radius: 9999 },
         icon: (
           <svg viewBox="0 0 40 40" className="size-full" fill="none" stroke="currentColor" strokeWidth="1.4">
             <ellipse cx="20" cy="20" rx="16" ry="10" />
             <text x="20" y="22" fontSize="7" textAnchor="middle" fill="currentColor" stroke="none">
               UC
+            </text>
+          </svg>
+        ),
+      },
+      {
+        kind: "useCase",
+        name: "Actividad (Rect. redondeado)",
+        category: "4plus1",
+        tooltip: "Actividad o caso de uso en rectángulo redondeado UML",
+        extra: { radius: 16, name: "Actividad" },
+        icon: (
+          <svg viewBox="0 0 40 40" className="size-full" fill="none" stroke="currentColor" strokeWidth="1.4">
+            <rect x="5" y="10" width="30" height="20" rx="5" />
+            <text x="20" y="22" fontSize="7" textAnchor="middle" fill="currentColor" stroke="none">
+              ACT
             </text>
           </svg>
         ),

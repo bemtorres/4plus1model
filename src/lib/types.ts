@@ -125,6 +125,7 @@ export type IconName =
   | "sparkles"
   | "menu"
   | "palette"
+  | "swap"
   | "x";
 
 export interface DiagramElement {

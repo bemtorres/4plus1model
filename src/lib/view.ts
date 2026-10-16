@@ -9,6 +9,7 @@ import {
   diagramDef,
   elementNodeSize,
   isDrillable,
+  kindMeta,
   levelMeta,
 } from "./diagrams";
 import type {
@@ -245,7 +246,7 @@ export function buildView(
 
   const detail = sheet.elements.filter((element) =>
     isRootLevel
-      ? depthOfElement(diagram, element) === 0 && element.parentId === null
+      ? (depthOfElement(diagram, element) === 0 || element.parentId === null)
       : depthOfElement(diagram, element) === detailDepth &&
         (scopeId ? element.parentId === scopeId : element.parentId === null),
   );
@@ -334,7 +335,10 @@ export function buildView(
   for (const element of sheet.elements) {
     if (!visibleIds.has(element.id)) continue;
     const isSelected = selection?.type === "element" && selection.id === element.id;
-    const isResizable = element.width != null || element.kind === "system";
+    const meta = kindMeta(diagram, element.kind);
+    const isResizable = meta.shape !== "person" && element.kind !== "note";
+    const isSystem = element.kind === "system";
+    const size = elementNodeSize(diagram, element);
     const shared = {
       id: element.id,
       position: { x: element.x, y: element.y },
@@ -342,9 +346,15 @@ export function buildView(
       selected: isSelected,
       draggable: true,
       deletable: true,
-      // El sistema (rectángulo del escenario) fija ancho/alto en el nodo de RF.
+      connectable: !isSystem,
+      zIndex: isSystem ? -1 : undefined,
+      // Nodos redimensionables (cuadrados, rectángulos, elipses, sistemas, etc.)
       ...(isResizable
-        ? { style: { ...elementNodeSize(diagram, element) } }
+        ? {
+            width: size.width,
+            height: size.height,
+            style: { width: size.width, height: size.height },
+          }
         : {}),
     };
     elementNodes.push(
@@ -355,8 +365,14 @@ export function buildView(
   }
 
   // React Flow pinta en el orden del array: los nodos de abajo van primero.
-  elementNodes.sort((a, b) => b.position.y - a.position.y || b.position.x - a.position.x);
-  const nodes: FlowNode[] = [...elementNodes, ...boundaryNodes];
+  // Además, el sistema/boundary siempre debe estar al fondo respecto a casos de uso y actores.
+  elementNodes.sort((a, b) => {
+    const aIsSystem = a.data.element.kind === "system" ? 0 : 1;
+    const bIsSystem = b.data.element.kind === "system" ? 0 : 1;
+    if (aIsSystem !== bIsSystem) return aIsSystem - bIsSystem;
+    return b.position.y - a.position.y || b.position.x - a.position.x;
+  });
+  const nodes: FlowNode[] = [...boundaryNodes, ...elementNodes];
 
   const edges: DiagramFlowEdge[] = [];
   const drawnPairs = new Set<string>();

@@ -175,44 +175,80 @@ export function DiagramElementNode({ data, selected }: NodeProps<ElementFlowNode
     bgOpacity: element.bgOpacity,
   };
   const computedStyle = nodeStyle(sheet.diagram, element.kind, styleOverrides);
-  const box = elementNodeSize(sheet.diagram, element);
-  const boxStyle: React.CSSProperties =
-    meta.shape === "system"
-      ? { width: "100%", height: "100%" }
-      : { width: box.width, minHeight: box.height };
+  const isPerson = meta.shape === "person";
+  const isResizable = !isPerson;
+  const isSelected = Boolean(selected || isDirectlySelected);
+  const canResize = isResizable && isSelected && !readOnly;
 
-  // El sistema es el rectángulo del escenario: escalable y siempre al fondo.
+  const resizer = canResize ? (
+    <NodeResizer
+      isVisible={canResize}
+      minWidth={meta.shape === "system" ? 120 : 30}
+      minHeight={meta.shape === "system" ? 80 : 30}
+      onResizeEnd={(_event, params) => {
+        updateElement(element.id, {
+          width: Math.round(params.width),
+          height: Math.round(params.height),
+          x: Math.round(params.x),
+          y: Math.round(params.y),
+        });
+      }}
+      lineStyle={{ stroke: "var(--accent, #3b82f6)", strokeWidth: 1.5 }}
+      handleStyle={{
+        width: 10,
+        height: 10,
+        borderRadius: 2,
+        backgroundColor: "var(--surface, #ffffff)",
+        borderColor: "var(--accent, #3b82f6)",
+        borderWidth: 1.5,
+      }}
+    />
+  ) : null;
+
+  const box = elementNodeSize(sheet.diagram, element);
+  const boxStyle: React.CSSProperties = isResizable
+    ? { width: "100%", height: "100%", boxSizing: "border-box" }
+    : { width: box.width, minHeight: box.height };
+
+  // El sistema es el rectángulo del escenario: escalable y siempre al fondo (sin handles de conexión).
   if (meta.shape === "system") {
     return (
       <>
-        <NodeResizer
-          isVisible={selected && !readOnly}
-          minWidth={220}
-          minHeight={160}
-          onResizeEnd={(_event, params) => {
-            updateElement(element.id, {
-              width: Math.round(params.width),
-              height: Math.round(params.height),
-            });
-          }}
-          lineStyle={{ stroke: "var(--accent)" }}
-          handleStyle={{ width: 9, height: 9, borderRadius: 2 }}
-        />
         <div
           className={[...classes, "uc-system"].join(" ")}
           style={{ ...computedStyle, ...boxStyle }}
         >
-          <SideHandles sides={["top", "right", "bottom", "left"]} show={showHandles} />
           <div
-            className="uc-system__title"
+            className="uc-system__header"
             style={{
               ...(element.textColor ? { color: element.textColor } : {}),
               ...(element.fontFamily ? { fontFamily: element.fontFamily } : {}),
             }}
           >
-            {element.name || "Sistema"}
+            <div
+              className="uc-system__title"
+              style={{
+                ...(element.size ? { fontSize: `${element.size}px` } : {}),
+              }}
+            >
+              {effectiveIcon ? (
+                <Icon name={effectiveIcon} className="mr-1.5 inline-block shrink-0 align-middle text-xs" />
+              ) : null}
+              <span>{element.name || "Sistema"}</span>
+            </div>
+            {description ? (
+              <div
+                className="uc-system__desc"
+                style={{
+                  ...(element.size ? { fontSize: `${Math.max(9, element.size - 2)}px` } : {}),
+                }}
+              >
+                {description}
+              </div>
+            ) : null}
           </div>
         </div>
+        {resizer}
       </>
     );
   }
@@ -275,171 +311,195 @@ export function DiagramElementNode({ data, selected }: NodeProps<ElementFlowNode
   // Casos de uso y elipses: óvalo con el nombre centrado.
   if (meta.shape === "ellipse") {
     return (
-      <div
-        className={[...classes, "uc-usecase"].join(" ")}
-        style={{ ...computedStyle, ...boxStyle }}
-      >
-        <SideHandles sides={["top", "right", "bottom", "left"]} show={showHandles} />
-        <div className="uc-usecase__body">
-          <div
-            className="uc-usecase__name"
-            style={{
-              ...(element.size ? { fontSize: `${element.size}px` } : {}),
-              ...(element.textColor ? { color: element.textColor } : {}),
-              ...(element.fontFamily ? { fontFamily: element.fontFamily } : {}),
-            }}
-          >
-            {effectiveIcon ? <Icon name={effectiveIcon} className="mr-1.5 inline-block shrink-0 align-middle text-xs" /> : null}
-            <span>{element.name || "Caso de uso"}</span>
+      <>
+        <div
+          className={[...classes, "uc-usecase"].join(" ")}
+          style={{ ...computedStyle, ...boxStyle }}
+        >
+          <SideHandles sides={["top", "right", "bottom", "left"]} show={showHandles} />
+          <div className="uc-usecase__body">
+            <div
+              className="uc-usecase__name"
+              style={{
+                ...(element.size ? { fontSize: `${element.size}px` } : {}),
+                ...(element.textColor ? { color: element.textColor } : {}),
+                ...(element.fontFamily ? { fontFamily: element.fontFamily } : {}),
+              }}
+            >
+              {effectiveIcon ? <Icon name={effectiveIcon} className="mr-1.5 inline-block shrink-0 align-middle text-xs" /> : null}
+              <span>{element.name || "Caso de uso"}</span>
+            </div>
+            {description ? (
+              <div className="uc-usecase__desc">{description}</div>
+            ) : null}
           </div>
-          {description ? (
-            <div className="uc-usecase__desc">{description}</div>
-          ) : null}
         </div>
-      </div>
+        {resizer}
+      </>
     );
   }
 
   // Cilindro / Base de Datos
   if (meta.shape === "cylinder") {
     return (
-      <div
-        className={[...classes, "drawio-shape drawio-cylinder"].join(" ")}
-        style={{ ...computedStyle, ...boxStyle }}
-      >
-        <SideHandles sides={["top", "right", "bottom", "left"]} show={showHandles} />
-        <div className="drawio-cylinder__top" />
-        <div className="drawio-shape__title mt-3" style={element.textColor ? { color: element.textColor } : undefined}>
-          {effectiveIcon ? <Icon name={effectiveIcon} className="mr-1.5 inline-block shrink-0 align-middle text-xs" /> : null}
-          <span>{element.name || "Base de datos"}</span>
+      <>
+        <div
+          className={[...classes, "drawio-shape drawio-cylinder"].join(" ")}
+          style={{ ...computedStyle, ...boxStyle }}
+        >
+          <SideHandles sides={["top", "right", "bottom", "left"]} show={showHandles} />
+          <div className="drawio-cylinder__top" />
+          <div className="drawio-shape__title mt-3" style={element.textColor ? { color: element.textColor } : undefined}>
+            {effectiveIcon ? <Icon name={effectiveIcon} className="mr-1.5 inline-block shrink-0 align-middle text-xs" /> : null}
+            <span>{element.name || "Base de datos"}</span>
+          </div>
+          {description ? (
+            <div className="drawio-shape__desc">{description}</div>
+          ) : null}
         </div>
-        {description ? (
-          <div className="drawio-shape__desc">{description}</div>
-        ) : null}
-      </div>
+        {resizer}
+      </>
     );
   }
 
   // Nube
   if (meta.shape === "cloud") {
     return (
-      <div
-        className={[...classes, "drawio-shape drawio-cloud"].join(" ")}
-        style={{ ...computedStyle, ...boxStyle }}
-      >
-        <SideHandles sides={["top", "right", "bottom", "left"]} show={showHandles} />
-        <div className="drawio-shape__title" style={element.textColor ? { color: element.textColor } : undefined}>
-          {effectiveIcon ? <Icon name={effectiveIcon} className="mr-1.5 inline-block shrink-0 align-middle text-xs" /> : null}
-          <span>{element.name || "Nube"}</span>
+      <>
+        <div
+          className={[...classes, "drawio-shape drawio-cloud"].join(" ")}
+          style={{ ...computedStyle, ...boxStyle }}
+        >
+          <SideHandles sides={["top", "right", "bottom", "left"]} show={showHandles} />
+          <div className="drawio-shape__title" style={element.textColor ? { color: element.textColor } : undefined}>
+            {effectiveIcon ? <Icon name={effectiveIcon} className="mr-1.5 inline-block shrink-0 align-middle text-xs" /> : null}
+            <span>{element.name || "Nube"}</span>
+          </div>
+          {description ? <div className="drawio-shape__desc">{description}</div> : null}
         </div>
-        {description ? <div className="drawio-shape__desc">{description}</div> : null}
-      </div>
+        {resizer}
+      </>
     );
   }
 
   // Rombo de decisión
   if (meta.shape === "diamond") {
     return (
-      <div
-        className={[...classes, "drawio-shape drawio-diamond"].join(" ")}
-        style={{ ...computedStyle, ...boxStyle }}
-      >
-        <SideHandles sides={["top", "right", "bottom", "left"]} show={showHandles} />
-        <div className="drawio-shape__title" style={element.textColor ? { color: element.textColor } : undefined}>
-          {effectiveIcon ? <Icon name={effectiveIcon} className="mr-1.5 inline-block shrink-0 align-middle text-xs" /> : null}
-          <span>{element.name || "Decisión"}</span>
+      <>
+        <div
+          className={[...classes, "drawio-shape drawio-diamond"].join(" ")}
+          style={{ ...computedStyle, ...boxStyle }}
+        >
+          <SideHandles sides={["top", "right", "bottom", "left"]} show={showHandles} />
+          <div className="drawio-shape__title" style={element.textColor ? { color: element.textColor } : undefined}>
+            {effectiveIcon ? <Icon name={effectiveIcon} className="mr-1.5 inline-block shrink-0 align-middle text-xs" /> : null}
+            <span>{element.name || "Decisión"}</span>
+          </div>
+          {description ? <div className="drawio-shape__desc">{description}</div> : null}
         </div>
-        {description ? <div className="drawio-shape__desc">{description}</div> : null}
-      </div>
+        {resizer}
+      </>
     );
   }
 
   // Cubo 3D / Servidor
   if (meta.shape === "cube") {
     return (
-      <div
-        className={[...classes, "drawio-shape drawio-cube"].join(" ")}
-        style={{ ...computedStyle, ...boxStyle }}
-      >
-        <SideHandles sides={["top", "right", "bottom", "left"]} show={showHandles} />
-        <div className="drawio-shape__title" style={element.textColor ? { color: element.textColor } : undefined}>
-          {effectiveIcon ? <Icon name={effectiveIcon} className="mr-1.5 inline-block shrink-0 align-middle text-xs" /> : null}
-          <span>{element.name || "Servidor"}</span>
+      <>
+        <div
+          className={[...classes, "drawio-shape drawio-cube"].join(" ")}
+          style={{ ...computedStyle, ...boxStyle }}
+        >
+          <SideHandles sides={["top", "right", "bottom", "left"]} show={showHandles} />
+          <div className="drawio-shape__title" style={element.textColor ? { color: element.textColor } : undefined}>
+            {effectiveIcon ? <Icon name={effectiveIcon} className="mr-1.5 inline-block shrink-0 align-middle text-xs" /> : null}
+            <span>{element.name || "Servidor"}</span>
+          </div>
+          <div className="text-[10px] opacity-60 mt-0.5">«{meta.stereotype}»</div>
+          {description ? <div className="drawio-shape__desc">{description}</div> : null}
         </div>
-        <div className="text-[10px] opacity-60 mt-0.5">«{meta.stereotype}»</div>
-        {description ? <div className="drawio-shape__desc">{description}</div> : null}
-      </div>
+        {resizer}
+      </>
     );
   }
 
   // Clase UML de 3 compartimentos
   if (meta.shape === "classBox") {
     return (
-      <div
-        className={[...classes, "drawio-classbox"].join(" ")}
-        style={{ ...computedStyle, ...boxStyle }}
-      >
-        <SideHandles sides={["top", "right", "bottom", "left"]} show={showHandles} />
-        <div className="drawio-classbox__header">
-          <div className="drawio-classbox__stereo">«{meta.stereotype}»</div>
-          <div className="drawio-classbox__name">
-            {effectiveIcon ? <Icon name={effectiveIcon} className="mr-1.5 inline-block shrink-0 align-middle text-xs" /> : null}
-            <span>{element.name || "Clase"}</span>
+      <>
+        <div
+          className={[...classes, "drawio-classbox"].join(" ")}
+          style={{ ...computedStyle, ...boxStyle }}
+        >
+          <SideHandles sides={["top", "right", "bottom", "left"]} show={showHandles} />
+          <div className="drawio-classbox__header">
+            <div className="drawio-classbox__stereo">«{meta.stereotype}»</div>
+            <div className="drawio-classbox__name">
+              {effectiveIcon ? <Icon name={effectiveIcon} className="mr-1.5 inline-block shrink-0 align-middle text-xs" /> : null}
+              <span>{element.name || "Clase"}</span>
+            </div>
+          </div>
+          <div className="drawio-classbox__section">
+            <div>+ id: UUID</div>
+            <div>+ nombre: String</div>
+          </div>
+          <div className="drawio-classbox__section">
+            <div>+ ejecutar(): void</div>
           </div>
         </div>
-        <div className="drawio-classbox__section">
-          <div>+ id: UUID</div>
-          <div>+ nombre: String</div>
-        </div>
-        <div className="drawio-classbox__section">
-          <div>+ ejecutar(): void</div>
-        </div>
-      </div>
+        {resizer}
+      </>
     );
   }
 
   // Componente de Software
   if (meta.shape === "componentBox") {
     return (
-      <div
-        className={[...classes, "drawio-shape drawio-componentbox"].join(" ")}
-        style={{ ...computedStyle, ...boxStyle }}
-      >
-        <SideHandles sides={["top", "right", "bottom", "left"]} show={showHandles} />
-        <div className="drawio-shape__title" style={element.textColor ? { color: element.textColor } : undefined}>
-          {effectiveIcon ? <Icon name={effectiveIcon} className="mr-1.5 inline-block shrink-0 align-middle text-xs" /> : null}
-          <span>{element.name || "Componente"}</span>
+      <>
+        <div
+          className={[...classes, "drawio-shape drawio-componentbox"].join(" ")}
+          style={{ ...computedStyle, ...boxStyle }}
+        >
+          <SideHandles sides={["top", "right", "bottom", "left"]} show={showHandles} />
+          <div className="drawio-shape__title" style={element.textColor ? { color: element.textColor } : undefined}>
+            {effectiveIcon ? <Icon name={effectiveIcon} className="mr-1.5 inline-block shrink-0 align-middle text-xs" /> : null}
+            <span>{element.name || "Componente"}</span>
+          </div>
+          <div className="text-[10px] opacity-60 mt-0.5">«{meta.stereotype}»</div>
+          {description ? <div className="drawio-shape__desc">{description}</div> : null}
         </div>
-        <div className="text-[10px] opacity-60 mt-0.5">«{meta.stereotype}»</div>
-        {description ? <div className="drawio-shape__desc">{description}</div> : null}
-      </div>
+        {resizer}
+      </>
     );
   }
 
   // Ventana de Aplicación
   if (meta.shape === "window") {
     return (
-      <div
-        className={[...classes, "drawio-window"].join(" ")}
-        style={{ ...computedStyle, ...boxStyle }}
-      >
-        <SideHandles sides={["top", "right", "bottom", "left"]} show={showHandles} />
-        <div className="drawio-window__bar">
-          <div className="drawio-window__dot" />
-          <div className="drawio-window__dot" />
-          <div className="drawio-window__dot" />
-          <span className="text-[10px] font-semibold text-muted ml-1 truncate">
-            {element.name || "Ventana"}
-          </span>
-        </div>
-        <div className="drawio-window__body">
-          <div className="drawio-shape__title">
-            {effectiveIcon ? <Icon name={effectiveIcon} className="mr-1.5 inline-block shrink-0 align-middle text-xs" /> : null}
-            <span>{element.name || "Ventana"}</span>
+      <>
+        <div
+          className={[...classes, "drawio-window"].join(" ")}
+          style={{ ...computedStyle, ...boxStyle }}
+        >
+          <SideHandles sides={["top", "right", "bottom", "left"]} show={showHandles} />
+          <div className="drawio-window__bar">
+            <div className="drawio-window__dot" />
+            <div className="drawio-window__dot" />
+            <div className="drawio-window__dot" />
+            <span className="text-[10px] font-semibold text-muted ml-1 truncate">
+              {element.name || "Ventana"}
+            </span>
           </div>
-          {description ? <div className="drawio-shape__desc">{description}</div> : null}
+          <div className="drawio-window__body">
+            <div className="drawio-shape__title">
+              {effectiveIcon ? <Icon name={effectiveIcon} className="mr-1.5 inline-block shrink-0 align-middle text-xs" /> : null}
+              <span>{element.name || "Ventana"}</span>
+            </div>
+            {description ? <div className="drawio-shape__desc">{description}</div> : null}
+          </div>
         </div>
-      </div>
+        {resizer}
+      </>
     );
   }
 
@@ -447,28 +507,34 @@ export function DiagramElementNode({ data, selected }: NodeProps<ElementFlowNode
   if (meta.shape === "text" || meta.shape === "heading") {
     const isHeading = meta.shape === "heading";
     return (
-      <div
-        className={[...classes, "drawio-text"].join(" ")}
-        style={{ ...computedStyle, ...boxStyle }}
-      >
-        <SideHandles sides={["top", "right", "bottom", "left"]} show={showHandles} />
+      <>
         <div
-          style={{
-            fontSize: element.size ? `${element.size}px` : isHeading ? "18px" : "13px",
-            fontWeight: isHeading ? 700 : 400,
-            color: element.textColor ?? "var(--foreground)",
-          }}
+          className={[...classes, "drawio-text"].join(" ")}
+          style={{ ...computedStyle, ...boxStyle }}
         >
-          {element.name || (isHeading ? "Título" : "Texto")}
+          <SideHandles sides={["top", "right", "bottom", "left"]} show={showHandles} />
+          <div
+            style={{
+              fontSize: element.size ? `${element.size}px` : isHeading ? "18px" : "13px",
+              fontWeight: isHeading ? 700 : 400,
+              color: element.textColor ?? "var(--foreground)",
+            }}
+          >
+            {element.name || (isHeading ? "Título" : "Texto")}
+          </div>
         </div>
-      </div>
+        {resizer}
+      </>
     );
   }
 
   return (
-    <div className={classes.join(" ")} style={{ ...computedStyle, ...boxStyle }}>
-      <SideHandles sides={["top", "right", "bottom", "left"]} show={showHandles} />
-      <Content {...content} />
-    </div>
+    <>
+      <div className={classes.join(" ")} style={{ ...computedStyle, ...boxStyle }}>
+        <SideHandles sides={["top", "right", "bottom", "left"]} show={showHandles} />
+        <Content {...content} />
+      </div>
+      {resizer}
+    </>
   );
 }

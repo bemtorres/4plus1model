@@ -10,7 +10,9 @@ import {
 import { useState } from "react";
 import {
   ELEMENT_ICONS,
+  defaultNodeSize,
   diagramDef,
+  elementNodeSize,
   iconOf,
   kindMeta,
   stylesOf,
@@ -533,7 +535,13 @@ function ElementContentTab({
       ) : null}
 
       <TextField value={name.value} onChange={name.onChange} isDisabled={readOnly}>
-        <Label>{element.kind === "note" ? t("inspector.noteText") : t("inspector.name")}</Label>
+        <Label>
+          {element.kind === "note"
+            ? t("inspector.noteText")
+            : element.kind === "system"
+              ? "Nombre del Sistema"
+              : t("inspector.name")}
+        </Label>
         {element.kind === "note" ? (
           <TextArea
             rows={3}
@@ -541,17 +549,28 @@ function ElementContentTab({
             placeholder={t("inspector.noteTextPlaceholder")}
           />
         ) : (
-          <Input onBlur={name.onBlur} />
+          <Input
+            onBlur={name.onBlur}
+            placeholder={element.kind === "system" ? "Ej: Tienda Online, Sistema Bancario..." : undefined}
+          />
         )}
       </TextField>
 
       {element.kind !== "note" ? (
         <TextField value={description.value} onChange={description.onChange} isDisabled={readOnly}>
-          <Label>{t("inspector.description")}</Label>
+          <Label>
+            {element.kind === "system"
+              ? "Enunciado / Descripción"
+              : t("inspector.description")}
+          </Label>
           <TextArea
-            rows={3}
+            rows={element.kind === "system" ? 3 : 3}
             onBlur={description.onBlur}
-            placeholder={t("inspector.descriptionPlaceholder")}
+            placeholder={
+              element.kind === "system"
+                ? "Enunciado del problema o alcance del sistema (se muestra en la cabecera superior)..."
+                : t("inspector.descriptionPlaceholder")
+            }
           />
         </TextField>
       ) : null}
@@ -574,6 +593,42 @@ function ElementContentTab({
 
       {element.kind === "useCase" ? (
         <>
+          <div className="flex flex-col gap-1.5">
+            <FieldLabel>Forma de la casilla</FieldLabel>
+            <div className="grid grid-cols-2 gap-1.5">
+              <button
+                type="button"
+                disabled={readOnly}
+                onClick={() => updateElement(element.id, { radius: 9999 })}
+                className={[
+                  "flex items-center justify-center gap-1.5 px-2.5 py-1.5 rounded-md border text-xs font-medium transition-all cursor-pointer",
+                  element.radius == null || element.radius >= 60
+                    ? "border-accent bg-accent/15 text-accent font-semibold shadow-2xs"
+                    : "border-border bg-surface text-muted hover:text-foreground hover:bg-surface-secondary",
+                ].join(" ")}
+                title="Forma clásica de óvalo UML para caso de uso"
+              >
+                <span className="inline-block w-4 h-2.5 rounded-full border-2 border-current" />
+                <span>Óvalo</span>
+              </button>
+              <button
+                type="button"
+                disabled={readOnly}
+                onClick={() => updateElement(element.id, { radius: 16 })}
+                className={[
+                  "flex items-center justify-center gap-1.5 px-2.5 py-1.5 rounded-md border text-xs font-medium transition-all cursor-pointer",
+                  element.radius != null && element.radius < 60
+                    ? "border-accent bg-accent/15 text-accent font-semibold shadow-2xs"
+                    : "border-border bg-surface text-muted hover:text-foreground hover:bg-surface-secondary",
+                ].join(" ")}
+                title="Forma de rectángulo con esquinas redondeadas para actividad"
+              >
+                <span className="inline-block w-4 h-3 rounded-[4px] border-2 border-current" />
+                <span>Rect. redondeado</span>
+              </button>
+            </div>
+          </div>
+
           <div className="flex flex-col gap-1.5">
             <FieldLabel>{t("inspector.useCase.goalLevel")}</FieldLabel>
             <Picker
@@ -679,6 +734,12 @@ function ElementStyleTab({
   const showBorder = element.border !== false;
 
   const isActor = element.kind === "actor";
+  const isResizable = meta.shape !== "person" && element.kind !== "note";
+  const defaultSize = defaultNodeSize(sheet.diagram, element.kind);
+  const currentSize = elementNodeSize(sheet.diagram, element);
+  const isCustomSize =
+    (element.width != null && element.width !== defaultSize.width) ||
+    (element.height != null && element.height !== defaultSize.height);
 
   const FONT_OPTIONS = [
     { value: "", label: "Por defecto (Inter / Sistema)" },
@@ -729,6 +790,98 @@ function ElementStyleTab({
                 </button>
               ))}
             </div>
+          </div>
+          <Separator />
+        </>
+      ) : null}
+
+      {/* Dimensiones (Ancho y Alto en píxeles): para Cuadrado, Rectángulo, etc. */}
+      {isResizable ? (
+        <>
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold text-foreground">
+                Dimensiones (Tamaño)
+              </span>
+              {isCustomSize && !readOnly ? (
+                <button
+                  type="button"
+                  onClick={() => updateElement(element.id, { width: null, height: null })}
+                  className="text-[11px] text-accent hover:underline flex items-center gap-1 cursor-pointer"
+                  title="Restablecer al tamaño por defecto"
+                >
+                  <Icon name="refresh" className="text-[10px]" />
+                  <span>Restablecer</span>
+                </button>
+              ) : null}
+            </div>
+
+            <div className="grid grid-cols-2 gap-2 items-start">
+              <SimpleNumberInput
+                label="Ancho"
+                value={currentSize.width}
+                min={30}
+                max={2000}
+                step={10}
+                suffix="px"
+                readOnly={readOnly}
+                onChange={(width) => updateElement(element.id, { width })}
+              />
+              <SimpleNumberInput
+                label="Alto"
+                value={currentSize.height}
+                min={30}
+                max={2000}
+                step={10}
+                suffix="px"
+                readOnly={readOnly}
+                onChange={(height) => updateElement(element.id, { height })}
+              />
+            </div>
+
+            {/* Accesos rápidos de proporción */}
+            {!readOnly ? (
+              <div className="flex items-center gap-1.5 pt-0.5">
+                <span className="text-[10px] text-muted">Ajuste rápido:</span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const side = Math.max(currentSize.width, currentSize.height);
+                    updateElement(element.id, { width: side, height: side });
+                  }}
+                  className="px-2 py-0.5 rounded text-[10px] font-medium border border-border bg-surface-secondary/50 hover:bg-surface-secondary hover:border-accent text-muted hover:text-foreground transition-colors cursor-pointer"
+                  title="Hacer cuadrado perfecto (1:1)"
+                >
+                  Cuadrado 1:1
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    updateElement(element.id, {
+                      width: Math.round(currentSize.width * 1.25),
+                      height: Math.round(currentSize.height * 1.25),
+                    });
+                  }}
+                  className="px-2 py-0.5 rounded text-[10px] font-medium border border-border bg-surface-secondary/50 hover:bg-surface-secondary hover:border-accent text-muted hover:text-foreground transition-colors cursor-pointer"
+                  title="Aumentar tamaño un 25%"
+                >
+                  +25%
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    updateElement(element.id, {
+                      width: Math.max(40, Math.round(currentSize.width * 0.8)),
+                      height: Math.max(30, Math.round(currentSize.height * 0.8)),
+                    });
+                  }}
+                  className="px-2 py-0.5 rounded text-[10px] font-medium border border-border bg-surface-secondary/50 hover:bg-surface-secondary hover:border-accent text-muted hover:text-foreground transition-colors cursor-pointer"
+                  title="Reducir tamaño un 20%"
+                >
+                  -20%
+                </button>
+              </div>
+            ) : null}
           </div>
           <Separator />
         </>
@@ -918,7 +1071,7 @@ function ElementRelationsTab({
   element: DiagramElement;
   relationships: DiagramRelationship[];
 }) {
-  const { sheet, select, readOnly } = useProject();
+  const { sheet, select, invertRelationship, readOnly } = useProject();
   const t = useT();
   const styleLabel = useStyleLabel();
   const byId = indexElements(sheet);
@@ -955,13 +1108,25 @@ function ElementRelationsTab({
                         {isSource ? t("inspector.to") : t("inspector.from")}: {other?.name ?? "?"}
                       </span>
                     </span>
-                    <button
-                      type="button"
-                      onClick={() => select({ type: "relationship", id: rel.id })}
-                      className="rounded px-2 py-0.5 text-[11px] font-medium text-accent hover:bg-accent-soft hover:underline"
-                    >
-                      {t("inspector.editRelation")}
-                    </button>
+                    <div className="flex items-center gap-1">
+                      {!readOnly ? (
+                        <button
+                          type="button"
+                          onClick={() => invertRelationship(rel.id)}
+                          className="flex items-center justify-center size-6 rounded hover:bg-surface text-muted hover:text-accent transition-colors cursor-pointer"
+                          title="Invertir dirección de la flecha"
+                        >
+                          <Icon name="swap" className="text-xs" />
+                        </button>
+                      ) : null}
+                      <button
+                        type="button"
+                        onClick={() => select({ type: "relationship", id: rel.id })}
+                        className="rounded px-2 py-0.5 text-[11px] font-medium text-accent hover:bg-accent-soft hover:underline cursor-pointer"
+                      >
+                        {t("inspector.editRelation")}
+                      </button>
+                    </div>
                   </div>
                   {rel.label ? (
                     <p className="truncate text-xs text-muted">“{rel.label}”</p>
@@ -1127,7 +1292,7 @@ function ElementInspector({ element }: { element: DiagramElement }) {
 }
 
 function RelationshipInspector({ relationship }: { relationship: DiagramRelationship }) {
-  const { sheet, updateRelationship, removeRelationship, select, readOnly } = useProject();
+  const { sheet, updateRelationship, invertRelationship, removeRelationship, select, readOnly } = useProject();
   const t = useT();
   const styleLabel = useStyleLabel();
   const byId = indexElements(sheet);
@@ -1153,37 +1318,95 @@ function RelationshipInspector({ relationship }: { relationship: DiagramRelation
           <p className="text-sm font-semibold text-foreground">
             {t("inspector.relationship")}
           </p>
-          <p className="text-xs text-muted">
-            {source?.name ?? "?"} → {target?.name ?? "?"}
+          <p className="text-xs text-muted flex items-center gap-1.5 flex-wrap">
+            <span>{source?.name ?? "?"}</span>
+            <span className="text-accent font-bold">→</span>
+            <span>{target?.name ?? "?"}</span>
           </p>
         </div>
+        {!readOnly ? (
+          <button
+            type="button"
+            onClick={() => invertRelationship(relationship.id)}
+            className="flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium text-accent bg-accent/10 hover:bg-accent/20 border border-accent/25 transition-all cursor-pointer shadow-2xs"
+            title="Invertir dirección de la flecha (intercambiar Origen y Destino)"
+          >
+            <Icon name="swap" className="text-xs" />
+            <span>Invertir</span>
+          </button>
+        ) : null}
       </header>
 
-      <div className="flex flex-col gap-1">
-        <FieldLabel>{t("inspector.origin")}</FieldLabel>
-        <button
-          type="button"
-          onClick={() => select({ type: "element", id: relationship.source })}
-          className="flex items-center gap-2 rounded-lg border border-border px-2.5 py-1.5 text-left text-sm transition-colors hover:bg-surface-secondary"
-        >
-          {source && sourceIcon ? (
-            <Icon name={sourceIcon} style={{ color: kindMeta(sheet.diagram, source.kind).bg }} />
+      {/* Origen y Destino con botón interactivo central para invertir */}
+      <div className="flex flex-col gap-2 rounded-xl border border-border bg-surface-secondary/40 p-3">
+        <div className="flex items-center justify-between">
+          <span className="text-xs font-semibold text-foreground">Extremos de la flecha</span>
+          {!readOnly ? (
+            <button
+              type="button"
+              onClick={() => invertRelationship(relationship.id)}
+              className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium text-accent hover:underline cursor-pointer"
+              title="Invertir flecha (Origen ⇄ Destino)"
+            >
+              <Icon name="swap" className="text-[10px]" />
+              <span>Invertir extremos</span>
+            </button>
           ) : null}
-          <span className="truncate">{source?.name ?? "?"}</span>
-        </button>
-        <span className="mt-2 block text-xs font-medium text-muted">
-          {t("inspector.destination")}
-        </span>
-        <button
-          type="button"
-          onClick={() => select({ type: "element", id: relationship.target })}
-          className="flex items-center gap-2 rounded-lg border border-border px-2.5 py-1.5 text-left text-sm transition-colors hover:bg-surface-secondary"
-        >
-          {target && targetIcon ? (
-            <Icon name={targetIcon} style={{ color: kindMeta(sheet.diagram, target.kind).bg }} />
-          ) : null}
-          <span className="truncate">{target?.name ?? "?"}</span>
-        </button>
+        </div>
+
+        {/* Origen */}
+        <div className="flex flex-col gap-1">
+          <div className="flex items-center justify-between text-[11px] text-muted">
+            <span className="font-medium text-foreground">{t("inspector.origin")}</span>
+            <span className="text-[10px] text-muted font-mono">Punto de salida</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => select({ type: "element", id: relationship.source })}
+            className="flex items-center gap-2 rounded-lg border border-border bg-surface px-2.5 py-1.5 text-left text-sm transition-colors hover:border-accent"
+          >
+            {source && sourceIcon ? (
+              <Icon name={sourceIcon} style={{ color: kindMeta(sheet.diagram, source.kind).bg }} />
+            ) : null}
+            <span className="truncate font-medium">{source?.name ?? "?"}</span>
+          </button>
+        </div>
+
+        {/* Botón central para invertir dirección */}
+        {!readOnly ? (
+          <div className="relative flex items-center justify-center my-0.5">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-border/70" />
+            </div>
+            <button
+              type="button"
+              onClick={() => invertRelationship(relationship.id)}
+              className="relative group flex items-center gap-1.5 px-3 py-1 rounded-full border border-border bg-surface text-xs font-medium text-muted hover:text-accent hover:border-accent hover:bg-accent-soft/30 transition-all shadow-xs cursor-pointer"
+              title="Invertir sentido de la flecha (intercambiar Origen y Destino)"
+            >
+              <Icon name="swap" className="text-xs transition-transform group-hover:rotate-180 duration-200 text-accent" />
+              <span>Invertir flecha (Origen ⇄ Destino)</span>
+            </button>
+          </div>
+        ) : null}
+
+        {/* Destino */}
+        <div className="flex flex-col gap-1">
+          <div className="flex items-center justify-between text-[11px] text-muted">
+            <span className="font-medium text-foreground">{t("inspector.destination")}</span>
+            <span className="text-[10px] text-accent font-mono font-medium">Punta de la flecha</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => select({ type: "element", id: relationship.target })}
+            className="flex items-center gap-2 rounded-lg border border-border bg-surface px-2.5 py-1.5 text-left text-sm transition-colors hover:border-accent"
+          >
+            {target && targetIcon ? (
+              <Icon name={targetIcon} style={{ color: kindMeta(sheet.diagram, target.kind).bg }} />
+            ) : null}
+            <span className="truncate font-medium">{target?.name ?? "?"}</span>
+          </button>
+        </div>
       </div>
 
       <div className="flex flex-col gap-1.5">
