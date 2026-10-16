@@ -42,6 +42,7 @@ export const ko: Dictionary = {
   "kind.actor": "액터",
   "kind.system": "시스템",
   "kind.useCase": "유스케이스",
+  "kind.detailedUseCase": "상세 유스케이스",
   "kind.step": "단계",
   "kind.actorType.primary": "주요",
   "kind.actorType.secondary": "보조",

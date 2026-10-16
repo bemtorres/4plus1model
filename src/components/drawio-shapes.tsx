@@ -389,6 +389,44 @@ export const FOUR_PLUS_ONE_SHAPES: {
         ),
       },
       {
+        kind: "detailedUseCase",
+        name: "CU Detallado",
+        category: "4plus1",
+        tooltip: "Caso de Uso Detallado (documentación completa y agrupación)",
+        extra: {
+          name: "CU Detallado",
+          description: "Especificación formal y agrupación de casos de uso",
+          icon: "book",
+          meta: {
+            useCaseType: "primary",
+            actor: "",
+            stakeholders: "",
+            preconditions: "",
+            postconditions: "",
+            mainScenario: "",
+            alternativeFlows: "",
+            specialRequirements: "",
+            techVariations: "",
+            frequency: "",
+            openIssues: "",
+            groupedUseCaseIds: "[]",
+          },
+        },
+        icon: (
+          <svg viewBox="0 0 40 40" className="size-full" fill="none" stroke="currentColor" strokeWidth="1.4">
+            <path d="M8 8 C8 6.5 9.5 5.5 11.5 5.5 L31 5.5 C32 5.5 33 6.5 33 7.5 L33 32.5 C33 33.5 32 34.5 31 34.5 L11.5 34.5 C9.5 34.5 8 33.5 8 32 Z" />
+            <path d="M8 30 C9.5 30 11.5 30 13 31 L33 31" />
+            <path d="M13 5.5 L13 34.5" strokeDasharray="1.5 1.5" />
+            <line x1="17" y1="11" x2="28" y2="11" strokeWidth="1.2" />
+            <line x1="17" y1="16" x2="28" y2="16" strokeWidth="1.2" />
+            <line x1="17" y1="21" x2="25" y2="21" strokeWidth="1.2" />
+            <text x="23" y="27" fontSize="5.5" fontWeight="bold" textAnchor="middle" fill="currentColor" stroke="none">
+              CU
+            </text>
+          </svg>
+        ),
+      },
+      {
         kind: "step",
         name: "Paso de Flujo",
         category: "4plus1",

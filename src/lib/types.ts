@@ -37,6 +37,7 @@ export type ElementKind =
   | "actor"
   | "system"
   | "useCase"
+  | "detailedUseCase"
   | "step"
   // Lógica
   | "class"

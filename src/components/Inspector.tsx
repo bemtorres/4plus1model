@@ -496,7 +496,7 @@ function ElementContentTab({
   childrenCount: number;
   relationshipsCount: number;
 }) {
-  const { sheet, updateElement, removeElement, drillInto } = useProject();
+  const { sheet, updateElement, removeElement, drillInto, addElement, addRelationship, select } = useProject();
   const t = useT();
   const diagram = sheet.diagram;
   const meta = kindMeta(diagram, element.kind);
@@ -662,6 +662,164 @@ function ElementContentTab({
           </TextField>
 
           <UseCaseFlowEditor useCase={element} readOnly={readOnly} />
+
+          {!readOnly ? (
+            <Button
+              size="sm"
+              variant="outline"
+              className="w-full mt-2 font-medium"
+              onPress={() => {
+                const existing = sheet.elements.find(
+                  (el) =>
+                    el.kind === "detailedUseCase" &&
+                    el.meta?.groupedUseCaseIds &&
+                    el.meta.groupedUseCaseIds.includes(element.id),
+                );
+                if (existing) {
+                  select({ type: "element", id: existing.id });
+                  window.dispatchEvent(
+                    new CustomEvent("modeler:open-detailed-use-case", {
+                      detail: { id: existing.id },
+                    }),
+                  );
+                } else {
+                  const newX = element.x + 260;
+                  const newY = element.y;
+                  const childSteps = sheet.elements
+                    .filter((e) => e.kind === "step" && e.parentId === element.id)
+                    .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+                  const mainScenario =
+                    childSteps.length > 0
+                      ? childSteps
+                          .map(
+                            (s, i) =>
+                              `${i + 1}. ${s.name}${s.description ? ` (${s.description})` : ""}`,
+                          )
+                          .join("\n")
+                      : "";
+
+                  const newId = addElement(
+                    "detailedUseCase",
+                    { x: newX, y: newY },
+                    element.parentId ?? undefined,
+                    {
+                      name: element.name,
+                      description: `Especificación formal de ${element.name}`,
+                      icon: "book",
+                      meta: {
+                        useCaseType: "primary",
+                        actor: "",
+                        stakeholders: "",
+                        preconditions: element.meta?.preconditions ?? "",
+                        postconditions: element.meta?.postconditions ?? "",
+                        mainScenario,
+                        groupedUseCaseIds: JSON.stringify([element.id]),
+                      },
+                    },
+                  );
+
+                  addRelationship({
+                    source: element.id,
+                    target: newId,
+                    sourceHandle: "right",
+                    targetHandle: "left",
+                    label: "especifica",
+                    description: "Documentación detallada del caso de uso",
+                    style: "association",
+                  });
+
+                  select({ type: "element", id: newId });
+                  window.dispatchEvent(
+                    new CustomEvent("modeler:open-detailed-use-case", {
+                      detail: { id: newId },
+                    }),
+                  );
+                }
+              }}
+            >
+              <Icon name="book" className="mr-1.5 text-xs text-amber-600" />
+              <span>📦 Agrupar en CU Detallado</span>
+            </Button>
+          ) : null}
+        </>
+      ) : null}
+
+      {element.kind === "detailedUseCase" ? (
+        <>
+          <Button
+            size="sm"
+            variant="primary"
+            className="w-full font-bold shadow-xs bg-amber-600 hover:bg-amber-700 text-white cursor-pointer"
+            onPress={() => {
+              window.dispatchEvent(
+                new CustomEvent("modeler:open-detailed-use-case", {
+                  detail: { id: element.id },
+                }),
+              );
+            }}
+          >
+            <Icon name="book" className="mr-1.5 text-base" />
+            <span>📖 Abrir Ficha Técnica (RUP)</span>
+          </Button>
+
+          <div className="flex flex-col gap-1.5">
+            <FieldLabel>Tipo de Caso de Uso</FieldLabel>
+            <Picker
+              label="Tipo de Caso de Uso"
+              disabled={readOnly}
+              value={element.meta?.useCaseType ?? "primary"}
+              onChange={(value) => setMeta("useCaseType", value)}
+              options={[
+                { value: "primary", label: "Primario" },
+                { value: "secondary", label: "Secundario" },
+              ]}
+            />
+          </div>
+
+          {element.meta?.useCaseType === "secondary" ? (
+            <div className="flex flex-col gap-1.5">
+              <FieldLabel>Enlazado a CU Principal</FieldLabel>
+              <Picker
+                label="CU Principal"
+                disabled={readOnly}
+                value={element.meta?.parentDetailedUseCaseId ?? ""}
+                onChange={(value) => setMeta("parentDetailedUseCaseId", value)}
+                options={[
+                  { value: "", label: "-- Sin vincular --" },
+                  ...sheet.elements
+                    .filter((e) => e.kind === "detailedUseCase" && e.id !== element.id)
+                    .map((e) => ({ value: e.id, label: e.name || "Sin nombre" })),
+                ]}
+              />
+            </div>
+          ) : null}
+
+          <TextField
+            value={element.meta?.actor ?? ""}
+            onChange={(value) => setMeta("actor", value)}
+            isDisabled={readOnly}
+          >
+            <Label>Actor Principal</Label>
+            <Input placeholder="Ej: Cliente Registrado" />
+          </TextField>
+
+          <TextField
+            value={preconditions.value}
+            onChange={preconditions.onChange}
+            isDisabled={readOnly}
+          >
+            <Label>{t("inspector.useCase.preconditions")}</Label>
+            <TextArea rows={2} onBlur={preconditions.onBlur} />
+          </TextField>
+
+          <TextField
+            value={postconditions.value}
+            onChange={postconditions.onChange}
+            isDisabled={readOnly}
+          >
+            <Label>{t("inspector.useCase.postconditions")}</Label>
+            <TextArea rows={2} onBlur={postconditions.onBlur} />
+          </TextField>
         </>
       ) : null}
 

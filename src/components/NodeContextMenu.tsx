@@ -11,6 +11,8 @@ interface NodeContextMenuProps {
   onDuplicate: () => void;
   onDelete: () => void;
   onClose: () => void;
+  onOpenDetailed?: () => void;
+  onGroupIntoDetailed?: () => void;
 }
 
 export function NodeContextMenu({
@@ -20,6 +22,8 @@ export function NodeContextMenu({
   onDuplicate,
   onDelete,
   onClose,
+  onOpenDetailed,
+  onGroupIntoDetailed,
 }: NodeContextMenuProps) {
   const t = useT();
   const menuRef = useRef<HTMLDivElement>(null);
@@ -37,8 +41,8 @@ export function NodeContextMenu({
   }, [onClose]);
 
   // Asegura que el menú no se salga de los límites de la pantalla
-  const menuWidth = 210;
-  const menuHeight = 135;
+  const menuWidth = 230;
+  const menuHeight = 180;
   const clampedX = Math.max(12, Math.min(x, window.innerWidth - menuWidth - 12));
   const clampedY = Math.max(12, Math.min(y, window.innerHeight - menuHeight - 12));
 
@@ -55,7 +59,7 @@ export function NodeContextMenu({
         ref={menuRef}
         role="menu"
         aria-label={`Opciones para ${element.name}`}
-        className="fixed z-50 w-52 overflow-hidden rounded-xl border border-border/80 bg-surface/95 p-1.5 shadow-2xl backdrop-blur-md animate-in fade-in zoom-in-95 duration-100 text-xs"
+        className="fixed z-50 w-56 overflow-hidden rounded-xl border border-border/80 bg-surface/95 p-1.5 shadow-2xl backdrop-blur-md animate-in fade-in zoom-in-95 duration-100 text-xs"
         style={{ left: `${clampedX}px`, top: `${clampedY}px` }}
         onClick={(e) => e.stopPropagation()}
       >
@@ -66,6 +70,45 @@ export function NodeContextMenu({
           </p>
           <p className="text-[10px] text-muted truncate mt-0.5">{meta.label}</p>
         </div>
+
+        {/* Abrir ficha técnica si es un caso de uso detallado */}
+        {element.kind === "detailedUseCase" && onOpenDetailed ? (
+          <button
+            type="button"
+            role="menuitem"
+            className="flex w-full items-center justify-between rounded-lg px-2.5 py-2 text-amber-700 dark:text-amber-300 bg-amber-500/10 hover:bg-amber-500/20 active:scale-[0.98] transition-colors text-left cursor-pointer mb-1 font-semibold"
+            onClick={() => {
+              onOpenDetailed();
+              onClose();
+            }}
+          >
+            <span className="flex items-center gap-2">
+              <span className="text-sm">📖</span>
+              <span>Abrir Ficha Detallada</span>
+            </span>
+            <kbd className="text-[9px] font-mono text-amber-700/80 dark:text-amber-300/80 bg-amber-500/10 rounded px-1.5 py-0.5">
+              2-clic
+            </kbd>
+          </button>
+        ) : null}
+
+        {/* Agrupar en CU Detallado si es un caso de uso ordinario */}
+        {element.kind === "useCase" && onGroupIntoDetailed ? (
+          <button
+            type="button"
+            role="menuitem"
+            className="flex w-full items-center justify-between rounded-lg px-2.5 py-2 text-foreground hover:bg-accent-soft hover:text-accent active:scale-[0.98] transition-colors text-left cursor-pointer mb-1"
+            onClick={() => {
+              onGroupIntoDetailed();
+              onClose();
+            }}
+          >
+            <span className="flex items-center gap-2">
+              <span className="text-sm">📦</span>
+              <span className="font-medium">Agrupar en CU Detallado</span>
+            </span>
+          </button>
+        ) : null}
 
         {/* Opción Duplicar */}
         <button

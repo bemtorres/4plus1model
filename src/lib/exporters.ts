@@ -153,10 +153,43 @@ export function exportMarkdown(project: Project): string {
       for (const useCase of useCases) {
         markdownUseCase(sheet, useCase, lines);
       }
+
+      const detailedUseCases = elements
+        .filter((element) => element.kind === "detailedUseCase")
+        .sort((a, b) => a.name.localeCompare(b.name));
+      for (const detailed of detailedUseCases) {
+        markdownDetailedUseCase(sheet, detailed, lines);
+      }
     }
   }
 
   return lines.join("\n");
+}
+
+function markdownDetailedUseCase(sheet: Sheet, element: DiagramElement, lines: string[]) {
+  const meta = element.meta ?? {};
+  const isSecondary = meta.useCaseType === "secondary";
+  const parent = meta.parentDetailedUseCaseId
+    ? sheet.elements.find((e) => e.id === meta.parentDetailedUseCaseId)
+    : null;
+
+  lines.push(`### Ficha de Caso de Uso Detallado: ${clean(element.name)}`, "");
+  lines.push(
+    `| Sección | Especificación |`,
+    `| :--- | :--- |`,
+    `| **Nombre del caso de uso** | ${clean(element.name)} (${isSecondary ? `Secundario${parent ? ` - Vinculado a: ${clean(parent.name)}` : ""}` : "Primario"}) |`,
+    `| **Actor Principal** | ${clean(meta.actor) || "—"} |`,
+    `| **Personal involucrado e intereses** | ${clean(meta.stakeholders) || "—"} |`,
+    `| **Precondiciones** | ${clean(meta.preconditions) || "—"} |`,
+    `| **Postcondiciones o garantías de éxito** | ${clean(meta.postconditions) || "—"} |`,
+    `| **Escenario Principal (Flujo Básico)** | ${clean(meta.mainScenario) || "—"} |`,
+    `| **Extensiones o Flujos Alternativos** | ${clean(meta.alternativeFlows) || "—"} |`,
+    `| **Requisitos especiales** | ${clean(meta.specialRequirements) || "—"} |`,
+    `| **Lista de tecnología y variaciones de datos** | ${clean(meta.techVariations) || "—"} |`,
+    `| **Frecuencia con la que se lleva a cabo** | ${clean(meta.frequency) || "—"} |`,
+    `| **Temas abiertos** | ${clean(meta.openIssues) || "—"} |`,
+    "",
+  );
 }
 
 /* ------------------------------------------------------------------ */

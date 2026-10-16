@@ -42,6 +42,7 @@ export const fr: Dictionary = {
   "kind.actor": "Acteur",
   "kind.system": "Système",
   "kind.useCase": "Cas d'utilisation",
+  "kind.detailedUseCase": "Cas d'utilisation détaillé",
   "kind.step": "Étape",
   "kind.actorType.primary": "Principal",
   "kind.actorType.secondary": "Secondaire",

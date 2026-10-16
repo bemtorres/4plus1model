@@ -39,7 +39,8 @@ export type NodeShape =
   | "arrowRight"
   | "classBox"
   | "componentBox"
-  | "queue";
+  | "queue"
+  | "detailedUseCase";
 
 export interface KindMeta {
   kind: ElementKind;

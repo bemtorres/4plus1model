@@ -42,6 +42,7 @@ export const zh: Dictionary = {
   "kind.actor": "参与者",
   "kind.system": "系统",
   "kind.useCase": "用例",
+  "kind.detailedUseCase": "详细用例",
   "kind.step": "步骤",
   "kind.actorType.primary": "主要",
   "kind.actorType.secondary": "次要",

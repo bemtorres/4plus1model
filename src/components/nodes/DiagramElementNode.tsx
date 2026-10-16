@@ -503,6 +503,130 @@ export function DiagramElementNode({ data, selected }: NodeProps<ElementFlowNode
     );
   }
 
+  // Caso de Uso Detallado (Formato Libro / Dossier de Especificación)
+  if (meta.shape === "detailedUseCase" || element.kind === "detailedUseCase") {
+    const isSecondary = element.meta?.useCaseType === "secondary";
+    const parentId = element.meta?.parentDetailedUseCaseId;
+    const parentElem = parentId ? sheet.elements.find((e) => e.id === parentId) : null;
+    const actorName = element.meta?.actor;
+
+    let groupedCount = 0;
+    try {
+      if (element.meta?.groupedUseCaseIds) {
+        const ids = JSON.parse(element.meta.groupedUseCaseIds);
+        if (Array.isArray(ids)) groupedCount = ids.length;
+      }
+    } catch {
+      // Ignorar si no es JSON válido
+    }
+
+    return (
+      <>
+        <div
+          className={[
+            ...classes,
+            "group relative overflow-hidden flex flex-col justify-between p-2.5 select-none text-left rounded-xl shadow-md border-2 transition-shadow",
+          ].join(" ")}
+          style={{
+            ...computedStyle,
+            ...boxStyle,
+            borderColor: element.borderColor ?? (isSecondary ? "#9333ea" : "#d97706"),
+            backgroundColor:
+              element.color ??
+              (isSecondary
+                ? "var(--surface, #faf5ff)"
+                : "var(--surface, #fffdfa)"),
+          }}
+        >
+          {/* Lomo de libro decorativo a la izquierda */}
+          <div
+            className="absolute left-0 top-0 bottom-0 w-1.5"
+            style={{
+              backgroundColor: isSecondary ? "#9333ea" : "#d97706",
+            }}
+          />
+
+          <SideHandles sides={["top", "right", "bottom", "left"]} show={showHandles} />
+
+          <div className="pl-1.5">
+            {/* Cabecera con Icono de Libro y Badges */}
+            <div className="flex items-center justify-between gap-1 mb-1.5">
+              <div className="flex items-center gap-1.5 min-w-0">
+                <span
+                  className="grid size-5 place-items-center rounded-md text-white shadow-xs shrink-0"
+                  style={{
+                    backgroundColor: isSecondary ? "#9333ea" : "#d97706",
+                  }}
+                  title="Caso de Uso Detallado"
+                >
+                  <Icon name="book" className="text-xs" />
+                </span>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-muted truncate">
+                  «CU Detallado»
+                </span>
+              </div>
+              <span
+                className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full uppercase tracking-wider shrink-0 ${
+                  isSecondary
+                    ? "bg-purple-100 text-purple-700 dark:bg-purple-900/60 dark:text-purple-300 border border-purple-300 dark:border-purple-700"
+                    : "bg-amber-100 text-amber-800 dark:bg-amber-900/60 dark:text-amber-300 border border-amber-300 dark:border-amber-700"
+                }`}
+              >
+                {isSecondary ? "Secundario" : "Primario"}
+              </span>
+            </div>
+
+            {/* Título del Caso de Uso */}
+            <div
+              className="font-bold text-xs text-foreground line-clamp-2 leading-tight"
+              style={element.textColor ? { color: element.textColor } : undefined}
+            >
+              {element.name || "Caso de Uso Detallado"}
+            </div>
+
+            {/* Actor principal */}
+            {actorName ? (
+              <div className="flex items-center gap-1 mt-1 text-[10px] text-muted">
+                <Icon name="user" className="text-[10px] shrink-0" />
+                <span className="truncate">
+                  Actor: <strong className="text-foreground">{actorName}</strong>
+                </span>
+              </div>
+            ) : null}
+
+            {/* Si es secundario y tiene padre */}
+            {isSecondary && parentElem ? (
+              <div className="flex items-center gap-1 mt-0.5 text-[9px] text-purple-700 dark:text-purple-300 truncate">
+                <Icon name="link" className="text-[9px] shrink-0" />
+                <span className="truncate">
+                  Vinculado a: <strong>{parentElem.name}</strong>
+                </span>
+              </div>
+            ) : null}
+
+            {/* Si agrupa casos de uso */}
+            {groupedCount > 0 ? (
+              <div className="flex items-center gap-1 mt-0.5 text-[9px] text-emerald-700 dark:text-emerald-400 font-medium">
+                <Icon name="cube" className="text-[9px] shrink-0" />
+                <span>Agrupa {groupedCount} caso{groupedCount > 1 ? "s" : ""} de uso</span>
+              </div>
+            ) : null}
+          </div>
+
+          {/* Pie interactivo indicando doble clic */}
+          <div className="pl-1.5 pt-1.5 mt-1 border-t border-border/50 flex items-center justify-between text-[9px] text-muted font-medium">
+            <span className="flex items-center gap-1 truncate">
+              <Icon name="file" className="text-[10px] shrink-0" />
+              <span>Doble clic para ver ficha</span>
+            </span>
+            <span className="text-[8px] opacity-75 font-mono shrink-0">RUP / Cockburn</span>
+          </div>
+        </div>
+        {resizer}
+      </>
+    );
+  }
+
   // Texto libre / Encabezado
   if (meta.shape === "text" || meta.shape === "heading") {
     const isHeading = meta.shape === "heading";

@@ -43,6 +43,7 @@ export const en = {
   "kind.actor": "Actor",
   "kind.system": "System",
   "kind.useCase": "Use case",
+  "kind.detailedUseCase": "Detailed use case",
   "kind.step": "Step",
   "kind.actorType.primary": "Primary",
   "kind.actorType.secondary": "Secondary",

@@ -27,6 +27,7 @@ import { DiagramElementNode } from "./nodes/DiagramElementNode";
 import { NoteNode } from "./nodes/NoteNode";
 import { NodeContextMenu } from "./NodeContextMenu";
 import { ReadOnlyBanner } from "./ReadOnlyBanner";
+import { DetailedUseCaseDialog } from "./DetailedUseCaseDialog";
 
 const nodeTypes = {
   element: DiagramElementNode,
@@ -103,6 +104,95 @@ function CanvasInner() {
     y: number;
     element: DiagramElement;
   } | null>(null);
+
+  const [detailedModalId, setDetailedModalId] = useState<string | null>(null);
+
+  // Escuchar evento global para abrir la ficha de CU detallado desde cualquier parte
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const custom = e as CustomEvent<{ id: string }>;
+      if (custom.detail?.id) {
+        setDetailedModalId(custom.detail.id);
+      }
+    };
+    window.addEventListener("modeler:open-detailed-use-case", handler);
+    return () => window.removeEventListener("modeler:open-detailed-use-case", handler);
+  }, []);
+
+  const groupIntoDetailedUseCase = useCallback(
+    (ucElement: DiagramElement) => {
+      const newX = ucElement.x + 260;
+      const newY = ucElement.y;
+
+      const connectedActorRel = sheet.relationships.find(
+        (rel) =>
+          (rel.source === ucElement.id &&
+            sheet.elements.find((e) => e.id === rel.target)?.kind === "actor") ||
+          (rel.target === ucElement.id &&
+            sheet.elements.find((e) => e.id === rel.source)?.kind === "actor"),
+      );
+      let actorName = "";
+      if (connectedActorRel) {
+        const actorId =
+          connectedActorRel.source === ucElement.id
+            ? connectedActorRel.target
+            : connectedActorRel.source;
+        actorName = sheet.elements.find((e) => e.id === actorId)?.name ?? "";
+      }
+
+      const childSteps = sheet.elements
+        .filter((e) => e.kind === "step" && e.parentId === ucElement.id)
+        .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+      const mainScenario =
+        childSteps.length > 0
+          ? childSteps
+              .map(
+                (s, i) =>
+                  `${i + 1}. ${s.name}${s.description ? ` (${s.description})` : ""}`,
+              )
+              .join("\n")
+          : "";
+
+      const newId = addElement(
+        "detailedUseCase",
+        { x: newX, y: newY },
+        ucElement.parentId ?? undefined,
+        {
+          name: ucElement.name,
+          description: `Especificación formal de ${ucElement.name}`,
+          icon: "book",
+          meta: {
+            useCaseType: "primary",
+            actor: actorName,
+            stakeholders: "",
+            preconditions: ucElement.meta?.preconditions ?? "",
+            postconditions: ucElement.meta?.postconditions ?? "",
+            mainScenario,
+            alternativeFlows: "",
+            specialRequirements: "",
+            techVariations: "",
+            frequency: "",
+            openIssues: "",
+            groupedUseCaseIds: JSON.stringify([ucElement.id]),
+          },
+        },
+      );
+
+      addRelationship({
+        source: ucElement.id,
+        target: newId,
+        sourceHandle: "right",
+        targetHandle: "left",
+        label: "especifica",
+        description: "Documentación detallada del caso de uso",
+        style: "association",
+      });
+
+      select({ type: "element", id: newId });
+      setDetailedModalId(newId);
+    },
+    [sheet.relationships, sheet.elements, addElement, addRelationship, select],
+  );
 
   const onNodeContextMenu = useCallback(
     (event: React.MouseEvent, node: FlowNode) => {
@@ -213,7 +303,12 @@ function CanvasInner() {
   const onNodeDoubleClick = useCallback(
     (_event: React.MouseEvent, node: { id: string; data: unknown }) => {
       const data = node.data as { element?: { kind: ElementKind } };
-      if (data.element && kindMeta(sheet.diagram, data.element.kind).drillable) {
+      if (!data.element) return;
+      if (data.element.kind === "detailedUseCase") {
+        setDetailedModalId(node.id);
+        return;
+      }
+      if (kindMeta(sheet.diagram, data.element.kind).drillable) {
         drillInto(node.id);
       }
     },
@@ -341,8 +436,19 @@ function CanvasInner() {
           onDuplicate={() => duplicateElement(contextMenu.element.id)}
           onDelete={() => removeElement(contextMenu.element.id)}
           onClose={() => setContextMenu(null)}
+          onOpenDetailed={() => setDetailedModalId(contextMenu.element.id)}
+          onGroupIntoDetailed={() => groupIntoDetailedUseCase(contextMenu.element)}
         />
       ) : null}
+
+      <DetailedUseCaseDialog
+        isOpen={Boolean(detailedModalId)}
+        onOpenChange={(open) => {
+          if (!open) setDetailedModalId(null);
+        }}
+        elementId={detailedModalId}
+        onSelectElement={(id) => setDetailedModalId(id)}
+      />
 
       {isEmpty ? (
         <div className="pointer-events-none absolute inset-0 flex items-center justify-center">

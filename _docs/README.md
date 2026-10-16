@@ -88,6 +88,12 @@ La documentación se organiza de forma modular y progresiva en los siguientes do
   - Estrategia de exportación multiformato (PlantUML, Mermaid, JSON, SVG).
   - Hoja de ruta por fases para implementar los editores restantes en la aplicación.
 
+- **[10. Guía de Creación y Análisis de Nuevos Items para IA](10_GUIA_CREACION_Y_ANALISIS_NUEVOS_ITEMS_AI.md)**
+  - Metodología completa de análisis previo antes de codificar nuevos elementos.
+  - Checklist exhaustivo de los 10 archivos a modificar en cada nuevo item.
+  - Patrón de agrupación, fichas técnicas modales y sincronización de datos.
+  - Caso de estudio detallado: Elemento `detailedUseCase` (Cockburn/RUP).
+
 ---
 
 ## Documentación de Referencia y Catálogo Previo
